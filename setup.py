@@ -1,4 +1,3 @@
-import os
 import setuptools
 
 with open("README.md", "r") as f:
@@ -20,7 +19,7 @@ setuptools.setup(
     url="https://github.com/automl/Auto-PyTorch",
     long_description_content_type="text/markdown",
     license="3-clause BSD",
-    keywords="machine learning algorithm configuration hyperparameter "
+    keywords="machine learning algorithm configuration hyperparameter"
              "optimization tuning neural architecture deep learning",
     packages=setuptools.find_packages(),
     classifiers=[
@@ -31,7 +30,7 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: BSD License",
     ],
-	python_requires='>=3',
+    python_requires='>=3',
     platforms=['Linux'],
     install_requires=requirements,
     include_package_data=True,
