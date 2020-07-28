@@ -7,10 +7,10 @@ from sklearn.utils.validation import check_random_state
 
 from sklearn.base import BaseEstimator
 
-from autopytorch.pipeline.base_component.encoding import EncoderNode
+from autopytorch.pipeline.base_component.encoding import EncoderComponent
 
 
-class OrdinalEncoder(EncoderNode):
+class OrdinalEncoder(EncoderComponent):
     @staticmethod
     def get_properties():
         raise NotImplementedError()

@@ -8,7 +8,7 @@ from sklearn.utils.validation import check_random_state
 from sklearn.base import BaseEstimator
 
 
-class AutoPytorchNode(BaseEstimator):
+class AutoPytorchComponent(BaseEstimator):
     @staticmethod
     def get_properties():
         raise NotImplementedError()

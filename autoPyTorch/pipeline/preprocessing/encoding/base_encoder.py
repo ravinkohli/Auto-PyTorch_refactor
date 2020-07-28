@@ -10,7 +10,7 @@ from sklearn.base import BaseEstimator
 from autopytorch.pipeline.base_component import AutoPytorchComponent
 
 
-class EncoderNode(AutoPytorchNode):
+class EncoderComponent(AutoPytorchComponent):
     @staticmethod
     def get_properties():
         raise NotImplementedError()
