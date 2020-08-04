@@ -9,25 +9,57 @@ import numpy as np
 from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_random_state
 
+from autoPyTorch.pipeline.components.base_choice import autoPyTorchChoice
+from autoPyTorch.pipeline.components.base_component import autoPyTorchComponent
+from autoPyTorch.pipeline.create_searchspace_util import (
+    add_forbidden,
+    find_active_choices,
+    get_match_array
+)
+
 
 class BasePipeline(Pipeline):
     """Base class for all pipeline objects.
     Notes
     -----
-    This class should not be instantiated, only subclassed."""
+    This class should not be instantiated, only subclassed.
+
+    Args:
+        config (Optional[Configuration]): Allows to directly specify a configuration space
+        steps (Optional[List[Tuple[str, autoPyTorchChoice]]]): the list of steps that
+            build the pipeline. If provided, they won't be dynamically produced.
+        include (Optional[Dict[str, Any]]): Allows the caller to specify which configurations
+            to honor during the creation of the configuration space.
+        exclude (Optional[Dict[str, Any]]): Allows the caller to specify which configurations
+            to avoid during the creation of the configuration space.
+        random_state (np.random.RandomState): allows to produce reproducible results by
+            setting a seed for randomized settings
+        init_params (Optional[Dict[str, Any]])
+
+
+    Attributes:
+        steps (List[Tuple[str, autoPyTorchChoice]]]): the steps of the current pipeline
+        config (Configuration): a configuration to delimit the current component choice
+        random_state (Optional[np.random.RandomState]): allows to produce reproducible
+               results by setting a seed for randomized settings
+
+    """
     __metaclass__ = ABCMeta
 
     def __init__(
         self,
         config: Optional[Configuration] = None,
-        steps: Optional[List[Tuple[str, AutoSklearnChoice]]] = None,
-        include: Optional[Dict] = None,
-        exclude: Optional[Dict] = None,
+        steps: Optional[List[Tuple[str, autoPyTorchChoice]]] = None,
+        dataset_properties: Optional[Dict[str, Any]] = None,
+        include: Optional[Dict[str, Any]] = None,
+        exclude: Optional[Dict[str, Any]] = None,
         random_state: Optional[np.random.RandomState] = None,
-        init_params: Optional[Dict] = None
+        init_params: Optional[Dict[str, Any]] = None
     ):
 
         self.init_params = init_params if init_params is not None else {}
+        self.dataset_properties = dataset_properties if \
+            dataset_properties is not None else {}
         self.include = include if include is not None else {}
         self.exclude = exclude if exclude is not None else {}
 
@@ -50,10 +82,10 @@ class BasePipeline(Pipeline):
                 diff = difflib.unified_diff(
                     str(self.config_space).splitlines(),
                     str(config.configuration_space).splitlines())
-                diff = '\n'.join(diff)
+                diff_msg = '\n'.join(diff)
                 raise ValueError('Configuration passed does not come from the '
                                  'same configuration space. Differences are: '
-                                 '%s' % diff)
+                                 '%s' % diff_msg)
             self.config = config
 
         self.set_hyperparameters(self.config, init_params=init_params)
@@ -64,7 +96,7 @@ class BasePipeline(Pipeline):
             self.random_state = check_random_state(random_state)
         super().__init__(steps=self.steps)
 
-        self._additional_run_info = {}
+        self._additional_run_info = {}  # type: Dict[str, str]
 
     def fit(self,
             X: np.ndarray,
@@ -83,13 +115,42 @@ class BasePipeline(Pipeline):
         Returns:
             self : returns an instance of self.
         """
-        raise NotImplementedError()
+        X, fit_params = self.fit_transformer(X, y, **fit_params)
+        self.fit_estimator(X, y, **fit_params)
+        return self
 
-    def fit_estimator(self, X, y, **fit_params):
+    def fit_estimator(self, X: np.ndarray, y: np.ndarray, **fit_params: Any) -> Pipeline:
         fit_params = {key.replace(":", "__"): value for key, value in
                       fit_params.items()}
         self._final_estimator.fit(X, y, **fit_params)
         return self
+
+    def fit_transformer(self, X: np.ndarray, y: np.ndarray, fit_params: Any = None
+                        ) -> Tuple[np.ndarray, Any]:
+        """
+        For every component in the pipeline, calls the estimator fit method
+        in order to sequentially fit the pipeline
+
+        Args:
+            X (np.ndarray): Training data. The preferred type of the matrix (dense or sparse)
+                depends on the estimator selected.
+            y (np.ndarray): array-like Targets
+            fit_params (dict): See the documentation of sklearn.pipeline.Pipeline for formatting
+                instructions.
+
+        Returns:
+            np.ndarray : Transformed features
+            fit_params : Dictionary used by estimators to fit and pass information
+        """
+        self.num_targets = 1 if len(y.shape) == 1 else y.shape[1]
+        if fit_params is None:
+            fit_params = {}
+        fit_params = {key.replace(":", "__"): value for key, value in
+                      fit_params.items()}
+        Xt, fit_params = self._fit(X, y, **fit_params)
+        if fit_params is None:
+            fit_params = {}
+        return Xt, fit_params
 
     def get_max_iter(self) -> int:
         if self.estimator_supports_iterative_fit():
@@ -135,8 +196,9 @@ class BasePipeline(Pipeline):
                                  dtype=self._output_dtype)
 
                 # Copied and adapted from the scikit-learn GP code
-                for k in range(max(1, int(np.ceil(float(X.shape[0]) /
-                                                  batch_size)))):
+                for k in range(max(1, int(np.ceil(
+                    float(X.shape[0]) / batch_size
+                )))):
                     batch_from = k * batch_size
                     batch_to = min([(k + 1) * batch_size, X.shape[0]])
                     y[batch_from:batch_to] = \
@@ -149,7 +211,10 @@ class BasePipeline(Pipeline):
         configuration: Configuration,
         init_params: Optional[Dict] = None
     ) -> 'Pipeline':
-        """Method to overwrite the default hyperparamter configuration of the pipeline
+        """Method to set the hyperparamter configuration of the pipeline.
+
+        It iterates over the components of the pipeline and applies a given
+        configuration accordingly
 
         Args:
             configuration (Configuration): configuration object to search and overwrite in
@@ -180,12 +245,12 @@ class BasePipeline(Pipeline):
                         value = init_params[param]
                         new_name = param.replace('%s:' % node_name, '', 1)
                         sub_init_params_dict[new_name] = value
-            else:
-                sub_init_params_dict = None
 
-            if isinstance(node, (AutoPytorchComponent, BasePipeline)):
-                node.set_hyperparameters(configuration=sub_configuration,
-                                         init_params=sub_init_params_dict)
+            if isinstance(node, (autoPyTorchChoice, autoPyTorchComponent, BasePipeline)):
+                node.set_hyperparameters(
+                    configuration=sub_configuration,
+                    init_params=None if init_params is None else sub_init_params_dict,
+                )
             else:
                 raise NotImplementedError('Not supported yet!')
 
@@ -195,25 +260,25 @@ class BasePipeline(Pipeline):
         """Return the configuration space for the CASH problem.
 
         Returns:
-            Configuration: The configuration space describing the AutoSklearnClassifier.
+            ConfigurationSpace: The configuration space describing the Pipeline.
         """
         if not hasattr(self, 'config_space') or self.config_space is None:
             self.config_space = self._get_hyperparameter_search_space(
                 include=self.include, exclude=self.exclude,
-                )
+            )
         return self.config_space
 
     def _get_hyperparameter_search_space(self,
-                                         include: Optional[Dict] = None,
-                                         exclude: Optional[Dict] = None,
+                                         include: Optional[Dict[str, Any]] = None,
+                                         exclude: Optional[Dict[str, Any]] = None,
                                          ) -> ConfigurationSpace:
         """Return the configuration space for the CASH problem.
         This method should be called by the method
         get_hyperparameter_search_space of a subclass. After the subclass
         assembles a list of available estimators and preprocessor components,
         _get_hyperparameter_search_space can be called to do the work of
-        creating the actual
-        ConfigSpace.configuration_space.ConfigurationSpace object.
+        creating the actual ConfigSpace.configuration_space.ConfigurationSpace object.
+
         Args:
             include (Dict): Overwrite to include user desired components to the pipeline
             exclude (Dict): Overwrite to exclude user desired components to the pipeline
@@ -232,10 +297,99 @@ class BasePipeline(Pipeline):
         """
         raise NotImplementedError()
 
-    def _get_pipeline_steps(self) -> List[Tuple[str, AutoPytorchComponent]]:
+    def _get_base_search_space(
+        self,
+        cs: ConfigurationSpace,
+        dataset_properties: Dict[str, Any],
+        include: Optional[Dict[str, Any]],
+        exclude: Optional[Dict[str, Any]],
+        pipeline: List[Tuple[str, autoPyTorchChoice]]
+    ) -> ConfigurationSpace:
+        if include is None:
+            if self.include is None:
+                include = {}
+            else:
+                include = self.include
+
+        keys = [pair[0] for pair in pipeline]
+        for key in include:
+            if key not in keys:
+                raise ValueError('Invalid key in include: %s; should be one '
+                                 'of %s' % (key, keys))
+
+        if exclude is None:
+            if self.exclude is None:
+                exclude = {}
+            else:
+                exclude = self.exclude
+
+        keys = [pair[0] for pair in pipeline]
+        for key in exclude:
+            if key not in keys:
+                raise ValueError('Invalid key in exclude: %s; should be one '
+                                 'of %s' % (key, keys))
+
+        matches = get_match_array(
+            pipeline, dataset_properties, include=include, exclude=exclude)
+
+        # Now we have only legal combinations at this step of the pipeline
+        # Simple sanity checks
+        assert np.sum(matches) != 0, "No valid pipeline found."
+
+        assert np.sum(matches) <= np.size(matches), \
+            "'matches' is not binary; %s <= %d, %s" % \
+            (str(np.sum(matches)), np.size(matches), str(matches.shape))
+
+        # Iterate each dimension of the matches array (each step of the
+        # pipeline) to see if we can add a hyperparameter for that step
+        for node_idx, n_ in enumerate(pipeline):
+            node_name, node = n_
+
+            is_choice = isinstance(node, autoPyTorchChoice)
+
+            # if the node isn't a choice we can add it immediately because it
+            #  must be active (if it wasn't, np.sum(matches) would be zero
+            if not is_choice:
+                cs.add_configuration_space(
+                    node_name,
+                    node.get_hyperparameter_search_space(dataset_properties),
+                )
+            # If the node is a choice, we have to figure out which of its
+            #  choices are actually legal choices
+            else:
+                choices_list = find_active_choices(
+                    matches, node, node_idx,
+                    dataset_properties,
+                    include.get(node_name),
+                    exclude.get(node_name)
+                )
+                sub_config_space = node.get_hyperparameter_search_space(
+                    dataset_properties, include=choices_list)
+                cs.add_configuration_space(node_name, sub_config_space)
+
+        # And now add forbidden parameter configurations
+        # According to matches
+        if np.sum(matches) < np.size(matches):
+            cs = add_forbidden(
+                conf_space=cs, pipeline=pipeline, matches=matches,
+                dataset_properties=dataset_properties, include=include,
+                exclude=exclude)
+
+        return cs
+
+    def _get_pipeline_steps(self) -> List[Tuple[str, autoPyTorchChoice]]:
+        """
+        Defines what steps a pipeline should follow.
+        The step itself has choices given via autoPyTorchChoices.
+
+        Returns:
+            List[Tuple[str, autoPyTorchChoices]]: list of steps sequentially exercised
+                by the pipeline.
+        """
         raise NotImplementedError()
 
     def _get_estimator_hyperparameter_name(self) -> str:
+        """The name of the current pipeline estimator, for representation purposes"""
         raise NotImplementedError()
 
     def get_additional_run_info(self) -> Dict:
