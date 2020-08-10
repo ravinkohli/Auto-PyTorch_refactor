@@ -8,7 +8,7 @@ class autoPyTorchSetupComponent(autoPyTorchComponent):
     in Auto-Pytorch"""
 
     def __init__(self) -> None:
-        self.scheduler = None
+        pass
 
     def transform(self, X: np.ndarray) -> np.ndarray:
         """The transform function calls the transform function of the
