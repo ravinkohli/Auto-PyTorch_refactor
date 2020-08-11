@@ -11,10 +11,10 @@ import numpy as np
 
 from torch.optim.lr_scheduler import _LRScheduler
 
-from autoPyTorch.pipeline.components.setup.base_setup import autoPyTorchSetupComponent
+from autoPyTorch.pipeline.components.setup.lr_scheduler.base_scheduler import BaseLRComponent
 
 
-class ReduceLROnPlateau(autoPyTorchSetupComponent):
+class ReduceLROnPlateau(BaseLRComponent):
     """
     Reduce learning rate when a metric has stopped improving. Models often benefit from
     reducing the learning rate by a factor of 2-10 once learning stagnates. This scheduler
@@ -46,7 +46,7 @@ class ReduceLROnPlateau(autoPyTorchSetupComponent):
         self.scheduler = None  # type: Optional[_LRScheduler]
 
     def fit(self, X: np.ndarray, y: np.ndarray, **fit_params: Any
-            ) -> autoPyTorchSetupComponent:
+            ) -> BaseLRComponent:
         """
         Sets the scheduler component choice as CosineAnnealingWarmRestarts
 

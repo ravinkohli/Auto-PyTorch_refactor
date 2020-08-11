@@ -7,10 +7,10 @@ import numpy as np
 
 from torch.optim.lr_scheduler import _LRScheduler
 
-from autoPyTorch.pipeline.components.setup.base_setup import autoPyTorchSetupComponent
+from autoPyTorch.pipeline.components.setup.lr_scheduler.base_scheduler import BaseLRComponent
 
 
-class CosineAnnealingWarmRestarts(autoPyTorchSetupComponent):
+class CosineAnnealingWarmRestarts(BaseLRComponent):
     """
     Set the learning rate of each parameter group using a cosine annealing schedule,
     where \eta_{max}ηmax is set to the initial lr, T_{cur} is the number of epochs
@@ -22,6 +22,7 @@ class CosineAnnealingWarmRestarts(autoPyTorchSetupComponent):
         T_mult (int):  A factor increases T_{i} after a restart
         random_state (Optional[np.random.RandomState]): random state
     """
+
     def __init__(
         self,
         T_0: int,
@@ -36,7 +37,7 @@ class CosineAnnealingWarmRestarts(autoPyTorchSetupComponent):
         self.scheduler = None  # type: Optional[_LRScheduler]
 
     def fit(self, X: np.ndarray, y: np.ndarray, **fit_params: Any
-            ) -> autoPyTorchSetupComponent:
+            ) -> BaseLRComponent:
         """
         Sets the scheduler component choice as CosineAnnealingWarmRestarts
 

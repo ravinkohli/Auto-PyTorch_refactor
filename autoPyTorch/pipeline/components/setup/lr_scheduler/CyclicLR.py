@@ -11,10 +11,10 @@ import numpy as np
 
 from torch.optim.lr_scheduler import _LRScheduler
 
-from autoPyTorch.pipeline.components.setup.base_setup import autoPyTorchSetupComponent
+from autoPyTorch.pipeline.components.setup.lr_scheduler.base_scheduler import BaseLRComponent
 
 
-class CyclicLR(autoPyTorchSetupComponent):
+class CyclicLR(BaseLRComponent):
     """
     Sets the learning rate of each parameter group according to cyclical learning rate
     policy (CLR). The policy cycles the learning rate between two boundaries with a
@@ -48,7 +48,7 @@ class CyclicLR(autoPyTorchSetupComponent):
         self.scheduler = None  # type: Optional[_LRScheduler]
 
     def fit(self, X: np.ndarray, y: np.ndarray, **fit_params: Any
-            ) -> autoPyTorchSetupComponent:
+            ) -> BaseLRComponent:
         """
         Sets the scheduler component choice as CosineAnnealingWarmRestarts
 

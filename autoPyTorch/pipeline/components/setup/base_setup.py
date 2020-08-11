@@ -21,11 +21,3 @@ class autoPyTorchSetupComponent(autoPyTorchComponent):
             np.ndarray: Transformed features
         """
         raise NotImplementedError()
-
-    def get_scheduler(self) -> autoPyTorchComponent:
-        """Return the underlying scheduler object.
-        Returns:
-            scheduler : the underlying scheduler object
-        """
-        assert self.scheduler is not None, "No scheduler was fit"
-        return self.scheduler

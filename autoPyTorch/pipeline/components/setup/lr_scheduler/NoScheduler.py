@@ -6,10 +6,10 @@ import numpy as np
 
 from torch.optim.lr_scheduler import _LRScheduler
 
-from autoPyTorch.pipeline.components.setup.base_setup import autoPyTorchSetupComponent
+from autoPyTorch.pipeline.components.setup.lr_scheduler.base_scheduler import BaseLRComponent
 
 
-class NoScheduler(autoPyTorchSetupComponent):
+class NoScheduler(BaseLRComponent):
     """
     Performs no scheduling via a LambdaLR with lambda==1.
 
@@ -25,7 +25,7 @@ class NoScheduler(autoPyTorchSetupComponent):
         self.scheduler = None  # type: Optional[_LRScheduler]
 
     def fit(self, X: np.ndarray, y: np.ndarray, **fit_params: Any
-            ) -> autoPyTorchSetupComponent:
+            ) -> BaseLRComponent:
         """
         Sets the scheduler component choice as CosineAnnealingWarmRestarts
 
