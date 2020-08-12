@@ -8,6 +8,7 @@ from ConfigSpace.hyperparameters import (
 
 import numpy as np
 
+import torch.optim.lr_scheduler
 from torch.optim.lr_scheduler import _LRScheduler
 
 from autoPyTorch.pipeline.components.setup.lr_scheduler.base_scheduler import BaseLRComponent
@@ -49,7 +50,6 @@ class StepLR(BaseLRComponent):
         Returns:
             A instance of self
         """
-        import torch.optim.lr_scheduler
 
         # Make sure there is an optimizer
         if 'optimizer' not in fit_params:
