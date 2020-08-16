@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import ConfigSpace as CS
 from ConfigSpace.configuration_space import ConfigurationSpace
@@ -10,12 +10,12 @@ from ConfigSpace.hyperparameters import (
 
 import numpy as np
 
-import torch.nn as nn
+import torch
 
-from autoPyTorch.pipeline.components.setup.network_initializer import autoPyTorchNetworkComponent
+from autoPyTorch.pipeline.components.setup.network.base_network import BaseNetworkComponent
 
 
-class MLPNet(autoPyTorchNetworkComponent):
+class MLPNet(BaseNetworkComponent):
     """
     This component automatically creates a Multi Layer Perceptron based on a given config.
 
@@ -35,79 +35,79 @@ class MLPNet(autoPyTorchNetworkComponent):
         self,
         num_layers: int,
         activation: str,
-        num_units_1: int,
         use_dropout: bool,
         random_state: Optional[np.random.RandomState] = None,
-        **kwargs: Dict[str, Any]
+        **kwargs: Any
     ):
 
         super().__init__()
         self.num_layers = num_layers
         self.activation = activation
         self.random_state = random_state
-        self.num_units_1 = num_units_1
         self.use_dropout = use_dropout
         self.config = kwargs
 
-    def fit(self, X: np.ndarray, y: np.ndarray, **fit_params: Any
-            ) -> autoPyTorchSetupComponent:
+    def fit(self, X: Dict[str, Any], y: Any = None) -> BaseNetworkComponent:
         """
-        Sets the scheduler component choice as CosineAnnealingWarmRestarts
+        Fits a component by using an input dictionary with pre-requisites
 
         Args:
-            X (np.ndarray): input features
-            y (npndarray): target features
+            X (X: Dict[str, Any]): Dependencies needed by current component to perform fit
+            y (Any): not used. To comply with sklearn API
 
         Returns:
             A instance of self
         """
-        layers = list()
-        in_features = X.shape[1]
-        out_features = y.shape[1]
+        # Make sure that input dictionary X has the required
+        # information to fit this stage
+        self.check_requirements(X)
 
-        self._add_layer(layers, in_features, self.num_units_1, 1)
+        layers = list()  # type: List[torch.nn.Module]
+        in_features = X['num_features']
+        out_features = X['num_classes']
+
+        self._add_layer(layers, in_features, self.config['num_units_1'], 1)
 
         for i in range(2, self.num_layers + 1):
-            self._add_layer(layers, self.config["num_units_%d" % (i-1)],
+            self._add_layer(layers, self.config["num_units_%d" % (i - 1)],
                             self.config["num_units_%d" % i], i)
 
-        layers.append(nn.Linear(self.config["num_units_%d" % self.config["num_layers"]],
-                                out_features))
-        self.model = nn.Sequential(*layers)
+        layers.append(torch.nn.Linear(self.config["num_units_%d" % self.num_layers],
+                                      out_features))
+        self.network = torch.nn.Sequential(*layers)
 
         return self
 
-    def _add_layer(self, layers, in_features, out_features, layer_id):
-        layers.append(nn.Linear(in_features, out_features))
-        layers.append(self.activation())
+    def _add_layer(self, layers: List[torch.nn.Module], in_features: int, out_features: int,
+                   layer_id: int) -> None:
+        """
+        Dynamically add a layer given the in->out specification
+
+        Args:
+            layers (List[nn.Module]): The list where all modules are added
+            in_features (int): input dimensionality of the new layer
+            out_features (int): output dimensionality of the new layer
+
+        """
+        layers.append(torch.nn.Linear(in_features, out_features))
+        layers.append(MLPNet.get_activations_dict()[self.activation]())
         if self.use_dropout:
-            layers.append(nn.Dropout(self.config["dropout_%d" % layer_id]))
-
-    def transform(self, X: np.ndarray) -> np.ndarray:
-        return X
-
-    @classmethod
-    def get_activations_dict(cls):
-        return {
-            'ELU': nn.ELU,
-            'LeakyReLU': nn.LeakyReLU,
-            'ReLU': nn.ReLU,
-            'Tanh': nn.Tanh,
-            'nn.Sigmoid': nn.Sigmoid,
-        }
+            layers.append(torch.nn.Dropout(self.config["dropout_%d" % layer_id]))
 
     @staticmethod
     def get_properties(dataset_properties: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
         return {
-            'shortname': 'CosineAnnealingWarmRestarts',
-            'name': 'Cosine Annealing WarmRestarts',
+            'shortname': 'MLP',
+            'name': 'Multi Layer Perceptron',
         }
 
     @staticmethod
     def get_hyperparameter_search_space(dataset_properties: Optional[Dict] = None,
                                         min_mlp_layers: int = 1,
                                         max_mlp_layers: int = 15,
-                                        dropout: bool = True
+                                        dropout: bool = True,
+                                        min_num_units: int = 10,
+                                        max_num_units: int = 1024,
                                         ) -> ConfigurationSpace:
 
         cs = ConfigurationSpace()
@@ -132,9 +132,9 @@ class MLPNet(autoPyTorchNetworkComponent):
 
         for i in range(1, max_mlp_layers + 1):
             n_units_hp = UniformIntegerHyperparameter("num_units_%d" % i,
-                                                      lower=10,
-                                                      upper=1024,
-                                                      default=20)
+                                                      lower=min_num_units,
+                                                      upper=max_num_units,
+                                                      default_value=20)
             cs.add_hyperparameter(n_units_hp)
 
             if i > min_mlp_layers:
@@ -146,13 +146,12 @@ class MLPNet(autoPyTorchNetworkComponent):
                     )
                 )
 
-            if use_dropout:
+            if dropout:
                 dropout_hp = UniformFloatHyperparameter(
-                        "dropout_%d" % i,
-                        lower=0.0,
-                        upper=0.8,
-                        default=0.5
-                    )
+                    "dropout_%d" % i,
+                    lower=0.0,
+                    upper=0.8,
+                    default_value=0.5
                 )
                 cs.add_hyperparameter(dropout_hp)
                 dropout_condition_1 = CS.EqualsCondition(dropout_hp, use_dropout, True)

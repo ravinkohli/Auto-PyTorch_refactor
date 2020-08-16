@@ -8,30 +8,40 @@ from ConfigSpace.configuration_space import ConfigurationSpace
 import numpy as np
 
 from autoPyTorch.pipeline.components.base_choice import autoPyTorchChoice
-from autoPyTorch.pipeline.components.base_component import autoPyTorchComponent, find_components
-from autoPyTorch.pipeline.components.setup.base_setup import autoPyTorchSetupComponent
+from autoPyTorch.pipeline.components.base_component import (
+    ThirdPartyComponents,
+    autoPyTorchComponent,
+    find_components,
+)
+from autoPyTorch.pipeline.components.setup.network.base_network import BaseNetworkComponent
 
 
 directory = os.path.split(__file__)[0]
-_schedulers = find_components(__package__,
-                              directory,
-                              autoPyTorchSetupComponent)
+_networks = find_components(__package__,
+                            directory,
+                            BaseNetworkComponent)
+_addons = ThirdPartyComponents(BaseNetworkComponent)
+
+
+def add_network(network: BaseNetworkComponent) -> None:
+    _addons.add_component(network)
 
 
 class NetworkChoice(autoPyTorchChoice):
 
     def get_components(self) -> Dict[str, autoPyTorchComponent]:
-        """Returns the available scheduler components
+        """Returns the available network components
 
         Args:
             None
 
         Returns:
-            Dict[str, autoPyTorchComponent]: all baseScheduler components available
-                as choices for learning rate scheduling
+            Dict[str, autoPyTorchComponent]: all baseNetwork components available
+                as choices
         """
         components = OrderedDict()
-        components.update(_schedulers)
+        components.update(_networks)
+        components.update(_addons.components)
         return components
 
     def get_available_components(
@@ -52,9 +62,8 @@ class NetworkChoice(autoPyTorchChoice):
              of the dataset to guide the pipeline choices of components
 
         Returns:
-            Dict[str, autoPyTorchComponent]: A filtered dict of learning
-                rate schedulers
-
+            Dict[str, autoPyTorchComponent]: A filtered dict of Network
+                components
         """
         if dataset_properties is None:
             dataset_properties = {}
@@ -81,14 +90,11 @@ class NetworkChoice(autoPyTorchChoice):
             entry = available_comp[name]
 
             # Exclude itself to avoid infinite loop
-            if entry == SchedulerChoice or hasattr(entry, 'get_components'):
+            if entry == NetworkChoice or hasattr(entry, 'get_components'):
                 continue
 
             # target_type = dataset_properties['target_type']
-            # Apply some automatic filtering here for
-            # schedulers based on the dataset!
-            # TODO: Think if there is any case where a scheduler
-            # is not recommended for a certain dataset
+            # Apply some automatic filtering here based on dataset
 
             components_dict[name] = entry
 
@@ -105,7 +111,7 @@ class NetworkChoice(autoPyTorchChoice):
 
         Args:
             dataset_properties (Optional[Dict[str, str]]): Describes the dataset to work on
-            default (Optional[str]): Default scheduler to use
+            default (Optional[str]): Default component to use
             include: Optional[Dict[str, Any]]: what components to include. It is an exhaustive
                 list, and will exclusively use this components.
             exclude: Optional[Dict[str, Any]]: which components to skip
@@ -120,39 +126,34 @@ class NetworkChoice(autoPyTorchChoice):
             dataset_properties = {}
 
         # Compile a list of legal preprocessors for this problem
-        available_schedulers = self.get_available_components(
+        available_networks = self.get_available_components(
             dataset_properties=dataset_properties,
             include=include, exclude=exclude)
 
-        if len(available_schedulers) == 0:
-            raise ValueError("No scheduler found")
+        if len(available_networks) == 0:
+            raise ValueError("No Network found")
 
         if default is None:
-            defaults = ['no_LRScheduler',
-                        'LambdaLR',
-                        'StepLR',
-                        'ExponentialLR',
-                        'CosineAnnealingLR',
-                        'ReduceLROnPlateau'
+            defaults = ['MLPNet',
                         ]
             for default_ in defaults:
-                if default_ in available_schedulers:
+                if default_ in available_networks:
                     default = default_
                     break
 
-        scheduler = CSH.CategoricalHyperparameter(
+        network = CSH.CategoricalHyperparameter(
             '__choice__',
-            list(available_schedulers.keys()),
+            list(available_networks.keys()),
             default_value=default
         )
-        cs.add_hyperparameter(scheduler)
-        for name in available_schedulers:
-            scheduler_configuration_space = available_schedulers[name]. \
+        cs.add_hyperparameter(network)
+        for name in available_networks:
+            network_configuration_space = available_networks[name]. \
                 get_hyperparameter_search_space(dataset_properties)
-            parent_hyperparameter = {'parent': scheduler, 'value': name}
+            parent_hyperparameter = {'parent': network, 'value': name}
             cs.add_configuration_space(
                 name,
-                scheduler_configuration_space,
+                network_configuration_space,
                 parent_hyperparameter=parent_hyperparameter
             )
 
@@ -163,31 +164,3 @@ class NetworkChoice(autoPyTorchChoice):
     def transform(self, X: np.ndarray) -> np.ndarray:
         assert self.choice is not None, "Cannot call transform before the object is initialized"
         return self.choice.transform(X)
-
-
-class autoPyTorchNetworkComponent(autoSetupComponent):
-    """Provide an abstract interface for networks
-    in Auto-Pytorch"""
-
-    def __init__(self) -> None:
-        self.model = None
-
-    def transform(self, X: np.ndarray) -> np.ndarray:
-        """The transform function calls the transform function of the
-        underlying model and returns the transformed array.
-
-        Args:
-            X (np.ndarray): input features
-
-        Returns:
-            np.ndarray: Transformed features
-        """
-        raise NotImplementedError()
-
-    def get_model(self) -> nn.Module:
-        """Return the underlying scheduler object.
-        Returns:
-            scheduler : the underlying scheduler object
-        """
-        assert self.model is not None, "No scheduler was fit"
-        return self.model

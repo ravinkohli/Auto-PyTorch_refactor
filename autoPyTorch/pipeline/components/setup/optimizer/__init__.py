@@ -13,34 +13,33 @@ from autoPyTorch.pipeline.components.base_component import (
     autoPyTorchComponent,
     find_components,
 )
-from autoPyTorch.pipeline.components.setup.lr_scheduler.base_scheduler import BaseLRComponent
-
+from autoPyTorch.pipeline.components.setup.optimizer.base_optimizer import BaseOptimizerComponent
 
 directory = os.path.split(__file__)[0]
-_schedulers = find_components(__package__,
+_optimizers = find_components(__package__,
                               directory,
-                              BaseLRComponent)
-_addons = ThirdPartyComponents(BaseLRComponent)
+                              BaseOptimizerComponent)
+_addons = ThirdPartyComponents(BaseOptimizerComponent)
 
 
-def add_scheduler(scheduler: BaseLRComponent) -> None:
-    _addons.add_component(scheduler)
+def add_optimizer(optimizer: BaseOptimizerComponent) -> None:
+    _addons.add_component(optimizer)
 
 
-class SchedulerChoice(autoPyTorchChoice):
+class OptimizerChoice(autoPyTorchChoice):
 
     def get_components(self) -> Dict[str, autoPyTorchComponent]:
-        """Returns the available scheduler components
+        """Returns the available optimizer components
 
         Args:
             None
 
         Returns:
-            Dict[str, autoPyTorchComponent]: all baseScheduler components available
-                as choices for learning rate scheduling
+            Dict[str, autoPyTorchComponent]: all BaseOptimizerComponents  available
+                as choices
         """
         components = OrderedDict()
-        components.update(_schedulers)
+        components.update(_optimizers)
         components.update(_addons.components)
         return components
 
@@ -62,9 +61,8 @@ class SchedulerChoice(autoPyTorchChoice):
              of the dataset to guide the pipeline choices of components
 
         Returns:
-            Dict[str, autoPyTorchComponent]: A filtered dict of learning
-                rate schedulers
-
+            Dict[str, autoPyTorchComponent]: A filtered dict of Optimizer
+                components
         """
         if dataset_properties is None:
             dataset_properties = {}
@@ -91,14 +89,11 @@ class SchedulerChoice(autoPyTorchChoice):
             entry = available_comp[name]
 
             # Exclude itself to avoid infinite loop
-            if entry == SchedulerChoice or hasattr(entry, 'get_components'):
+            if entry == OptimizerChoice or hasattr(entry, 'get_components'):
                 continue
 
             # target_type = dataset_properties['target_type']
-            # Apply some automatic filtering here for
-            # schedulers based on the dataset!
-            # TODO: Think if there is any case where a scheduler
-            # is not recommended for a certain dataset
+            # Apply some automatic filtering here based on dataset
 
             components_dict[name] = entry
 
@@ -115,7 +110,7 @@ class SchedulerChoice(autoPyTorchChoice):
 
         Args:
             dataset_properties (Optional[Dict[str, str]]): Describes the dataset to work on
-            default (Optional[str]): Default scheduler to use
+            default (Optional[str]): Default component to use
             include: Optional[Dict[str, Any]]: what components to include. It is an exhaustive
                 list, and will exclusively use this components.
             exclude: Optional[Dict[str, Any]]: which components to skip
@@ -130,39 +125,37 @@ class SchedulerChoice(autoPyTorchChoice):
             dataset_properties = {}
 
         # Compile a list of legal preprocessors for this problem
-        available_schedulers = self.get_available_components(
+        available_optimizers = self.get_available_components(
             dataset_properties=dataset_properties,
             include=include, exclude=exclude)
 
-        if len(available_schedulers) == 0:
-            raise ValueError("No scheduler found")
+        if len(available_optimizers) == 0:
+            raise ValueError("No Optimizer found")
 
         if default is None:
-            defaults = ['no_LRScheduler',
-                        'LambdaLR',
-                        'StepLR',
-                        'ExponentialLR',
-                        'CosineAnnealingLR',
-                        'ReduceLROnPlateau'
+            defaults = ['SGDOptimizer',
+                        'AdamOptimizer',
+                        'AdamWOptimizer',
+                        'RMSpropOptimizer'
                         ]
             for default_ in defaults:
-                if default_ in available_schedulers:
+                if default_ in available_optimizers:
                     default = default_
                     break
 
-        scheduler = CSH.CategoricalHyperparameter(
+        optimizer = CSH.CategoricalHyperparameter(
             '__choice__',
-            list(available_schedulers.keys()),
+            list(available_optimizers.keys()),
             default_value=default
         )
-        cs.add_hyperparameter(scheduler)
-        for name in available_schedulers:
-            scheduler_configuration_space = available_schedulers[name]. \
+        cs.add_hyperparameter(optimizer)
+        for name in available_optimizers:
+            optimizer_configuration_space = available_optimizers[name]. \
                 get_hyperparameter_search_space(dataset_properties)
-            parent_hyperparameter = {'parent': scheduler, 'value': name}
+            parent_hyperparameter = {'parent': optimizer, 'value': name}
             cs.add_configuration_space(
                 name,
-                scheduler_configuration_space,
+                optimizer_configuration_space,
                 parent_hyperparameter=parent_hyperparameter
             )
 
