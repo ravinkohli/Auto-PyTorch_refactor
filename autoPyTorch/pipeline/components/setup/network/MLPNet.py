@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 import ConfigSpace as CS
 from ConfigSpace.configuration_space import ConfigurationSpace
