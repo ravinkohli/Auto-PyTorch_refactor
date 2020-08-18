@@ -94,10 +94,10 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
 =======
 from torch.utils import data
 import numpy as np
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Mapping, Any
 
 class BaseDataset(data.Dataset,metaclass=ABCMeta):
-    def __init__(self, train_tensors: Tuple[np.array], val_tensors: Optional[Tuple[np.array]]=None):
+    def __init__(self, train_tensors: Tuple[Mapping[int,Any]], val_tensors: Optional[Tuple[Mapping[int,Any]]]=None):
         self.train_tensors = train_tensors
         self.val_tensors = val_tensors
 
