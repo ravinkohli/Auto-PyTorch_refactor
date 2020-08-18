@@ -94,22 +94,18 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
 =======
 from torch.utils import data
 import numpy as np
-from typing import Optional
+from typing import Optional, Tuple
 
 class BaseDataset(data.Dataset,metaclass=ABCMeta):
-    def __init__(self, X_train: np.array, Y_train: np.array, X_valid: Optional[np.array]=None, Y_valid: Optional[np.array]=None):
-        self.X_train = X_train
-        self.Y_train = Y_train
-        self.X_valid = X_valid
-        self.Y_valid = Y_valid
-        if self.X_valid is None != self.Y_valid is None:
-            raise ValueError("Either both X and Y valid sets should be provided or None.")
+    def __init__(self, train_tensors: Tuple[np.array], val_tensors: Optional[Tuple[np.array]]=None):
+        self.train_tensors = train_tensors
+        self.val_tensors = val_tensors
 
     def __getitem__(self, index):
-        raise NotImplementedError
+        return tuple(t[index] for t in self.train_tensors)
 
     def __len__(self):
-        raise NotImplementedError
+        return len(self.train_tensors)
 
     def create_cross_val_splits(self, cross_val_type, num_splits):
         indices = np.random.permutation(len(self))
@@ -127,11 +123,11 @@ class BaseDataset(data.Dataset,metaclass=ABCMeta):
         indices = np.random.permutation(len(self))
         val_count = round(val_share*len(self))
         if val_share is None:
-            if self.X_valid is not None:
+            if self.val_tensors is not None:
                 raise ValueError('`val_share` specified, but the Dataset was a given a pre-defined split at initializiation already.')
             return (data.Subset(self,indices[:val_count]),data.Subset(self,indices[val_count:]))
         else:
-            if self.X_valid is None:
+            if self.val_tensors is None:
                 raise ValueError('Please specify `val_share` or initialize with a validation dataset.')
-            val_ds = BaseDataset(self.X_valid,self.Y_valid)
+            val_ds = BaseDataset(self.val_tensors)
             return (self,val_ds)
