@@ -1,12 +1,16 @@
+from typing import Tuple, List
+
 import numpy as np
+from torch.utils import data
+
 from autoPyTorch.datasets.base_dataset import BaseDataset
 
-class TabularDataset(BaseDataset):
-    def __init__(self,X,Y,is_classification=None,is_multilabel=None):
-        self.dc = DataConverter(is_classification=is_classification,is_multilabel=is_multilabel)
-        X,Y,_,_,_ = self.dc.convert(X,Y)
-        super().__init__((X,Y))
 
+class TabularDataset(BaseDataset):
+    def __init__(self, X, Y, is_classification=None, is_multilabel=None):
+        self.dc = DataConverter(is_classification=is_classification, is_multilabel=is_multilabel)
+        X, Y, _, _, _ = self.dc.convert(X, Y)
+        super().__init__((X, Y))
 
 
 class DataConverter(object):
@@ -24,12 +28,12 @@ class DataConverter(object):
             is_classification: specifies, if it is a classification problem. None for autodetect.
             numerical_min_unique_values: minimum number of unique values for a numerical feature.
                 A feature will be interpreted as categorical, if it has less.
-            force_numerical: Array of feature indices, which schould be treated as numerical.
+            force_numerical: Array of feature indices, which should be treated as numerical.
             force_categorical: Array of feature indices, which should be trated as categorical.
             is_multilabel: True, if multivariable regression / multilabel classification
         """
         self.is_classification = is_classification
-        self.numerical_min_unique_values= numerical_min_unique_values
+        self.numerical_min_unique_values = numerical_min_unique_values
         self.force_numerical = force_numerical or []
         self.force_categorical = force_categorical or []
         self.is_multilabel = is_multilabel
@@ -47,8 +51,8 @@ class DataConverter(object):
 
         if len(Y.shape) == 1 or Y.shape[1] == 1:
             Y_result, Y_categorical = self.convert_matrix(Y.reshape(-1, 1),
-                                                                [0] if self.is_classification else [],
-                                                                [0] if self.is_classification == False else [])
+                                                          [0] if self.is_classification else [],
+                                                          [0] if self.is_classification == False else [])
             self.is_classification = np.any(Y_categorical)
             assert self.is_multilabel != True, "multilabel specified, but only 1-dim output vector given"
             self.is_multilabel = False
@@ -56,7 +60,7 @@ class DataConverter(object):
             Y_result = self.check_multi_dim_output(Y)
 
         if Y_result.shape[1] == 1:
-            Y_result = np.reshape(Y_result, (-1, ))
+            Y_result = np.reshape(Y_result, (-1,))
         elif not self.is_multilabel and self.is_classification:
             Y_result = np.argmax(Y_result, axis=1)
         return X_result, Y_result, self.is_classification, self.is_multilabel, categorical
@@ -82,10 +86,10 @@ class DataConverter(object):
         is_categorical = []
         len_values_and_indices = []
         result_width = 0
-        
+
         # iterate over the columns and get some data
         for i in range(matrix.shape[1]):
-            
+
             # check if it is categorical or numerical
             matrix_column = matrix[0:num_rows, i]
             if matrix.dtype == np.dtype("object"):
@@ -110,7 +114,7 @@ class DataConverter(object):
             # nan values are additional category in categorical features
             if len(nan_indices) > 0:
                 values = np.append(values[valid_value_indices], np.nan)
-                indices[nan_indices] = values.shape[0] - 1         
+                indices[nan_indices] = values.shape[0] - 1
 
             len_values_and_indices.append((len(values), indices))
             if len(values) == 1:
@@ -143,8 +147,7 @@ class DataConverter(object):
                 j += 1
 
         return result.astype('float32', copy=False), [x for x in is_categorical if x is not None]
-    
-    
+
     def check_multi_dim_output(self, Y):
         Y = Y.astype('float32', copy=False)
         unique = np.unique(Y)
