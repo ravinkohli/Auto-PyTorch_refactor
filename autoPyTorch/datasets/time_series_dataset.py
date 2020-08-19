@@ -1,10 +1,16 @@
-import numpy as np
-from autoPyTorch.datasets.base_dataset import BaseDataset
-from typing import Tuple, Optional, Union
-from autoPyTorch.datasets.cross_validation import get_cross_validators, get_holdout_validators, CrossValTypes, \
-    HoldoutValTypes
+from typing import Optional, Tuple, Union
 
-TIME_SERIES_FORECASTING_INPUT = np.ndarray  # currently only numpy arrays are supported
+import numpy as np
+
+from autoPyTorch.datasets.base_dataset import BaseDataset
+from autoPyTorch.datasets.cross_validation import (
+    CrossValTypes,
+    HoldoutValTypes,
+    get_cross_validators,
+    get_holdout_validators
+)
+
+TIME_SERIES_FORECASTING_INPUT = Tuple[np.ndarray, np.ndarray]  # currently only numpy arrays are supported
 TIME_SERIES_REGRESSION_INPUT = Tuple[np.ndarray, np.ndarray]
 TIME_SERIES_CLASSIFICATION_INPUT = Tuple[np.ndarray, np.ndarray]
 
@@ -48,16 +54,16 @@ def _check_time_series_forecasting_inputs(target_variables: Tuple[int],
                                           sequence_length: int,
                                           n_steps: int,
                                           train: TIME_SERIES_FORECASTING_INPUT,
-                                          val: Optional[TIME_SERIES_FORECASTING_INPUT] = None):
-    if train.ndim != 3:
+                                          val: Optional[TIME_SERIES_FORECASTING_INPUT] = None) -> None:
+    if train[0].ndim != 3:
         raise ValueError(
-            f"The training data for time series forecasting has to be a three-dimensional tensor of shape PxLxM.")
+            "The training data for time series forecasting has to be a three-dimensional tensor of shape PxLxM.")
     if val is not None:
-        if val.ndim != 3:
+        if val[0].ndim != 3:
             raise ValueError(
-                f"The validation data for time series forecasting "
-                f"has to be a three-dimensional tensor of shape PxLxM.")
-    _, time_series_length, num_features = train.shape
+                "The validation data for time series forecasting "
+                "has to be a three-dimensional tensor of shape PxLxM.")
+    _, time_series_length, num_features = train[0].shape
     if sequence_length + n_steps > time_series_length:
         raise ValueError(f"Invalid sequence length: Cannot create dataset "
                          f"using sequence_length={sequence_length} and n_steps={n_steps} "
@@ -72,7 +78,7 @@ def _prepare_time_series_forecasting_tensor(tensor: TIME_SERIES_FORECASTING_INPU
                                             target_variables: Tuple[int],
                                             sequence_length: int,
                                             n_steps: int) -> Tuple[np.ndarray, np.ndarray]:
-    population_size, time_series_length, num_features = tensor.shape
+    population_size, time_series_length, num_features = tensor[0].shape
     num_targets = len(target_variables)
     num_datapoints = time_series_length - sequence_length - n_steps + 1
     x_tensor = np.zeros((num_datapoints, population_size, sequence_length, num_features), dtype=np.float)
@@ -80,8 +86,8 @@ def _prepare_time_series_forecasting_tensor(tensor: TIME_SERIES_FORECASTING_INPU
 
     for p in range(population_size):
         for i in range(num_datapoints):
-            x_tensor[i, p, :, :] = tensor[p, i:i + sequence_length, :]
-            y_tensor[i, p, :] = tensor[p, i + sequence_length + n_steps - 1, target_variables]
+            x_tensor[i, p, :, :] = tensor[0][p, i:i + sequence_length, :]
+            y_tensor[i, p, :] = tensor[0][p, i + sequence_length + n_steps - 1, target_variables]
 
     # get rid of population dimension by reshaping
     x_tensor = x_tensor.reshape((-1, sequence_length, num_features))
@@ -127,7 +133,8 @@ class TimeSeriesRegressionDataset(BaseDataset):
 def _check_time_series_inputs(task_type: str,
                               train: Union[TIME_SERIES_CLASSIFICATION_INPUT, TIME_SERIES_REGRESSION_INPUT],
                               val: Optional[
-                                  Union[TIME_SERIES_CLASSIFICATION_INPUT, TIME_SERIES_REGRESSION_INPUT]] = None):
+                                  Union[TIME_SERIES_CLASSIFICATION_INPUT, TIME_SERIES_REGRESSION_INPUT]] = None
+                              ) -> None:
     if len(train) != 2:
         raise ValueError(f"There must be exactly two training tensors for {task_type}. "
                          f"The first one containing the data and the second one containing the targets.")
