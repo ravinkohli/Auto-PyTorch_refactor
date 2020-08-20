@@ -36,7 +36,7 @@ class BaseLRComponent(autoPyTorchSetupComponent):
         assert self.scheduler is not None, "No scheduler was fit"
         return self.scheduler
 
-    def check_requirements(self, X: Dict[str, Any]) -> None:
+    def check_requirements(self, X: Dict[str, Any], y: Any = None) -> None:
         """
         A mechanism in code to ensure the correctness of the fit dictionary
         It recursively makes sure that the children and parent level requirements
@@ -49,7 +49,7 @@ class BaseLRComponent(autoPyTorchSetupComponent):
         """
 
         # make sure the parent requirements are honored
-        super().check_requirements(X)
+        super().check_requirements(X, y)
 
         # The fit dictionary must have an optimizer, that the LR will wrap
         if 'optimizer' not in X or not isinstance(X['optimizer'], Optimizer):

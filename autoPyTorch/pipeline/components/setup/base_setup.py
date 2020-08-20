@@ -24,7 +24,7 @@ class autoPyTorchSetupComponent(autoPyTorchComponent):
         """
         raise NotImplementedError()
 
-    def check_requirements(self, X: Dict[str, Any]) -> None:
+    def check_requirements(self, X: Dict[str, Any], y: Any = None) -> None:
         """
         A mechanism in code to ensure the correctness of the fit dictionary
         It recursively makes sure that the children and parent level requirements

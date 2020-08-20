@@ -54,7 +54,7 @@ class AdamOptimizer(BaseOptimizerComponent):
 
         # Make sure that input dictionary X has the required
         # information to fit this stage
-        self.check_requirements(X)
+        self.check_requirements(X, y)
 
         self.optimizer = Adam(
             params=X['network'].parameters(),

@@ -34,38 +34,30 @@ class MLPNet(BaseNetworkComponent):
     def __init__(
         self,
         num_layers: int,
-        activation: str,
+        intermediate_activation: str,
         use_dropout: bool,
+        final_activation: Optional[str] = None,
         random_state: Optional[np.random.RandomState] = None,
         **kwargs: Any
     ):
 
-        super().__init__()
-        self.num_layers = num_layers
-        self.activation = activation
-        self.random_state = random_state
-        self.use_dropout = use_dropout
+        super().__init__(
+            num_layers=num_layers,
+            intermediate_activation=intermediate_activation,
+            use_dropout=use_dropout,
+            final_activation=final_activation,
+            random_state=random_state,
+        )
         self.config = kwargs
 
-    def fit(self, X: Dict[str, Any], y: Any = None) -> BaseNetworkComponent:
+    def build_network(self, in_features: int, out_features: int) -> torch.nn.Module:
+        """Returns the actual PyTorch model, that is dynamically created
+        from a self.config object.
+
+        self.config is a dictionary created form a given config in the config space.
+        It contains the necessary information to build a network.
         """
-        Fits a component by using an input dictionary with pre-requisites
-
-        Args:
-            X (X: Dict[str, Any]): Dependencies needed by current component to perform fit
-            y (Any): not used. To comply with sklearn API
-
-        Returns:
-            A instance of self
-        """
-        # Make sure that input dictionary X has the required
-        # information to fit this stage
-        self.check_requirements(X)
-
         layers = list()  # type: List[torch.nn.Module]
-        in_features = X['num_features']
-        out_features = X['num_classes']
-
         self._add_layer(layers, in_features, self.config['num_units_1'], 1)
 
         for i in range(2, self.num_layers + 1):
@@ -74,9 +66,8 @@ class MLPNet(BaseNetworkComponent):
 
         layers.append(torch.nn.Linear(self.config["num_units_%d" % self.num_layers],
                                       out_features))
-        self.network = torch.nn.Sequential(*layers)
-
-        return self
+        network = torch.nn.Sequential(*layers)
+        return network
 
     def _add_layer(self, layers: List[torch.nn.Module], in_features: int, out_features: int,
                    layer_id: int) -> None:
@@ -90,7 +81,7 @@ class MLPNet(BaseNetworkComponent):
 
         """
         layers.append(torch.nn.Linear(in_features, out_features))
-        layers.append(MLPNet.get_activations_dict()[self.activation]())
+        layers.append(MLPNet.get_activations_dict()[self.intermediate_activation]())
         if self.use_dropout:
             layers.append(torch.nn.Dropout(self.config["dropout_%d" % layer_id]))
 
@@ -118,10 +109,10 @@ class MLPNet(BaseNetworkComponent):
         num_layers = UniformIntegerHyperparameter(
             "num_layers", min_mlp_layers, max_mlp_layers, default_value=5)
 
-        activation = CategoricalHyperparameter(
-            "activation", choices=list(MLPNet.get_activations_dict().keys())
+        intermediate_activation = CategoricalHyperparameter(
+            "intermediate_activation", choices=list(MLPNet.get_activations_dict().keys())
         )
-        cs.add_hyperparameters([num_layers, activation])
+        cs.add_hyperparameters([num_layers, intermediate_activation])
 
         # We can have dropout in the network for
         # better generalization

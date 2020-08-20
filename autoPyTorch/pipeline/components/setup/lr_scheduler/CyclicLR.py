@@ -61,7 +61,7 @@ class CyclicLR(BaseLRComponent):
         """
 
         # Make sure there is an optimizer
-        self.check_requirements(X)
+        self.check_requirements(X, y)
 
         # No momentum to cycle in adam
         cycle_momentum = True

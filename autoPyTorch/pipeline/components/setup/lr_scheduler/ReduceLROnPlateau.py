@@ -59,7 +59,7 @@ class ReduceLROnPlateau(BaseLRComponent):
         """
 
         # Make sure there is an optimizer
-        self.check_requirements(X)
+        self.check_requirements(X, y)
 
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer=X['optimizer'],

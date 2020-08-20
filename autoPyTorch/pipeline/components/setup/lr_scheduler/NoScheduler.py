@@ -37,7 +37,7 @@ class NoScheduler(BaseLRComponent):
         """
 
         # Make sure there is an optimizer
-        self.check_requirements(X)
+        self.check_requirements(X, y)
         return self
 
     @staticmethod

@@ -8,13 +8,22 @@ from sklearn.base import clone
 
 import torch.nn as nn
 
-import autoPyTorch.pipeline.components.setup.lr_scheduler as lr_components
-import autoPyTorch.pipeline.components.setup.network as network_components
-import autoPyTorch.pipeline.components.setup.optimizer as optimizer_components
-from autoPyTorch.pipeline.components.setup.lr_scheduler import BaseLRComponent, SchedulerChoice
-from autoPyTorch.pipeline.components.setup.network import BaseNetworkComponent, NetworkChoice
+import autoPyTorch.pipeline.components.setup.lr_scheduler.base_scheduler_choice as lr_components
+import autoPyTorch.pipeline.components.setup.network.base_network_choice as network_components
+import autoPyTorch.pipeline.components.setup.optimizer.base_optimizer_choice as optimizer_components
+from autoPyTorch.pipeline.components.setup.lr_scheduler.base_scheduler_choice import (
+    BaseLRComponent,
+    SchedulerChoice
+)
 from autoPyTorch.pipeline.components.setup.network.MLPNet import MLPNet
-from autoPyTorch.pipeline.components.setup.optimizer import BaseOptimizerComponent, OptimizerChoice
+from autoPyTorch.pipeline.components.setup.network.base_network_choice import (
+    BaseNetworkComponent,
+    NetworkChoice
+)
+from autoPyTorch.pipeline.components.setup.optimizer.base_optimizer_choice import (
+    BaseOptimizerComponent,
+    OptimizerChoice
+)
 
 
 class DummyLR(BaseLRComponent):
@@ -364,7 +373,7 @@ class NetworkTest(unittest.TestCase):
         ]:
             network = MLPNet(
                 num_layers=num_layers,
-                activation=activation,
+                intermediate_activation=activation,
                 use_dropout=use_dropout,
                 **dictionary,
             )

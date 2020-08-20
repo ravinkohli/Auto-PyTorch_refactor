@@ -2,6 +2,7 @@ import importlib
 import inspect
 import pkgutil
 import sys
+import warnings
 from collections import OrderedDict
 from typing import Any, Dict, Optional
 
@@ -43,6 +44,17 @@ def find_components(
 
 
 class ThirdPartyComponents(object):
+    """
+    This class allow the user to create a new component for any stage of the pipeline.
+    Inheriting from the base class of each component does not provide any checks,
+    to make sure that the hyperparameter space is properly specified.
+
+    This class ensures the minimum component checking for the configuration
+    space to work.
+
+    Args:
+        base_class (BaseEstimator) component type desired to be created
+    """
     def __init__(self, base_class: BaseEstimator) -> None:
         self.base_class = base_class
         self.components = OrderedDict()  # type: Dict[str, BaseEstimator]
@@ -157,7 +169,7 @@ class autoPyTorchComponent(BaseEstimator):
 
         return self
 
-    def check_requirements(self, X: Dict[str, Any]) -> None:
+    def check_requirements(self, X: Dict[str, Any], y: Any = None) -> None:
         """
         A mechanism in code to ensure the correctness of the fit dictionary
         It recursively makes sure that the children and parent level requirements
@@ -169,6 +181,9 @@ class autoPyTorchComponent(BaseEstimator):
                 so that further stages can be properly fitted
         """
         assert isinstance(X, dict), "The input X to the pipeline must be a dictionary"
+
+        if y is not None:
+            warnings.warn("Provided y argument, yet only X is required")
 
     def __str__(self) -> str:
         """Representation of the current Component"""
