@@ -1,16 +1,19 @@
 from typing import Tuple, List
 
 import numpy as np
-from torch.utils import data
-
 from autoPyTorch.datasets.base_dataset import BaseDataset
+from .cross_validation import k_fold_cross_validation
 
 
 class TabularDataset(BaseDataset):
     def __init__(self, X, Y, is_classification=None, is_multilabel=None):
         self.dc = DataConverter(is_classification=is_classification, is_multilabel=is_multilabel)
         X, Y, _, _, _ = self.dc.convert(X, Y)
+        self.cross_validators["k_fold_cross_validation"] = k_fold_cross_validation
         super().__init__((X, Y))
+
+    def _get_data_indices(self):
+        return np.random.permutation(len(self))
 
 
 class DataConverter(object):
