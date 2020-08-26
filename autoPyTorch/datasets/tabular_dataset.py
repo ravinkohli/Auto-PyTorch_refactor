@@ -1,166 +1,85 @@
-from typing import Tuple, List
+from typing import Any, List, Optional
+from enum import Enum
 
 import numpy as np
+import pandas as pd
 from autoPyTorch.datasets.base_dataset import BaseDataset
 from .cross_validation import k_fold_cross_validation
 
 
+class DataTypes(Enum):
+    Canonical = 1
+    Float = 2
+    String = 3
+
+
+class Value2Index(object):
+    def __init__(self, values: list):
+        assert all(not(pd.isna(v)) for v in values)
+        self.values = {v: i for i, v in enumerate(values)}
+
+    def __getitem__(self, item: Any) -> int:
+        if pd.isna(item):
+            return 0
+        else:
+            return self.values[item] + 1
+
+
 class TabularDataset(BaseDataset):
-    def __init__(self, X, Y, is_classification=None, is_multilabel=None):
-        self.dc = DataConverter(is_classification=is_classification, is_multilabel=is_multilabel)
-        X, Y, _, _, _ = self.dc.convert(X, Y)
-        self.cross_validators["k_fold_cross_validation"] = k_fold_cross_validation
+    """
+    Support for Numpy Arrays is missing Strings.
+    """
+    def __init__(self, X: Any, Y: Any):
+        X, self.data_types, self.nan_mask, self.itovs, self.vtois = self.interpret(X)
+        Y, _, self.target_nan_mask, self.target_itov, self.target_vtoi = self.interpret(Y, assert_single_column=True)
         super().__init__((X, Y))
+        self.cross_validators["k_fold_cross_validation"] = k_fold_cross_validation
 
-    def _get_data_indices(self):
+    def interpret(self, data: Any, assert_single_column: bool = False) -> tuple:
+        single_column = False
+        if isinstance(data, np.ndarray):
+            if len(data.shape) == 1 and ',' not in str(data.dtype):
+                single_column = True
+                data = data[:, None]
+            data = pd.DataFrame(data).infer_objects().convert_dtypes()
+        elif isinstance(data, pd.DataFrame):
+            data = data.infer_objects().convert_dtypes()
+        elif isinstance(data, pd.Series):
+            single_column = True
+            data = data.to_frame()
+        else:
+            raise ValueError('Provided data needs to be either an np.ndarray or a pd.DataFrame for TabularDataset.')
+        if assert_single_column:
+            assert single_column, \
+                "The data is asserted to be only of a single column, but it isn't. \
+                Most likely your targets are not a vector or series."
+
+        data_types = []
+        nan_mask = data.isna().to_numpy()
+        for col_index, dtype in enumerate(data.dtypes):
+            if dtype.kind == 'f':
+                data_types.append(DataTypes.Float)
+            elif dtype.kind in ('i', 'u', 'b'):
+                data_types.append(DataTypes.Canonical)
+            elif isinstance(dtype, pd.StringDtype):
+                data_types.append(DataTypes.String)
+            else:
+                raise ValueError(f"The dtype in column {col_index} is {dtype} which is not supported.")
+        itovs: List[Optional[List[Any]]] = []
+        vtois: List[Optional[Value2Index]] = []
+        for col_index, (_, col) in enumerate(data.iteritems()):
+            if data_types[col_index] != DataTypes.Float:
+                non_na_values = [v for v in set(col) if not pd.isna(v)]
+                itovs.append([np.nan] + non_na_values)
+                vtois.append(Value2Index(non_na_values))
+            else:
+                itovs.append(None)
+                vtois.append(None)
+
+        if single_column:
+            return data.iloc[:, 0], data_types[0], nan_mask[0], itovs[0], vtois[0]
+
+        return data, data_types, nan_mask, itovs, vtois
+
+    def _get_data_indices(self) -> np.ndarray:
         return np.random.permutation(len(self))
-
-
-class DataConverter(object):
-    def __init__(self, is_classification=None,
-                 numerical_min_unique_values=3,
-                 force_numerical=None,
-                 force_categorical=None,
-                 is_multilabel=None):
-        """
-        Initialize the data_converter.
-        
-        Arguments:
-            X: NxM Matrix: N records with M features
-            Y: Vector of N labels.
-            is_classification: specifies, if it is a classification problem. None for autodetect.
-            numerical_min_unique_values: minimum number of unique values for a numerical feature.
-                A feature will be interpreted as categorical, if it has less.
-            force_numerical: Array of feature indices, which should be treated as numerical.
-            force_categorical: Array of feature indices, which should be trated as categorical.
-            is_multilabel: True, if multivariable regression / multilabel classification
-        """
-        self.is_classification = is_classification
-        self.numerical_min_unique_values = numerical_min_unique_values
-        self.force_numerical = force_numerical or []
-        self.force_categorical = force_categorical or []
-        self.is_multilabel = is_multilabel
-
-    def convert(self, X, Y):
-        """
-        Convert the data.
-        
-        Returns:
-            X_result: The converted X matrix, using one-hot-encoding for categorical features.
-            Y_result: The converted Y vector, using integers for categorical featues.
-            is_classification: If the problem is a classification problem.
-        """
-        X_result, categorical = self.convert_matrix(X, self.force_categorical, self.force_numerical)
-
-        if len(Y.shape) == 1 or Y.shape[1] == 1:
-            Y_result, Y_categorical = self.convert_matrix(Y.reshape(-1, 1),
-                                                          [0] if self.is_classification else [],
-                                                          [0] if self.is_classification == False else [])
-            self.is_classification = np.any(Y_categorical)
-            assert self.is_multilabel != True, "multilabel specified, but only 1-dim output vector given"
-            self.is_multilabel = False
-        else:
-            Y_result = self.check_multi_dim_output(Y)
-
-        if Y_result.shape[1] == 1:
-            Y_result = np.reshape(Y_result, (-1,))
-        elif not self.is_multilabel and self.is_classification:
-            Y_result = np.argmax(Y_result, axis=1)
-        return X_result, Y_result, self.is_classification, self.is_multilabel, categorical
-
-    def convert_matrix(self, matrix, force_categorical, force_numerical):
-        """
-        Covert the matrix in a matrix of floats.
-        Use one-hot-encoding for categorical features.
-        Features are categorical if at least one item is a string or it has more
-            unique values than specified numerical_min_unique_values
-            or it is listed in force_categorical.
-        
-        Arguments:
-            matrix: The matrix to convert.
-            force_cateogrical: The list of column indizes, which should be categorical.
-            force_numerical: The list of column indizes, which should be numerical.
-            
-        Result:
-            result: the converted matrix
-            categorical: boolean vector, that specifies which columns are categorical
-        """
-        num_rows = len(matrix)
-        is_categorical = []
-        len_values_and_indices = []
-        result_width = 0
-
-        # iterate over the columns and get some data
-        for i in range(matrix.shape[1]):
-
-            # check if it is categorical or numerical
-            matrix_column = matrix[0:num_rows, i]
-            if matrix.dtype == np.dtype("object"):
-                values_occurred = dict()
-                values = []
-                indices = []
-                for v in matrix_column:
-                    if v not in values_occurred:
-                        values_occurred[v] = len(values)
-                        values.append(v)
-                    indices.append(values_occurred[v])
-                indices = np.array(indices)
-                values = np.array(values, dtype=object)
-                nan_indices = np.array([i for i, n in enumerate(matrix_column) if n == np.nan])
-                valid_value_indices = np.array([i for i, n in enumerate(values) if n != np.nan])
-            else:
-                values, indices = np.unique(matrix_column, return_inverse=True)
-                nan_indices = np.argwhere(np.isnan(matrix_column)).flatten()
-                valid_value_indices = np.argwhere(~np.isnan(values)).flatten()
-
-            # check for missing values
-            # nan values are additional category in categorical features
-            if len(nan_indices) > 0:
-                values = np.append(values[valid_value_indices], np.nan)
-                indices[nan_indices] = values.shape[0] - 1
-
-            len_values_and_indices.append((len(values), indices))
-            if len(values) == 1:
-                is_categorical.append(None)
-            elif i in force_categorical or i not in force_numerical and (
-                    len(values) < self.numerical_min_unique_values or
-                    any(type(value) is str for value in values)):
-                # column is categorical
-                is_categorical.append(True)
-                result_width += 1
-            else:
-                # column is numerical
-                is_categorical.append(False)
-                result_width += 1
-
-        # fill the result
-        result = np.zeros(shape=(num_rows, result_width), dtype='float32', order='F')
-        j = 0
-        for i, is_cat in enumerate(is_categorical):
-            len_values, indices = len_values_and_indices[i]
-            if len_values == 1:
-                continue
-            if is_cat:
-                # column is categorical: convert to int
-                result[:, j] = indices
-                j += 1
-            else:
-                # column is numerical
-                result[:, j] = matrix[:, i]
-                j += 1
-
-        return result.astype('float32', copy=False), [x for x in is_categorical if x is not None]
-
-    def check_multi_dim_output(self, Y):
-        Y = Y.astype('float32', copy=False)
-        unique = np.unique(Y)
-        if len(unique) == 2 and self.is_classification != False and 0 in unique and 1 in unique:
-            self.is_classification = True
-            if np.all(np.sum(Y, axis=1) == 1) and self.is_multilabel != True:
-                self.is_multilabel = False
-            else:
-                self.is_multilabel = True
-        else:
-            assert not np.any(np.isnan(Y)), "NaN in Y"
-            self.is_classification = False
-        return Y
