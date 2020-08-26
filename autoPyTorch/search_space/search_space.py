@@ -40,25 +40,31 @@ class SearchSpace:
 
         Args:
             name (str): The name of the hyperparameter to be added.
-            type (str): The type of the hyperparameter to be added.
+            hyperparameter_type (str): The type of the hyperparameter to be added.
 
         Returns:
+            hyperparameter (cs.Hyperparameter): The hyperparameter that was added
+                to the hyperparameter search space.
         """
         missing_arg = SearchSpace._assert_necessary_arguments_given(
             hyperparameter_type,
             **kwargs,
         )
+
         if missing_arg is not None:
             raise TypeError(f'A {hyperparameter_type} must have a value for {missing_arg}')
         else:
+            hyperparameter = SearchSpace.hyperparameter_types[hyperparameter_type](
+                name=name,
+                **kwargs,
+            )
             self._hp_search_space.add_hyperparameter(
-                SearchSpace.hyperparameter_types[type](
-                    name=name,
-                    **kwargs,
-                )
+                hyperparameter
             )
 
-    @classmethod
+        return hyperparameter
+
+    @staticmethod
     def _assert_necessary_arguments_given(
         hyperparameter_type: str,
         **kwargs,
@@ -87,10 +93,55 @@ class SearchSpace:
 
         return None
 
-    def add_condition(
-        self,
-        hp1,
-        hp2,
-        cond,
+    def set_parent_hyperperparameter(
+            self,
+            child_hp,
+            parent_hp,
+            parent_value,
     ):
-        pass
+        """Activate the child hyperparameter on the search space only if the
+        parent hyperparameter takes a particular value.
+
+        Args:
+            child_hp (cs.Hyperparameter): The child hyperparameter to be added.
+            parent_hp (cs.Hyperparameter): The parent hyperparameter to be considered.
+            parent_value (str|float|int): The value of the parent hyperparameter for when the
+                child hyperparameter will be added to the search space.
+
+        Returns:
+        """
+        self._hp_search_space.add_condition(
+            cs.EqualsCondition(
+                child_hp,
+                parent_hp,
+                parent_value,
+            )
+        )
+
+    def add_configspace_condition(
+        self,
+        child_hp,
+        parent_hp,
+        configspace_condition,
+        value,
+    ):
+        """Add a condition on the chi
+
+        Args:
+            child_hp (cs.Hyperparameter): The child hyperparameter to be added.
+            parent_hp (cs.Hyperparameter): The parent hyperparameter to be considered.
+            configspace_condition (cs.AbstractCondition): The condition to be fullfilled
+                by the parent hyperparameter. A list of all the possible conditions can be
+                found at ConfigSpace/conditions.py.
+            value (str|float|int|list): The value of the parent hyperparameter to be matched
+                in the condition. value needs to be a list only for the InCondition.
+
+        Returns:
+        """
+        self._hp_search_space.add_condition(
+            configspace_condition(
+                child_hp,
+                parent_hp,
+                value,
+            )
+        )
