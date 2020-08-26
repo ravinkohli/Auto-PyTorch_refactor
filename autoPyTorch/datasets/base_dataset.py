@@ -1,16 +1,35 @@
 from abc import ABCMeta
 from torch.utils import data
 import numpy as np
-from typing import Optional, Tuple, List, Dict, Callable
+from typing import Optional, Tuple, List, Dict, Callable, Any
+
+
+def check_valid_data(data: Any) -> None:
+    if not (hasattr(data, '__getitem__') and hasattr(data, '__len__')):
+        raise ValueError(
+            'The specified Data for Dataset does either not have a __getitem__ or a __len__ attribute.')
+
+
+def type_check(train_tensors: Tuple[Any, ...], val_tensors: Optional[Tuple[Any, ...]]) -> None:
+    for t in train_tensors:
+        check_valid_data(t)
+    if val_tensors is not None:
+        for t in val_tensors:
+            check_valid_data(t)
 
 
 class BaseDataset(data.Dataset, metaclass=ABCMeta):
-    def __init__(self, train_tensors: Tuple[np.ndarray, ...], val_tensors: Optional[Tuple[np.ndarray, ...]] = None):
+    def __init__(self, train_tensors: Tuple[Any, ...], val_tensors: Optional[Tuple[Any, ...]] = None):
+        """
+        :param train_tensors: A tuple of objects that have a __len__ and a __getitem__ attribute.
+        :param val_tensors: A optional tuple of objects that have a __len__ and a __getitem__ attribute.
+        """
+        type_check(train_tensors, val_tensors)
         self.train_tensors = train_tensors
         self.val_tensors = val_tensors
         self.cross_validators = {}  # type: Dict[str, Callable[[int, np.ndarray], List[Tuple[np.ndarray, np.ndarray]]]]
 
-    def __getitem__(self, index) -> Tuple[np.ndarray, ...]:
+    def __getitem__(self, index: int) -> Tuple[np.ndarray, ...]:
         return tuple(t[index] for t in self.train_tensors)
 
     def __len__(self) -> int:
