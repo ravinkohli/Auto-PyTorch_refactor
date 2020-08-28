@@ -1,58 +1,52 @@
-from torch.utils import data
 import numpy as np
 from autoPyTorch.datasets.base_dataset import BaseDataset
 from typing import Tuple, Optional, Set
-from .cross_validation import time_series_cross_validation, k_fold_cross_validation
+from autoPyTorch.datasets.cross_validation import get_cross_validators, get_holdout_validators, CrossValTypes, \
+    HoldoutValTypes
 
 
 class TimeSeriesForecastingDataset(BaseDataset):
     def __init__(self, target_variables: Set[int], sequence_length: int, n_steps: int,
-                 train_tensors: Tuple[np.ndarray, ...], val_tensors: Optional[Tuple[np.ndarray, ...]] = None):
+                 train: np.ndarray, val: Optional[np.ndarray] = None):
         """
 
         :param target_variables: The indices of the variables you want to forecast
         :param sequence_length: The amount of past data you want to use to forecast future value
         :param n_steps: The number of steps you want to forecast into the future
-        :param train_tensors: Tuple with one tensor holding the training data
-        :param val_tensors: Tuple with one tensor holding the validation data
+        :param train: Tuple with one tensor holding the training data
+        :param val: Tuple with one tensor holding the validation data
         """
         _check_time_series_forecasting_inputs(
             target_variables=target_variables,
             sequence_length=sequence_length,
             n_steps=n_steps,
-            train_tensors=train_tensors,
-            val_tensors=val_tensors)
-        train = _prepare_time_series_forecasting_tensor(tensor=train_tensors[0],
+            train=train,
+            val=val)
+        train = _prepare_time_series_forecasting_tensor(tensor=train,
                                                         target_variables=target_variables,
                                                         sequence_length=sequence_length,
                                                         n_steps=n_steps)
-        val = _prepare_time_series_forecasting_tensor(tensor=val_tensors[0],
+        val = _prepare_time_series_forecasting_tensor(tensor=val,
                                                       target_variables=target_variables,
                                                       sequence_length=sequence_length,
-                                                      n_steps=n_steps) if val_tensors is not None else None
-        self.cross_validators["time_series_cross_validation"] = time_series_cross_validation
-        super().__init__(train_tensors=train, val_tensors=val)
-
-    def _get_data_indices(self) -> np.ndarray:
-        return np.arange(len(self))
+                                                      n_steps=n_steps) if val is not None else None
+        super().__init__(train_tensors=train, val_tensors=val, shuffle=False)
+        self.cross_validators = get_cross_validators(CrossValTypes.time_series_cross_validation)
+        self.holdout_validators = get_holdout_validators(HoldoutValTypes.train_val_split)
 
 
 def _check_time_series_forecasting_inputs(target_variables: Set[int], sequence_length: int, n_steps: int,
-                                          train_tensors: Tuple[np.ndarray, ...],
-                                          val_tensors: Optional[Tuple[np.ndarray, ...]] = None):
-    if len(train_tensors) != 1:
-        raise ValueError(f"Multiple training tensors for time series regression is not supported.")
-    if train_tensors[0].ndim != 3:
+                                          train: np.ndarray,
+                                          val: np.ndarray = None):
+    if train.ndim != 3:
         raise ValueError(
-            f"The training data for time series regression has to be a three-dimensional tensor of shape PxLxM.")
-    if val_tensors is not None:
-        if len(val_tensors) != 1:
-            raise ValueError(f"Multiple validation tensors for time series regression is not supported.")
-        if val_tensors[0].ndim != 3:
+            f"The training data for time series forecasting has to be a three-dimensional tensor of shape PxLxM.")
+    if val is not None:
+        if val.ndim != 3:
             raise ValueError(
-                f"The validation data for time series regression "
+                f"The validation data for time series forecasting "
                 f"has to be a three-dimensional tensor of shape PxLxM.")
-    _, time_series_length, num_features = train_tensors[0].shape
+    _, time_series_length, num_features = train.shape
     if sequence_length + n_steps > time_series_length:
         raise ValueError(f"Invalid sequence length: Cannot create dataset "
                          f"using sequence_length={sequence_length} and n_steps={n_steps} "
@@ -85,36 +79,58 @@ def _prepare_time_series_forecasting_tensor(tensor: np.ndarray,
 
 
 class TimeSeriesClassificationDataset(BaseDataset):
-    def __init__(self, train_tensors: Tuple[np.ndarray, ...], val_tensors: Optional[Tuple[np.ndarray, ...]] = None):
-        _check_time_series_classification_inputs(train_tensors=train_tensors, val_tensors=val_tensors)
-        self.cross_validators["k_fold_cross_validation"] = k_fold_cross_validation
-        super().__init__(train_tensors, val_tensors)
-
-    def _get_data_indices(self) -> np.ndarray:
-        return np.random.permutation(len(self))
-
-
-def _check_time_series_classification_inputs(train_tensors: Tuple[np.ndarray, ...],
-                                             val_tensors: Optional[Tuple[np.ndarray, ...]]):
-    if len(train_tensors) != 2:
-        raise ValueError(f"There must be exactly two training tensors for time series classification. "
-                         f"The first one containing the data and the second one containing the class labels.")
-    if train_tensors[0].ndim != 3:
-        raise ValueError(
-            f"The training data for time series classification has to be a three-dimensional tensor of shape NxSxM.")
-    if train_tensors[1].ndim != 2:
-        raise ValueError(
-            f"The training targets for time series classification have to be of shape NxC."
+    def __init__(self, train: Tuple[np.ndarray, np.ndarray], val: Optional[Tuple[np.ndarray, np.ndarray]] = None):
+        _check_time_series_inputs(train=train, val=val,
+                                  task_type="time_series_classification")
+        super().__init__(train_tensors=train, val_tensors=val, shuffle=True)
+        self.cross_validators = get_cross_validators(
+            CrossValTypes.stratified_k_fold_cross_validation,
+            CrossValTypes.k_fold_cross_validation,
+            CrossValTypes.shuffle_split_cross_validation,
+            CrossValTypes.stratified_shuffle_split_cross_validation
         )
-    if val_tensors is not None:
-        if len(val_tensors) != 2:
-            raise ValueError(f"There must be exactly two validation tensors for time series classification. "
-                             f"The first one containing the data and the second one containing the class labels.")
-        if val_tensors[0].ndim != 3:
+        self.holdout_validators = get_holdout_validators(
+            HoldoutValTypes.train_val_split,
+            HoldoutValTypes.stratified_train_val_split
+        )
+
+
+class TimeSeriesRegressionDataset(BaseDataset):
+    def __init__(self, train: Tuple[np.ndarray, np.ndarray], val: Optional[Tuple[np.ndarray, np.ndarray]] = None):
+        _check_time_series_inputs(train=train, val=val,
+                                  task_type="time_series_regression")
+        super().__init__(train_tensors=train, val_tensors=val, shuffle=True)
+        self.cross_validators = get_cross_validators(
+            CrossValTypes.k_fold_cross_validation,
+            CrossValTypes.shuffle_split_cross_validation
+        )
+        self.holdout_validators = get_holdout_validators(
+            HoldoutValTypes.train_val_split
+        )
+
+
+def _check_time_series_inputs(train: Tuple[np.ndarray, np.ndarray],
+                              val: Tuple[np.ndarray, np.ndarray], task_type: str):
+    if len(train) != 2:
+        raise ValueError(f"There must be exactly two training tensors for {task_type}. "
+                         f"The first one containing the data and the second one containing the targets.")
+    if train[0].ndim != 3:
+        raise ValueError(
+            f"The training data for {task_type} has to be a three-dimensional tensor of shape NxSxM.")
+    if train[1].ndim != 1:
+        raise ValueError(
+            f"The training targets for {task_type} have to be of shape N."
+        )
+    if val is not None:
+        if len(val) != 2:
             raise ValueError(
-                f"The validation data for time series classification has to be a "
+                f"There must be exactly two validation tensors for{task_type}. "
+                f"The first one containing the data and the second one containing the targets.")
+        if val[0].ndim != 3:
+            raise ValueError(
+                f"The validation data for {task_type} has to be a "
                 f"three-dimensional tensor of shape NxSxM.")
-        if val_tensors[1].ndim != 2:
+        if val[0].ndim != 1:
             raise ValueError(
-                f"The training targets for time series classification have to be of shape NxC."
+                f"The validation targets for {task_type} have to be of shape N."
             )
