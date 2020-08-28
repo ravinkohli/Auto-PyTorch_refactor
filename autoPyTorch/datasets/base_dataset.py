@@ -1,7 +1,7 @@
 from abc import ABCMeta
 from torch.utils.data import Dataset, Subset
 import numpy as np
-from typing import Optional, Tuple, List, Any, Dict
+from typing import Optional, Tuple, List, Any, Dict, Union
 from autoPyTorch.datasets.cross_validation import CROSS_VAL_FN, HOLDOUT_FN, is_stratified
 
 
@@ -20,7 +20,9 @@ def type_check(train_tensors: Tuple[Any, ...], val_tensors: Optional[Tuple[Any, 
 
 
 class BaseDataset(Dataset, metaclass=ABCMeta):
-    def __init__(self, train_tensors: Tuple[Any, ...], val_tensors: Optional[Tuple[Any, ...]] = None,
+    def __init__(self,
+                 train_tensors: Union[Tuple[Any, ...]],
+                 val_tensors: Optional[Tuple[Any, ...]] = None,
                  shuffle: Optional[bool] = True, seed: Optional[int] = 42):
         """
         :param train_tensors: A tuple of objects that have a __len__ and a __getitem__ attribute.
@@ -39,7 +41,7 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         return tuple(t[index] for t in self.train_tensors)
 
     def __len__(self) -> int:
-        return self.train_tensors[0].shape[0]
+        return len(self.train_tensors[0])
 
     def _get_indices(self) -> np.ndarray:
         if self.shuffle:
