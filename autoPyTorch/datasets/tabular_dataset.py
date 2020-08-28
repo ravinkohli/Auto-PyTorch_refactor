@@ -4,7 +4,8 @@ from enum import Enum
 import numpy as np
 import pandas as pd
 from autoPyTorch.datasets.base_dataset import BaseDataset
-from .cross_validation import k_fold_cross_validation
+from autoPyTorch.datasets.cross_validation import get_holdout_validators, get_cross_validators, CrossValTypes, \
+    HoldoutValTypes
 
 
 class DataTypes(Enum):
@@ -15,7 +16,7 @@ class DataTypes(Enum):
 
 class Value2Index(object):
     def __init__(self, values: list):
-        assert all(not(pd.isna(v)) for v in values)
+        assert all(not (pd.isna(v)) for v in values)
         self.values = {v: i for i, v in enumerate(values)}
 
     def __getitem__(self, item: Any) -> int:
@@ -29,11 +30,21 @@ class TabularDataset(BaseDataset):
     """
     Support for Numpy Arrays is missing Strings.
     """
+
     def __init__(self, X: Any, Y: Any):
         X, self.data_types, self.nan_mask, self.itovs, self.vtois = self.interpret(X)
         Y, _, self.target_nan_mask, self.target_itov, self.target_vtoi = self.interpret(Y, assert_single_column=True)
-        super().__init__((X, Y))
-        self.cross_validators["k_fold_cross_validation"] = k_fold_cross_validation
+        super().__init__(train_tensors=(X, Y), shuffle=True)
+        self.cross_validators = get_cross_validators(
+            CrossValTypes.stratified_k_fold_cross_validation,
+            CrossValTypes.k_fold_cross_validation,
+            CrossValTypes.shuffle_split_cross_validation,
+            CrossValTypes.stratified_shuffle_split_cross_validation
+        )
+        self.holdout_validators = get_holdout_validators(
+            HoldoutValTypes.train_val_split,
+            HoldoutValTypes.stratified_train_val_split
+        )
 
     def interpret(self, data: Any, assert_single_column: bool = False) -> tuple:
         single_column = False
@@ -80,6 +91,3 @@ class TabularDataset(BaseDataset):
             return data.iloc[:, 0], data_types[0], nan_mask[0], itovs[0], vtois[0]
 
         return data, data_types, nan_mask, itovs, vtois
-
-    def _get_data_indices(self) -> np.ndarray:
-        return np.random.permutation(len(self))
