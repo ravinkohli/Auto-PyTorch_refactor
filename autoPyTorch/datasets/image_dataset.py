@@ -1,12 +1,21 @@
-import numpy as np
-from torch.utils.data import Dataset, TensorDataset
-import torch
-from torchvision.transforms import functional as TF
+from typing import List, Optional, Tuple, Union
+
 from PIL import Image
+
+import numpy as np
+
+import torch
+from torch.utils.data import Dataset, TensorDataset
+
+from torchvision.transforms import functional as TF
+
 from autoPyTorch.datasets.base_dataset import BaseDataset
-from typing import Tuple, Optional, Union, List
-from autoPyTorch.datasets.cross_validation import CrossValTypes, HoldoutValTypes, get_cross_validators, \
+from autoPyTorch.datasets.cross_validation import (
+    CrossValTypes,
+    HoldoutValTypes,
+    get_cross_validators,
     get_holdout_validators
+)
 
 IMAGE_DATASET_INPUT = Union[Dataset, Tuple[Union[np.ndarray, List[str]], np.ndarray]]
 
@@ -49,7 +58,7 @@ def _calc_mean_std(train: Dataset) -> Tuple[torch.Tensor, torch.Tensor]:
 
 
 def _check_image_inputs(train: IMAGE_DATASET_INPUT,
-                        val: Optional[IMAGE_DATASET_INPUT] = None):
+                        val: Optional[IMAGE_DATASET_INPUT] = None) -> None:
     if not isinstance(train, Dataset):
         if len(train[0]) != len(train[1]):
             raise ValueError(
