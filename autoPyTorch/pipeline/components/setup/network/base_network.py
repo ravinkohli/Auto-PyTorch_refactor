@@ -15,16 +15,12 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
 
     def __init__(
         self,
-        num_layers: int,
         intermediate_activation: str,
-        use_dropout: bool,
         final_activation: Optional[str],
         random_state: Optional[np.random.RandomState] = None,
     ) -> None:
         self.network = None
-        self.num_layers = num_layers
         self.intermediate_activation = intermediate_activation
-        self.use_dropout = use_dropout
         self.random_state = random_state
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> autoPyTorchSetupComponent:
@@ -55,9 +51,7 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
         using:
 
             common network arguments from the base class:
-                * num_layer
                 * intermediate_activation
-                * use_dropout
                 * final_activation
 
             a self.config that is network specific, and contains the additional

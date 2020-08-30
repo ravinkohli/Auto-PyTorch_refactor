@@ -185,6 +185,7 @@ class TabularClassificationPipeline(ClassifierMixin, BasePipeline):
             ("encoder", EncoderChoice(default_dataset_properties)),
             ("scaler", ScalerChoice(default_dataset_properties)),
             ("network", NetworkChoice(default_dataset_properties)),
+            # ("initialization", InitializerChoice(default_dataset_properties)),
             ("optimizer", OptimizerChoice(default_dataset_properties)),
             ("lr_scheduler", SchedulerChoice(default_dataset_properties)),
         ])
