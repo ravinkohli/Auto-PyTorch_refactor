@@ -96,10 +96,6 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
         # For the Network, we need the number of input features,
         # to build the first network layer
         if 'num_features' not in X.keys():
-            print(f"wjkajdkasjkdlas {X.keys()}")
-            print(f" WHAT {'num_features' not in X or not isinstance(X['num_features'], int)}")
-            print(f" THE {'num_features' not in X}")
-            print(f"{not isinstance(X['num_features'], int)}")
             raise ValueError("Could not parse the number of input features in the fit dictionary "
                              "To fit a network, the number of features is needed to define "
                              "the hidden layers, yet the dict contains only: {}".format(
