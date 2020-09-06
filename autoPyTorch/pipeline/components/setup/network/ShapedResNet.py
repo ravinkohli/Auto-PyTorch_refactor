@@ -20,9 +20,21 @@ from autoPyTorch.pipeline.components.setup.network.utils import (
 
 class ShapedResNet(ResNet):
     """
-    Implementation of a Residual Network builder
+    Implementation of a Residual Network builder with support
+    for Shaped number of units per group.
 
     Args:
+        num_groups (int): total number of groups in the network. A group is composed of
+                          blocks_per_group ResNets.
+        intermediate_activation (str): type of activation for this layer
+        random_state (Optional[np.random.RandomState]): random state
+        num_units_%d (int): Number of units of layer %d
+        blocks_per_group (int): Number of ResNet all groups will have
+        use_dropout (bool): Whether or not to add dropout at each layer
+        use_shake_shake (bool): Whether or not to use use_shake_shake regularization
+        use_shake_drop (bool): Whether to use shake drop regularization
+        resnet_shape (str): A geometrical shape, that guides the construction
+                            of the number of units per group.
     """
 
     def __init__(
@@ -79,6 +91,7 @@ class ShapedResNet(ResNet):
                 self._add_group(
                     in_features=self.config["num_units_%d" % (i - 1)],
                     out_features=self.config["num_units_%d" % i],
+                    blocks_per_group=self.config["blocks_per_group"],
                     last_block_index=(i - 1) * self.config["blocks_per_group"],
                     dropout=self.config['use_dropout']
                 )

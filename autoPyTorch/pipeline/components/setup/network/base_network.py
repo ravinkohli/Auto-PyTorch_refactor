@@ -22,6 +22,7 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
         self.network = None
         self.intermediate_activation = intermediate_activation
         self.random_state = random_state
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> autoPyTorchSetupComponent:
         """
@@ -42,6 +43,9 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
         out_features = X['num_classes']
 
         self.network = self.build_network(in_features, out_features)
+
+        # Properly set the network training device
+        self.to(self.device)
 
         return self
 
@@ -143,6 +147,14 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
         """Returns the weights of the network"""
         assert self.network is not None, "No network was initialized"
         return self.network.parameters()
+
+    def to(self, device: Optional[torch.device] = None) -> None:
+        """Setups the network in cpu or gpu"""
+        assert self.network is not None, "No network was initialized"
+        if device is not None:
+            self.network = self.network.to(device)
+        else:
+            self.network = self.network.to(self.device)
 
     def __str__(self) -> str:
         """ Allow a nice understanding of what components where used """

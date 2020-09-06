@@ -20,9 +20,18 @@ from autoPyTorch.pipeline.components.setup.network.utils import (
 
 class ShapedMLPNet(BaseNetworkComponent):
     """
-    Implementation of a Shapped MLP
+    Implementation of a Shapped MLP -- an MLP with the number of units
+    arranged so that a given shape is honored
 
     Args:
+        num_groups (int): total number of layers this MLP will have
+        intermediate_activation (str): type of activation for this layer
+        final_activation (str): the final activation of this class
+        random_state (Optional[np.random.RandomState]): random state
+        use_dropout (bool): Whether or not to add dropout at each layer
+        dropout_%d (float): The assigned dropout of layer %d
+        resnet_shape (str): A geometrical shape, that guides the construction
+                            of the number of units per group.
     """
 
     def __init__(

@@ -30,6 +30,9 @@ class MLPNet(BaseNetworkComponent):
         intermediate_activation (str): type of activation for this layer
         final_activation (str): the final activation of this class
         random_state (Optional[np.random.RandomState]): random state
+        num_units_%d (int): Number of units of layer %d
+        use_dropout (bool): Whether or not to add dropout at each layer
+        dropout_%d (float): The assigned dropout of layer %d
     """
 
     def __init__(

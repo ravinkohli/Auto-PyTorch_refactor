@@ -26,6 +26,15 @@ class ResNet(BaseNetworkComponent):
     Implementation of a Residual Network builder
 
     Args:
+        num_groups (int): total number of groups in the network. A group is composed of
+                          blocks_per_group ResNets.
+        intermediate_activation (str): type of activation for this layer
+        random_state (Optional[np.random.RandomState]): random state
+        num_units_%d (int): Number of units of layer %d
+        blocks_per_group_%d (int): Number of ResNet group %d will have
+        use_dropout (bool): Whether or not to add dropout at each layer
+        use_shake_shake (bool): Whether or not to use use_shake_shake regularization
+        use_shake_drop (bool): Whether to use shake drop regularization
     """
 
     def __init__(
@@ -60,7 +69,8 @@ class ResNet(BaseNetworkComponent):
                 self._add_group(
                     in_features=self.config["num_units_%d" % (i - 1)],
                     out_features=self.config["num_units_%d" % i],
-                    last_block_index=(i - 1) * self.config["blocks_per_group"],
+                    blocks_per_group=self.config["blocks_per_group_%d" % i],
+                    last_block_index=(i - 1) * self.config["blocks_per_group_%d" % i],
                     dropout=self.config['use_dropout']
                 )
             )
@@ -73,7 +83,8 @@ class ResNet(BaseNetworkComponent):
         network = torch.nn.Sequential(*layers)
         return network
 
-    def _add_group(self, in_features: int, out_features: int, last_block_index: int, dropout: bool
+    def _add_group(self, in_features: int, out_features: int,
+                   blocks_per_group: int, last_block_index: int, dropout: bool
                    ) -> torch.nn.Module:
         """
         Adds a group into the main network.
@@ -83,20 +94,21 @@ class ResNet(BaseNetworkComponent):
         Args:
             in_features (int): number of inputs for the current block
             out_features (int): output dimensionality for the current block
+            blocks_per_group (int): Number of ResNet per group
             last_block_index (int): block index for shake regularization
             droupout (bool): whether or not use dropout
         """
         blocks = list()
-        for i in range(self.config["blocks_per_group"]):
+        for i in range(blocks_per_group):
             blocks.append(
                 ResBlock(
-                    self.config,
-                    in_features,
-                    out_features,
-                    last_block_index + i,
-                    dropout,
-                    ResNet.get_activations_dict()[self.intermediate_activation]
-
+                    config=self.config,
+                    in_features=in_features,
+                    out_features=out_features,
+                    blocks_per_group=blocks_per_group,
+                    block_index=last_block_index + i,
+                    dropout=dropout,
+                    activation=ResNet.get_activations_dict()[self.intermediate_activation]
                 )
             )
             in_features = out_features
@@ -127,13 +139,10 @@ class ResNet(BaseNetworkComponent):
         num_groups = UniformIntegerHyperparameter(
             "num_groups", lower=min_num_gropus, upper=max_num_groups, default_value=5)
 
-        blocks_per_group = UniformIntegerHyperparameter(
-            "blocks_per_group", lower=min_blocks_per_groups, upper=max_blocks_per_groups)
-
         intermediate_activation = CategoricalHyperparameter(
             "intermediate_activation", choices=list(ResNet.get_activations_dict().keys())
         )
-        cs.add_hyperparameters([num_groups, blocks_per_group, intermediate_activation])
+        cs.add_hyperparameters([num_groups, intermediate_activation])
 
         # We can have dropout in the network for
         # better generalization
@@ -157,10 +166,15 @@ class ResNet(BaseNetworkComponent):
                 lower=min_num_units,
                 upper=max_num_units,
             )
-            cs.add_hyperparameters([n_units])
+            blocks_per_group = UniformIntegerHyperparameter(
+                "blocks_per_group_%d" % i, lower=min_blocks_per_groups,
+                upper=max_blocks_per_groups)
+
+            cs.add_hyperparameters([n_units, blocks_per_group])
 
             if i > 1:
                 cs.add_condition(CS.GreaterThanCondition(n_units, num_groups, i - 1))
+                cs.add_condition(CS.GreaterThanCondition(blocks_per_group, num_groups, i - 1))
 
             this_dropout = UniformFloatHyperparameter(
                 "dropout_%d" % i, lower=0.0, upper=1.0
@@ -189,6 +203,7 @@ class ResBlock(torch.nn.Module):
         config: Dict[str, Any],
         in_features: int,
         out_features: int,
+        blocks_per_group: int,
         block_index: int,
         dropout: bool,
         activation: torch.nn.Module
@@ -212,7 +227,7 @@ class ResBlock(torch.nn.Module):
             )
 
         self.block_index = block_index
-        self.num_blocks = self.config["blocks_per_group"] * self.config["num_groups"]
+        self.num_blocks = blocks_per_group * self.config["num_groups"]
         self.layers = self._build_block(in_features, out_features)
 
         if config["use_shake_shake"]:
