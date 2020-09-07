@@ -1,13 +1,21 @@
 import numpy as np
 from autoPyTorch.datasets.base_dataset import BaseDataset
-from typing import Tuple, Optional, Set
+from typing import Tuple, Optional, Union
 from autoPyTorch.datasets.cross_validation import get_cross_validators, get_holdout_validators, CrossValTypes, \
     HoldoutValTypes
 
+TIME_SERIES_FORECASTING_INPUT = np.ndarray  # currently only numpy arrays are supported
+TIME_SERIES_REGRESSION_INPUT = Tuple[np.ndarray, np.ndarray]
+TIME_SERIES_CLASSIFICATION_INPUT = Tuple[np.ndarray, np.ndarray]
+
 
 class TimeSeriesForecastingDataset(BaseDataset):
-    def __init__(self, target_variables: Set[int], sequence_length: int, n_steps: int,
-                 train: np.ndarray, val: Optional[np.ndarray] = None):
+    def __init__(self,
+                 target_variables: Tuple[int],
+                 sequence_length: int,
+                 n_steps: int,
+                 train: TIME_SERIES_FORECASTING_INPUT,
+                 val: Optional[TIME_SERIES_FORECASTING_INPUT] = None):
         """
 
         :param target_variables: The indices of the variables you want to forecast
@@ -35,9 +43,11 @@ class TimeSeriesForecastingDataset(BaseDataset):
         self.holdout_validators = get_holdout_validators(HoldoutValTypes.train_val_split)
 
 
-def _check_time_series_forecasting_inputs(target_variables: Set[int], sequence_length: int, n_steps: int,
-                                          train: np.ndarray,
-                                          val: np.ndarray = None):
+def _check_time_series_forecasting_inputs(target_variables: Tuple[int],
+                                          sequence_length: int,
+                                          n_steps: int,
+                                          train: TIME_SERIES_FORECASTING_INPUT,
+                                          val: Optional[TIME_SERIES_FORECASTING_INPUT] = None):
     if train.ndim != 3:
         raise ValueError(
             f"The training data for time series forecasting has to be a three-dimensional tensor of shape PxLxM.")
@@ -57,8 +67,8 @@ def _check_time_series_forecasting_inputs(target_variables: Set[int], sequence_l
                              f"so each target variable has to be between 0 and {num_features - 1}.")
 
 
-def _prepare_time_series_forecasting_tensor(tensor: np.ndarray,
-                                            target_variables: Set[int],
+def _prepare_time_series_forecasting_tensor(tensor: TIME_SERIES_FORECASTING_INPUT,
+                                            target_variables: Tuple[int],
                                             sequence_length: int,
                                             n_steps: int) -> Tuple[np.ndarray, np.ndarray]:
     population_size, time_series_length, num_features = tensor.shape
@@ -79,8 +89,11 @@ def _prepare_time_series_forecasting_tensor(tensor: np.ndarray,
 
 
 class TimeSeriesClassificationDataset(BaseDataset):
-    def __init__(self, train: Tuple[np.ndarray, np.ndarray], val: Optional[Tuple[np.ndarray, np.ndarray]] = None):
-        _check_time_series_inputs(train=train, val=val,
+    def __init__(self,
+                 train: TIME_SERIES_CLASSIFICATION_INPUT,
+                 val: Optional[TIME_SERIES_CLASSIFICATION_INPUT] = None):
+        _check_time_series_inputs(train=train,
+                                  val=val,
                                   task_type="time_series_classification")
         super().__init__(train_tensors=train, val_tensors=val, shuffle=True)
         self.cross_validators = get_cross_validators(
@@ -97,7 +110,8 @@ class TimeSeriesClassificationDataset(BaseDataset):
 
 class TimeSeriesRegressionDataset(BaseDataset):
     def __init__(self, train: Tuple[np.ndarray, np.ndarray], val: Optional[Tuple[np.ndarray, np.ndarray]] = None):
-        _check_time_series_inputs(train=train, val=val,
+        _check_time_series_inputs(train=train,
+                                  val=val,
                                   task_type="time_series_regression")
         super().__init__(train_tensors=train, val_tensors=val, shuffle=True)
         self.cross_validators = get_cross_validators(
@@ -109,8 +123,10 @@ class TimeSeriesRegressionDataset(BaseDataset):
         )
 
 
-def _check_time_series_inputs(train: Tuple[np.ndarray, np.ndarray],
-                              val: Tuple[np.ndarray, np.ndarray], task_type: str):
+def _check_time_series_inputs(task_type: str,
+                              train: Union[TIME_SERIES_CLASSIFICATION_INPUT, TIME_SERIES_REGRESSION_INPUT],
+                              val: Optional[
+                                  Union[TIME_SERIES_CLASSIFICATION_INPUT, TIME_SERIES_REGRESSION_INPUT]] = None):
     if len(train) != 2:
         raise ValueError(f"There must be exactly two training tensors for {task_type}. "
                          f"The first one containing the data and the second one containing the targets.")
