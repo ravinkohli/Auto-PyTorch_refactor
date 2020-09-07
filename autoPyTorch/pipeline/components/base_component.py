@@ -85,6 +85,7 @@ class ThirdPartyComponents(object):
 
 
 class autoPyTorchComponent(BaseEstimator):
+
     @staticmethod
     def get_properties(dataset_properties: Optional[Dict[str, str]] = None
                        ) -> Dict[str, Any]:
