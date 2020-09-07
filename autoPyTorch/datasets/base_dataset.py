@@ -1,8 +1,10 @@
 from abc import ABCMeta
 from torch.utils.data import Dataset, Subset
 import numpy as np
-from typing import Optional, Tuple, List, Any, Dict, Union
+from typing import Optional, Tuple, List, Any, Dict
 from autoPyTorch.datasets.cross_validation import CROSS_VAL_FN, HOLDOUT_FN, is_stratified
+
+BASE_DATASET_INPUT = Tuple[Any, ...]
 
 
 def check_valid_data(data: Any) -> None:
@@ -11,7 +13,7 @@ def check_valid_data(data: Any) -> None:
             'The specified Data for Dataset does either not have a __getitem__ or a __len__ attribute.')
 
 
-def type_check(train_tensors: Tuple[Any, ...], val_tensors: Optional[Tuple[Any, ...]]) -> None:
+def type_check(train_tensors: BASE_DATASET_INPUT, val_tensors: Optional[BASE_DATASET_INPUT] = None) -> None:
     for t in train_tensors:
         check_valid_data(t)
     if val_tensors is not None:
@@ -21,9 +23,10 @@ def type_check(train_tensors: Tuple[Any, ...], val_tensors: Optional[Tuple[Any, 
 
 class BaseDataset(Dataset, metaclass=ABCMeta):
     def __init__(self,
-                 train_tensors: Union[Tuple[Any, ...]],
-                 val_tensors: Optional[Tuple[Any, ...]] = None,
-                 shuffle: Optional[bool] = True, seed: Optional[int] = 42):
+                 train_tensors: BASE_DATASET_INPUT,
+                 val_tensors: Optional[BASE_DATASET_INPUT] = None,
+                 shuffle: Optional[bool] = True,
+                 seed: Optional[int] = 42):
         """
         :param train_tensors: A tuple of objects that have a __len__ and a __getitem__ attribute.
         :param val_tensors: A optional tuple of objects that have a __len__ and a __getitem__ attribute.
@@ -50,7 +53,9 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
             indices = np.arange(len(self))
         return indices
 
-    def create_cross_val_splits(self, cross_val_type: str, num_splits: int) -> List[Tuple[Dataset, Dataset]]:
+    def create_cross_val_splits(self,
+                                cross_val_type: str,
+                                num_splits: int) -> List[Tuple[Dataset, Dataset]]:
         if cross_val_type not in self.cross_validators:
             raise NotImplementedError(f'The selected `cross_val_type` "{cross_val_type}" is not implemented.')
         kwargs = {}
@@ -60,8 +65,9 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         splits = self.cross_validators[cross_val_type](num_splits, self._get_indices(), **kwargs)
         return [(Subset(self, split[0]), Subset(self, split[1])) for split in splits]
 
-    def create_val_split(self, holdout_val_type: Optional[str] = None, val_share: Optional[float] = None) \
-            -> Tuple[Dataset, Dataset]:
+    def create_val_split(self,
+                         holdout_val_type: Optional[str] = None,
+                         val_share: Optional[float] = None) -> Tuple[Dataset, Dataset]:
         if val_share is not None:
             if holdout_val_type is None:
                 raise ValueError(
