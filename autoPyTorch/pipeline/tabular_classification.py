@@ -11,6 +11,9 @@ from autoPyTorch.pipeline.components.base_choice import autoPyTorchChoice
 from autoPyTorch.pipeline.components.setup.lr_scheduler.base_scheduler_choice import SchedulerChoice
 from autoPyTorch.pipeline.components.setup.network.base_network_choice import NetworkChoice
 from autoPyTorch.pipeline.components.setup.optimizer.base_optimizer_choice import OptimizerChoice
+from autoPyTorch.pipeline.components.setup.network_initializer.base_network_init_choice import (
+    NetworkInitializerChoice
+)
 
 
 class TabularClassificationPipeline(ClassifierMixin, BasePipeline):
@@ -181,6 +184,7 @@ class TabularClassificationPipeline(ClassifierMixin, BasePipeline):
 
         steps.extend([
             ("network", NetworkChoice(default_dataset_properties)),
+            ("network_init", NetworkInitializerChoice(default_dataset_properties)),
             ("optimizer", OptimizerChoice(default_dataset_properties)),
             ("lr_scheduler", SchedulerChoice(default_dataset_properties)),
         ])
