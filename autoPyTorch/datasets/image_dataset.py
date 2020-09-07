@@ -4,31 +4,35 @@ import torch
 from PIL import Image
 from autoPyTorch.datasets.base_dataset import BaseDataset
 from typing import Tuple, Optional, Union, List
-from autoPyTorch.datasets.cross_validation import k_fold_cross_validation, \
-    holdout_validation, \
-    stratified_holdout_validation
+from autoPyTorch.datasets.cross_validation import CrossValTypes, HoldoutValTypes, get_cross_validators, \
+    get_holdout_validators
+
+IMAGE_DATASET_INPUT = Union[Dataset, Tuple[Union[np.ndarray, List[str]], np.ndarray]]
 
 
 class ImageDataset(BaseDataset):
     def __init__(self,
-                 train: Union[Dataset, Tuple[Union[np.ndarray, List[str]], np.ndarray]],
-                 val: Optional[Union[Dataset, Tuple[Union[np.ndarray, List[str]], np.ndarray]]] = None):
+                 train: IMAGE_DATASET_INPUT,
+                 val: Optional[IMAGE_DATASET_INPUT] = None):
         _check_image_inputs(train=train, val=val)
         train = _create_image_dataset(data=train)
         if val is not None:
             val = _create_image_dataset(data=val)
         super().__init__(train_tensors=(train,), val_tensors=(val,), shuffle=True)
-        self.cross_validators.update(
-            {"k_fold_cross_validation": k_fold_cross_validation}
+        self.cross_validators = get_cross_validators(
+            CrossValTypes.stratified_k_fold_cross_validation,
+            CrossValTypes.k_fold_cross_validation,
+            CrossValTypes.shuffle_split_cross_validation,
+            CrossValTypes.stratified_shuffle_split_cross_validation
         )
-        self.holdout_validators.update(
-            {"holdout_validation": holdout_validation,
-             "stratified_holdout_validation": stratified_holdout_validation}
+        self.holdout_validators = get_holdout_validators(
+            HoldoutValTypes.train_val_split,
+            HoldoutValTypes.stratified_train_val_split
         )
 
 
-def _check_image_inputs(train: Union[Dataset, Tuple[Union[np.ndarray, List[str]], np.ndarray]],
-                        val: Optional[Union[Dataset, Tuple[Union[np.ndarray, List[str]], np.ndarray]]]):
+def _check_image_inputs(train: IMAGE_DATASET_INPUT,
+                        val: Optional[IMAGE_DATASET_INPUT] = None):
     if not isinstance(train, Dataset):
         if len(train[0]) != len(train[1]):
             raise ValueError(
@@ -39,7 +43,7 @@ def _check_image_inputs(train: Union[Dataset, Tuple[Union[np.ndarray, List[str]]
                     f"expected val inputs to have the same length, but got lengths {len(train[0])} and {len(train[1])}")
 
 
-def _create_image_dataset(data: Union[Dataset, Tuple[Union[np.ndarray, List[str]], np.ndarray]]) -> Dataset:
+def _create_image_dataset(data: IMAGE_DATASET_INPUT) -> Dataset:
     # if user already provided a dataset, use it
     if isinstance(data, Dataset):
         return data
@@ -56,8 +60,9 @@ class _FilePathDataset(Dataset):
         self.file_paths = file_paths
         self.targets = targets
 
-    def __getitem__(self, index: int):
-        img = Image.open(self.file_paths[index]).convert("RGB")
+    def __getitem__(self, index: int) -> Tuple[Image, torch.Tensor]:
+        with open(self.file_paths[index], "rb") as f:
+            img = Image.open(f).convert("RGB")
         return img, torch.tensor(self.targets[index])
 
     def __len__(self) -> int:
