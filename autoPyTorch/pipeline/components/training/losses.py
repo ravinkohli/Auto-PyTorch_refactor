@@ -1,25 +1,31 @@
 from typing import Any, Dict, Optional
 
-from torch import nn
+from torch.nn.modules.loss import (
+    CrossEntropyLoss,
+    BCEWithLogitsLoss,
+    MSELoss,
+    L1Loss
+)
+from torch.nn.modules.loss import _Loss as Loss
 
 
-def get_default(x):
+def get_default(x: Dict[str, Loss]) -> Loss:
     return x[list(x.keys())[0]]
 
 
 losses = dict(classification=dict(
     CrossEntropyLoss=dict(
-        module=nn.CrossEntropyLoss, supported_output_type='multi-class'),
+        module=CrossEntropyLoss, supported_output_type='multi-class'),
     BCEWithLogitsLoss=dict(
-        module=nn.BCEWithLogitsLoss, supported_output_type='binary-class')),
+        module=BCEWithLogitsLoss, supported_output_type='binary-class')),
     regression=dict(
         MSELoss=dict(
-            module=nn.MSELoss, supported_output_type='continuous'),
+            module=MSELoss, supported_output_type='continuous'),
         L1Loss=dict(
-            module=nn.L1Loss, supported_output_type='continuous')))
+            module=L1Loss, supported_output_type='continuous')))
 
 
-def get_supported_losses(dataset_properties: Dict[str, Any]) -> Dict[str, nn.Module]:
+def get_supported_losses(dataset_properties: Dict[str, Any]) -> Dict[str, Loss]:
     supported_losses = dict()
     for key, value in losses[dataset_properties['task_type'].split('_')[-1]].items():
         if value['supported_output_type'] == dataset_properties['output_type']:
@@ -28,7 +34,7 @@ def get_supported_losses(dataset_properties: Dict[str, Any]) -> Dict[str, nn.Mod
     return supported_losses
 
 
-def get_loss_instance(dataset_properties: Dict[str, Any], name: Optional[str] = None) -> nn.Module:
+def get_loss_instance(dataset_properties: Dict[str, Any], name: Optional[str] = None) -> Loss:
     assert 'task_type' in dataset_properties, \
         "Expected dataset_properties to have task_type got {}".format(dataset_properties.keys())
     assert 'output_type' in dataset_properties, \
