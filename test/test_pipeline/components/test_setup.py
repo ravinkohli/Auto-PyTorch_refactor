@@ -279,7 +279,7 @@ class NetworkTest(unittest.TestCase):
         network_choice = NetworkChoice()
 
         # Make sure all components are returned
-        self.assertEqual(len(network_choice.get_components().keys()), 1)
+        self.assertEqual(len(network_choice.get_components().keys()), 4)
 
         # For every network in the components, make sure
         # that it complies with the scikit learn estimator.
@@ -364,7 +364,7 @@ class NetworkTest(unittest.TestCase):
             'num_features': 10,
             'num_classes': 2,
         }
-        for num_layers, activation, use_dropout, dictionary in [
+        for num_groups, activation, use_dropout, dictionary in [
             (
                 3, 'relu', True, {
                 'num_units_1': 11,
@@ -393,7 +393,7 @@ class NetworkTest(unittest.TestCase):
             )
         ]:
             network = MLPNet(
-                num_layers=num_layers,
+                num_groups=num_groups,
                 intermediate_activation=activation,
                 use_dropout=use_dropout,
                 **dictionary,
@@ -422,12 +422,12 @@ class NetworkTest(unittest.TestCase):
             # Make sure the number of layers is honored
             layers = [module for name, module in list(network.network.named_modules())
                       if isinstance(module, nn.Linear)]
-            self.assertEqual(len(layers), num_layers + 1)
+            self.assertEqual(len(layers), num_groups + 1)
 
             # Make sure the number of units is honored
             num_units = [module.out_features for name, module in list(
                 network.network.named_modules()) if isinstance(module, nn.Linear)]
-            self.assertEqual([dictionary['num_units_' + str(i)] for i in range(1, num_layers + 1)
+            self.assertEqual([dictionary['num_units_' + str(i)] for i in range(1, num_groups + 1)
                               ] + [X['num_classes']],
                              num_units
                              )
@@ -436,7 +436,7 @@ class NetworkTest(unittest.TestCase):
                         if isinstance(module, nn.Dropout)]
 
             if use_dropout:
-                self.assertEqual(len(dropouts), num_layers)
+                self.assertEqual(len(dropouts), num_groups)
             else:
                 self.assertEqual(len(dropouts), 0)
 
@@ -446,7 +446,7 @@ class NetworkTest(unittest.TestCase):
             elif 'tanh' in activation:
                 activations = [module for name, module in list(network.network.named_modules())
                                if isinstance(module, nn.Tanh)]
-            self.assertEqual(len(activations), num_layers)
+            self.assertEqual(len(activations), num_groups)
 
 
 class NetworkInitializerTest(unittest.TestCase):

@@ -15,17 +15,14 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
 
     def __init__(
         self,
-        num_layers: int,
         intermediate_activation: str,
-        use_dropout: bool,
         final_activation: Optional[str],
         random_state: Optional[np.random.RandomState] = None,
     ) -> None:
         self.network = None
-        self.num_layers = num_layers
         self.intermediate_activation = intermediate_activation
-        self.use_dropout = use_dropout
         self.random_state = random_state
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> autoPyTorchSetupComponent:
         """
@@ -47,6 +44,9 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
 
         self.network = self.build_network(in_features, out_features)
 
+        # Properly set the network training device
+        self.to(self.device)
+
         return self
 
     @abstractmethod
@@ -55,9 +55,7 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
         using:
 
             common network arguments from the base class:
-                * num_layer
                 * intermediate_activation
-                * use_dropout
                 * final_activation
 
             a self.config that is network specific, and contains the additional
@@ -98,10 +96,6 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
         # For the Network, we need the number of input features,
         # to build the first network layer
         if 'num_features' not in X.keys():
-            print(f"wjkajdkasjkdlas {X.keys()}")
-            print(f" WHAT {'num_features' not in X or not isinstance(X['num_features'], int)}")
-            print(f" THE {'num_features' not in X}")
-            print(f"{not isinstance(X['num_features'], int)}")
             raise ValueError("Could not parse the number of input features in the fit dictionary "
                              "To fit a network, the number of features is needed to define "
                              "the hidden layers, yet the dict contains only: {}".format(
@@ -149,6 +143,14 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
         """Returns the weights of the network"""
         assert self.network is not None, "No network was initialized"
         return self.network.parameters()
+
+    def to(self, device: Optional[torch.device] = None) -> None:
+        """Setups the network in cpu or gpu"""
+        assert self.network is not None, "No network was initialized"
+        if device is not None:
+            self.network = self.network.to(device)
+        else:
+            self.network = self.network.to(self.device)
 
     def __str__(self) -> str:
         """ Allow a nice understanding of what components where used """

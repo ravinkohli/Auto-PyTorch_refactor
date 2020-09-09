@@ -26,25 +26,25 @@ class MLPNet(BaseNetworkComponent):
         - Specifying the number of units per layers
 
     Args:
-        T_0 (int): Number of iterations for the first restart
-        T_mult (int):  A factor increases T_{i} after a restart
+        num_groups (int): total number of layers this MLP will have
+        intermediate_activation (str): type of activation for this layer
+        final_activation (str): the final activation of this class
         random_state (Optional[np.random.RandomState]): random state
+        num_units_%d (int): Number of units of layer %d
+        use_dropout (bool): Whether or not to add dropout at each layer
+        dropout_%d (float): The assigned dropout of layer %d
     """
 
     def __init__(
         self,
-        num_layers: int,
         intermediate_activation: str,
-        use_dropout: bool,
         final_activation: Optional[str] = None,
         random_state: Optional[np.random.RandomState] = None,
         **kwargs: Any
     ):
 
         super().__init__(
-            num_layers=num_layers,
             intermediate_activation=intermediate_activation,
-            use_dropout=use_dropout,
             final_activation=final_activation,
             random_state=random_state,
         )
@@ -60,11 +60,11 @@ class MLPNet(BaseNetworkComponent):
         layers = list()  # type: List[torch.nn.Module]
         self._add_layer(layers, in_features, self.config['num_units_1'], 1)
 
-        for i in range(2, self.num_layers + 1):
+        for i in range(2, self.config['num_groups'] + 1):
             self._add_layer(layers, self.config["num_units_%d" % (i - 1)],
                             self.config["num_units_%d" % i], i)
 
-        layers.append(torch.nn.Linear(self.config["num_units_%d" % self.num_layers],
+        layers.append(torch.nn.Linear(self.config["num_units_%d" % self.config['num_groups']],
                                       out_features))
         network = torch.nn.Sequential(*layers)
         return network
@@ -82,7 +82,7 @@ class MLPNet(BaseNetworkComponent):
         """
         layers.append(torch.nn.Linear(in_features, out_features))
         layers.append(MLPNet.get_activations_dict()[self.intermediate_activation]())
-        if self.use_dropout:
+        if self.config['use_dropout']:
             layers.append(torch.nn.Dropout(self.config["dropout_%d" % layer_id]))
 
     @staticmethod
@@ -106,13 +106,13 @@ class MLPNet(BaseNetworkComponent):
         # The number of hidden layers the network will have.
         # Layer blocks are meant to have the same architecture, differing only
         # by the number of units
-        num_layers = UniformIntegerHyperparameter(
-            "num_layers", min_mlp_layers, max_mlp_layers, default_value=5)
+        num_groups = UniformIntegerHyperparameter(
+            "num_groups", min_mlp_layers, max_mlp_layers, default_value=5)
 
         intermediate_activation = CategoricalHyperparameter(
             "intermediate_activation", choices=list(MLPNet.get_activations_dict().keys())
         )
-        cs.add_hyperparameters([num_layers, intermediate_activation])
+        cs.add_hyperparameters([num_groups, intermediate_activation])
 
         # We can have dropout in the network for
         # better generalization
@@ -133,7 +133,7 @@ class MLPNet(BaseNetworkComponent):
                 # if there are at least i layers
                 cs.add_condition(
                     CS.GreaterThanCondition(
-                        n_units_hp, num_layers, i - 1
+                        n_units_hp, num_groups, i - 1
                     )
                 )
 
@@ -148,7 +148,7 @@ class MLPNet(BaseNetworkComponent):
                 dropout_condition_1 = CS.EqualsCondition(dropout_hp, use_dropout, True)
 
                 if i > min_mlp_layers:
-                    dropout_condition_2 = CS.GreaterThanCondition(dropout_hp, num_layers, i - 1)
+                    dropout_condition_2 = CS.GreaterThanCondition(dropout_hp, num_groups, i - 1)
                     cs.add_condition(CS.AndConjunction(dropout_condition_1, dropout_condition_2))
                 else:
                     cs.add_condition(dropout_condition_1)
