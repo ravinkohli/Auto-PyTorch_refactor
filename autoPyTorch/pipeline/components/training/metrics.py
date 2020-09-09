@@ -45,9 +45,10 @@ def get_metric_instances(dataset_properties: Dict[str, Any], names: Optional[Ite
     if names is not None:
         for name in names:
             if name not in supported_metrics.keys():
-                raise ValueError("Invalid name entered for task {}, and output type {} "
-                                 "currently supported metrics for task include {}".format(
-                    task_type, dataset_properties['output_type'], list(supported_metrics.keys())))
+                raise ValueError("Invalid name entered for task {}, and output type {} currently supported"
+                                 " metrics for task include {}".format(task_type,
+                                                                       dataset_properties['output_type'],
+                                                                       list(supported_metrics.keys())))
             else:
                 metric = supported_metrics[name]
                 metrics.append(metric)

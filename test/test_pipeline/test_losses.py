@@ -4,7 +4,6 @@ import torch
 from torch import nn
 
 from autoPyTorch.pipeline.components.training.losses import get_loss_instance
-from autoPyTorch.pipeline.components.training.losses import get_supported_losses
 
 
 class LossTest(unittest.TestCase):

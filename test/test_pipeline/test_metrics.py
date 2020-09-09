@@ -7,6 +7,7 @@ import torch
 from autoPyTorch.pipeline.components.training.metrics import get_metric_instances
 from autoPyTorch.pipeline.components.training.metrics import get_supported_metrics
 
+
 class MetricsTest(unittest.TestCase):
     def test_get_no_name(self):
         dataset_properties = {'task_type': 'tabular_classification', 'output_type': 'multi-class'}
