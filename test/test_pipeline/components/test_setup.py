@@ -10,6 +10,7 @@ import torch.nn as nn
 
 import autoPyTorch.pipeline.components.setup.lr_scheduler.base_scheduler_choice as lr_components
 import autoPyTorch.pipeline.components.setup.network.base_network_choice as network_components
+import autoPyTorch.pipeline.components.setup.network_initializer.base_network_init_choice as network_initializer_components
 import autoPyTorch.pipeline.components.setup.optimizer.base_optimizer_choice as optimizer_components
 from autoPyTorch.pipeline.components.setup.lr_scheduler.base_scheduler_choice import (
     BaseLRComponent,
@@ -23,6 +24,10 @@ from autoPyTorch.pipeline.components.setup.network.base_network_choice import (
 from autoPyTorch.pipeline.components.setup.optimizer.base_optimizer_choice import (
     BaseOptimizerComponent,
     OptimizerChoice
+)
+from autoPyTorch.pipeline.components.setup.network_initializer.base_network_init_choice import (
+    BaseNetworkInitializerComponent,
+    NetworkInitializerChoice
 )
 
 
@@ -59,6 +64,22 @@ class DummyOptimizer(BaseOptimizerComponent):
 
 
 class DummyNet(BaseNetworkComponent):
+    def __init__(self, random_state=None):
+        pass
+
+    @staticmethod
+    def get_hyperparameter_search_space(dataset_properties=None):
+        cs = ConfigurationSpace()
+        return cs
+
+    def get_properties(dataset_properties=None):
+        return {
+            'shortname': 'Dummy',
+            'name': 'Dummy',
+        }
+
+
+class DummyNetworkInitializer(BaseNetworkInitializerComponent):
     def __init__(self, random_state=None):
         pass
 
@@ -426,6 +447,92 @@ class NetworkTest(unittest.TestCase):
                 activations = [module for name, module in list(network.network.named_modules())
                                if isinstance(module, nn.Tanh)]
             self.assertEqual(len(activations), num_groups)
+
+
+class NetworkInitializerTest(unittest.TestCase):
+    def test_every_network_initializer_is_valid(self):
+        """
+        Makes sure that every network_initializer is a valid estimator.
+        That is, we can fully create an object via get/set params.
+
+        This also test that we can properly initialize each one
+        of them
+        """
+        network_initializer_choice = NetworkInitializerChoice()
+
+        # Make sure all components are returned
+        self.assertEqual(len(network_initializer_choice.get_components().keys()), 5)
+
+        # For every optimizer in the components, make sure
+        # that it complies with the scikit learn estimator.
+        # This is important because usually components are forked to workers,
+        # so the set/get params methods should recreate the same object
+        for name, network_initializer in network_initializer_choice.get_components().items():
+            config = network_initializer.get_hyperparameter_search_space().sample_configuration()
+            estimator = network_initializer(**config)
+            estimator_clone = clone(estimator)
+            estimator_clone_params = estimator_clone.get_params()
+
+            # Make sure all keys are copied properly
+            for k, v in estimator.get_params().items():
+                self.assertIn(k, estimator_clone_params)
+
+            # Make sure the params getter of estimator are honored
+            klass = estimator.__class__
+            new_object_params = estimator.get_params(deep=False)
+            for name, param in new_object_params.items():
+                new_object_params[name] = clone(param, safe=False)
+            new_object = klass(**new_object_params)
+            params_set = new_object.get_params(deep=False)
+
+            for name in new_object_params:
+                param1 = new_object_params[name]
+                param2 = params_set[name]
+                self.assertEqual(param1, param2)
+
+    def test_get_set_config_space(self):
+        """Make sure that we can setup a valid choice in the network_initializer
+        choice"""
+        network_initializer_choice = NetworkInitializerChoice()
+        cs = network_initializer_choice.get_hyperparameter_search_space()
+
+        # Make sure that all hyperparameters are part of the serach space
+        self.assertListEqual(
+            sorted(cs.get_hyperparameter('__choice__').choices),
+            sorted(list(network_initializer_choice.get_components().keys()))
+        )
+
+        # Make sure we can properly set some random configs
+        # Whereas just one iteration will make sure the algorithm works,
+        # doing five iterations increase the confidence. We will be able to
+        # catch component specific crashes
+        for i in range(5):
+            config = cs.sample_configuration()
+            config_dict = copy.deepcopy(config.get_dictionary())
+            network_initializer_choice.set_hyperparameters(config)
+
+            self.assertEqual(network_initializer_choice.choice.__class__,
+                             network_initializer_choice.get_components()[config_dict['__choice__']])
+
+            # Then check the choice configuration
+            selected_choice = config_dict.pop('__choice__', None)
+            for key, value in config_dict.items():
+                # Remove the selected_choice string from the parameter
+                # so we can query in the object for it
+                key = key.replace(selected_choice + ':', '')
+                self.assertIn(key, vars(network_initializer_choice.choice))
+                self.assertEqual(value, network_initializer_choice.choice.__dict__[key])
+
+    def test_network_initializer_add(self):
+        """Makes sure that a component can be added to the CS"""
+        # No third party components to start with
+        self.assertEqual(len(network_initializer_components._addons.components), 0)
+
+        # Then make sure the network_initializer can be added and query'ed
+        network_initializer_components.add_network_initializer(DummyNetworkInitializer)
+        self.assertEqual(len(network_initializer_components._addons.components), 1)
+        cs = NetworkInitializerChoice().get_hyperparameter_search_space()
+        self.assertIn('DummyNetworkInitializer', str(cs))
 
 
 if __name__ == '__main__':
