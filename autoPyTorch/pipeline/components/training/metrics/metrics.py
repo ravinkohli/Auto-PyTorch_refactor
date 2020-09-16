@@ -1,38 +1,39 @@
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Iterable, Optional, Type
 
 from pytorch_lightning.metrics import classification
 from pytorch_lightning.metrics import regression
 from pytorch_lightning.metrics.metric import Metric
 
-autopytorch_metrics = dict({
-    'classification': {
-        'Accuracy': classification.Accuracy,
-        'AveragePrecision': classification.AveragePrecision,
-        'AUROC': classification.AUROC,
-        'ConfusionMatrix': classification.ConfusionMatrix,
-        'F1': classification.F1,
-        'MulticlassPrecisionRecall': classification.MulticlassPrecisionRecall,
-        'MulticlassROC': classification.MulticlassROC,
-        'Precision': classification.Precision,
-        'PrecisionRecall': classification.PrecisionRecall,
-        'Recall': classification.Recall,
-        'ROC': classification.ROC
-    },
-    'regression': {
-        'RMSE': regression.RMSE,
-        'RMSLE': regression.RMSLE,
-        'SSIM': regression.SSIM,
-    },
-})
+autopytorch_metrics = dict(classification=dict(Accuracy=classification.Accuracy,
+                                               AveragePrecision=classification.AveragePrecision,
+                                               AUROC=classification.AUROC,
+                                               ConfusionMatrix=classification.ConfusionMatrix,
+                                               F1=classification.F1,
+                                               MulticlassPrecisionRecall=classification.MulticlassPrecisionRecall,
+                                               MulticlassROC=classification.MulticlassROC,
+                                               Precision=classification.Precision,
+                                               PrecisionRecall=classification.PrecisionRecall,
+                                               Recall=classification.Recall,
+                                               ROC=classification.ROC),
+                           regression=dict(RMSE=regression.RMSE,
+                                           RMSLE=regression.RMSLE,
+                                           SSIM=regression.SSIM)
+                           )
+
+default_metrics = dict(classification=classification.Accuracy, regression=regression.RMSE)
 
 
-def get_supported_metrics(dataset_properties: Dict[str, Any]) -> Dict[str, Metric]:
+def get_supported_metrics(dataset_properties: Dict[str, Any]) -> Dict[str, Type[Metric]]:
     supported_metrics = dict()
 
     for key, value in autopytorch_metrics[dataset_properties['task_type'].split('_')[-1]].items():
         supported_metrics[key] = value
 
     return supported_metrics
+
+
+def get_default(task: str) -> Type[Metric]:
+    return default_metrics[task.split('_')[-1]]
 
 
 def get_metric_instances(dataset_properties: Dict[str, Any], names: Optional[Iterable[str]] = None) -> Iterable[Metric]:
@@ -53,6 +54,6 @@ def get_metric_instances(dataset_properties: Dict[str, Any], names: Optional[Ite
                 metric = supported_metrics[name]
                 metrics.append(metric)
     else:
-        metrics = [supported_metrics[key] for key in supported_metrics.keys()]
+        metrics = get_default(task_type)
 
     return metrics
