@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Type
 
 from torch.nn.modules.loss import (
     CrossEntropyLoss,
@@ -7,10 +7,6 @@ from torch.nn.modules.loss import (
     L1Loss
 )
 from torch.nn.modules.loss import _Loss as Loss
-
-
-def get_default(x: Dict[str, Loss]) -> Loss:
-    return x[list(x.keys())[0]]
 
 
 losses = dict(classification=dict(
@@ -24,8 +20,14 @@ losses = dict(classification=dict(
         L1Loss=dict(
             module=L1Loss, supported_output_type='continuous')))
 
+default_losses = dict(classification=CrossEntropyLoss, regression=MSELoss)
 
-def get_supported_losses(dataset_properties: Dict[str, Any]) -> Dict[str, Loss]:
+
+def get_default(task: str) -> Type[Loss]:
+    return default_losses[task.split('_')[-1]]
+
+
+def get_supported_losses(dataset_properties: Dict[str, Any]) -> Dict[str, Type[Loss]]:
     supported_losses = dict()
     for key, value in losses[dataset_properties['task_type'].split('_')[-1]].items():
         if value['supported_output_type'] == dataset_properties['output_type']:
@@ -52,6 +54,6 @@ def get_loss_instance(dataset_properties: Dict[str, Any], name: Optional[str] = 
         else:
             loss = supported_losses[name]
     else:
-        loss = get_default(supported_losses)
+        loss = get_default(task_type)
 
     return loss()

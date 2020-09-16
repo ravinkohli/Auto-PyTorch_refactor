@@ -4,8 +4,8 @@ from pytorch_lightning.metrics.metric import Metric
 
 import torch
 
-from autoPyTorch.pipeline.components.training.metrics import get_metric_instances
-from autoPyTorch.pipeline.components.training.metrics import get_supported_metrics
+from autoPyTorch.pipeline.components.training.metrics.metrics import get_metric_instances
+from autoPyTorch.pipeline.components.training.metrics.metrics import get_supported_metrics
 
 
 class MetricsTest(unittest.TestCase):

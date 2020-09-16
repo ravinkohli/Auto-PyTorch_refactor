@@ -34,8 +34,9 @@ class LossTest(unittest.TestCase):
                            {'task_type': 'tabular_regression', 'output_type': 'continuous'}]
         pred_cross_entropy = torch.randn(4, 4, requires_grad=True)
         list_predictions = [pred_cross_entropy, torch.empty(4).random_(2), torch.randn(4)]
+        list_names = [None, 'BCEWithLogitsLoss', None]
         list_targets = [torch.empty(4, dtype=torch.long).random_(4), torch.empty(4).random_(2), torch.randn(4)]
-        for dataset_properties, pred, target in zip(list_properties, list_predictions, list_targets):
-            loss = get_loss_instance(dataset_properties)
+        for dataset_properties, pred, target, name in zip(list_properties, list_predictions, list_targets, list_names):
+            loss = get_loss_instance(dataset_properties=dataset_properties, name=name)
             score = loss(pred, target)
             self.assertIsInstance(score, torch.Tensor)
