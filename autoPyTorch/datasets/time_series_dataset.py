@@ -34,10 +34,11 @@ class TimeSeriesForecastingDataset(BaseDataset):
                                                         target_variables=target_variables,
                                                         sequence_length=sequence_length,
                                                         n_steps=n_steps)
-        val = _prepare_time_series_forecasting_tensor(tensor=val,
-                                                      target_variables=target_variables,
-                                                      sequence_length=sequence_length,
-                                                      n_steps=n_steps) if val is not None else None
+        if val is not None:
+            val = _prepare_time_series_forecasting_tensor(tensor=val,
+                                                          target_variables=target_variables,
+                                                          sequence_length=sequence_length,
+                                                          n_steps=n_steps)
         super().__init__(train_tensors=train, val_tensors=val, shuffle=False)
         self.cross_validators = get_cross_validators(CrossValTypes.time_series_cross_validation)
         self.holdout_validators = get_holdout_validators(HoldoutValTypes.train_val_split)

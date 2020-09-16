@@ -1,6 +1,7 @@
 import numpy as np
 from torch.utils.data import Dataset, TensorDataset
 import torch
+from torchvision.transforms import functional as TF
 from PIL import Image
 from autoPyTorch.datasets.base_dataset import BaseDataset
 from typing import Tuple, Optional, Union, List
@@ -18,6 +19,9 @@ class ImageDataset(BaseDataset):
         train = _create_image_dataset(data=train)
         if val is not None:
             val = _create_image_dataset(data=val)
+        mean_std = _calc_mean_std(train=train)
+        self.mean = mean_std[0]
+        self.std = mean_std[0]
         super().__init__(train_tensors=(train,), val_tensors=(val,), shuffle=True)
         self.cross_validators = get_cross_validators(
             CrossValTypes.stratified_k_fold_cross_validation,
@@ -29,6 +33,19 @@ class ImageDataset(BaseDataset):
             HoldoutValTypes.train_val_split,
             HoldoutValTypes.stratified_train_val_split
         )
+
+
+def _calc_mean_std(train: Dataset) -> Tuple[torch.Tensor, torch.Tensor]:
+    mean = torch.zeros((3,), dtype=torch.float)
+    var = torch.zeros((3,), dtype=torch.float)
+    for img, _ in train:
+        v, m = torch.var_mean(img, dim=[1, 2])
+        mean += m
+        var += v
+    mean /= len(train)
+    var /= len(var)
+    std = torch.sqrt(var)
+    return mean, std
 
 
 def _check_image_inputs(train: IMAGE_DATASET_INPUT,
@@ -63,7 +80,7 @@ class _FilePathDataset(Dataset):
     def __getitem__(self, index: int) -> Tuple[Image, torch.Tensor]:
         with open(self.file_paths[index], "rb") as f:
             img = Image.open(f).convert("RGB")
-        return img, torch.tensor(self.targets[index])
+        return TF.to_tensor(img), torch.tensor(self.targets[index])
 
     def __len__(self) -> int:
         return len(self.file_paths)
