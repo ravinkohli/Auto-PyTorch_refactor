@@ -35,8 +35,8 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         type_check(train_tensors, val_tensors)
         self.train_tensors = train_tensors
         self.val_tensors = val_tensors
-        self.cross_validators = {}  # type: Dict[str, CROSS_VAL_FN]
-        self.holdout_validators = {}  # type: Dict[str, HOLDOUT_FN]
+        self.cross_validators: Dict[str, CROSS_VAL_FN] = {}
+        self.holdout_validators: Dict[str, HOLDOUT_FN] = {}
         self.rand = np.random.RandomState(seed=seed)
         self.shuffle = shuffle
 
