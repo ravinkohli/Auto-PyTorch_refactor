@@ -10,8 +10,7 @@ import torch.nn as nn
 
 import autoPyTorch.pipeline.components.setup.lr_scheduler.base_scheduler_choice as lr_components
 import autoPyTorch.pipeline.components.setup.network.base_network_choice as network_components
-import autoPyTorch.pipeline.components.setup.network_initializer.base_network_init_choice as \
-    network_initializer_components
+import autoPyTorch.pipeline.components.setup.network_initializer.base_network_init_choice as network_initializer_components  # noqa: E501
 import autoPyTorch.pipeline.components.setup.optimizer.base_optimizer_choice as optimizer_components
 from autoPyTorch.pipeline.components.setup.lr_scheduler.base_scheduler_choice import (
     BaseLRComponent,

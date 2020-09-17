@@ -17,7 +17,14 @@ X, y = sklearn.datasets.fetch_openml(data_id=40981, return_X_y=True, as_frame=Tr
 X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(
     X,
     y,
-    random_state=1
+    random_state=1,
+    test_size=0.2,
+)
+
+train_indices, val_indices = sklearn.model_selection.train_test_split(
+    list(range(len(X_train))),
+    random_state=1,
+    test_size=0.25,
 )
 
 numerical = X.columns.to_list()
@@ -51,8 +58,13 @@ pipeline.fit(X={
     'num_features': len(X),
     'num_classes': len(np.unique(y)),
     'is_small_preprocess': True,
-    'X_train': X_train,
     'categories': categories,
+    'X_train': X_train,
+    'y_train': y_train,
+    'train_indices': train_indices,
+    'val_indices': val_indices,
+    'X_test': X_test,
+    'y_test': y_test,
 })
 
 # Showcase some components of the pipeline
