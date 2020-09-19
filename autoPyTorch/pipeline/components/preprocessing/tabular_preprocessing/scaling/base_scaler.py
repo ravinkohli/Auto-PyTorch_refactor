@@ -4,17 +4,19 @@ import numpy as np
 
 import torch
 
-from autoPyTorch.pipeline.components.preprocessing.base_preprocessing import autoPyTorchPreprocessingComponent
+from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.base_tabular_preprocessing import (
+    autoPyTorchTabularPreprocessingComponent
+)
 
 
-class BaseImputer(autoPyTorchPreprocessingComponent):
+class BaseScaler(autoPyTorchTabularPreprocessingComponent):
     """
-    Provides abstract class interface for Imputers in AutoPyTorch
+    Provides abstract class interface for Scalers in AutoPytorch
     """
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Adds self into the 'X' dictionary and returns it.
+        Adds the fitted preprocessor into the 'X' dictionary and returns it.
         Args:
             X (Dict[str, Any]): 'X' dictionary
 
@@ -24,7 +26,7 @@ class BaseImputer(autoPyTorchPreprocessingComponent):
         if self.column_transformer is None:
             raise ValueError("cant call transform on {} without fitting first."
                              .format(self.__class__.__name__))
-        X.update({'imputer': self})
+        X.update({'scaler': self})
         return X
 
     def __call__(self, X: Union[np.ndarray, torch.tensor]) -> Union[np.ndarray, torch.tensor]:
@@ -56,9 +58,8 @@ class BaseImputer(autoPyTorchPreprocessingComponent):
                 so that further stages can be properly fitted
         """
         super().check_requirements(X, y)
-        if 'numerical_columns' not in X or 'categorical_columns' not in X:
+        if 'numerical_columns' not in X:
             raise ValueError("To fit a scaler, the fit dictionary "
                              "must contain a list of the numerical "
-                             "and categorical columns of the data but only "
-                             "contains {}".format(X.keys())
+                             "columns of the data but only contains {}".format(X.keys())
                              )

@@ -13,7 +13,7 @@ from sklearn.impute import SimpleImputer as SklearnSimpleImputer
 
 import torch
 
-from autoPyTorch.pipeline.components.preprocessing.imputation.base_imputer import BaseImputer
+from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.imputation.base_imputer import BaseImputer
 
 
 class SimpleImputer(BaseImputer):

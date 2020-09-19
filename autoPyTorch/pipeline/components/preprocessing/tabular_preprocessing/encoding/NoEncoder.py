@@ -4,7 +4,7 @@ import numpy as np
 
 import torch
 
-from autoPyTorch.pipeline.components.preprocessing.encoding.base_encoder import BaseEncoder
+from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.encoding.base_encoder import BaseEncoder
 
 
 class NoEncoder(BaseEncoder):

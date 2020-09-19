@@ -4,7 +4,7 @@ import numpy as np
 
 import torch
 
-from autoPyTorch.pipeline.components.preprocessing.scaling.base_scaler import BaseScaler
+from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.scaling.base_scaler import BaseScaler
 
 
 class NoScaler(BaseScaler):

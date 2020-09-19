@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.compose import make_column_transformer
 from sklearn.preprocessing import OrdinalEncoder as OE
 
-from autoPyTorch.pipeline.components.preprocessing.encoding.base_encoder import BaseEncoder
+from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.encoding.base_encoder import BaseEncoder
 
 
 class OrdinalEncoder(BaseEncoder):

@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.compose import make_column_transformer
 from sklearn.preprocessing import MinMaxScaler as SklearnMinMaxScaler
 
-from autoPyTorch.pipeline.components.preprocessing.scaling.base_scaler import BaseScaler
+from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.scaling.base_scaler import BaseScaler
 
 
 class MinMaxScaler(BaseScaler):

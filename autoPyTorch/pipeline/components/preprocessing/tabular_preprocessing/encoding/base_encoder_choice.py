@@ -11,37 +11,37 @@ from autoPyTorch.pipeline.components.base_component import (
     autoPyTorchComponent,
     find_components,
 )
-from autoPyTorch.pipeline.components.preprocessing.scaling.base_scaler import BaseScaler
-
-scaling_directory = os.path.split(__file__)[0]
-_scalers = find_components(__package__,
-                           scaling_directory,
-                           BaseScaler)
-
-_addons = ThirdPartyComponents(BaseScaler)
+from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.encoding.base_encoder import BaseEncoder
 
 
-def add_scaler(scaler: BaseScaler) -> None:
-    _addons.add_component(scaler)
+encoding_directory = os.path.split(__file__)[0]
+_encoders = find_components(__package__,
+                            encoding_directory,
+                            BaseEncoder)
+_addons = ThirdPartyComponents(BaseEncoder)
 
 
-class ScalerChoice(autoPyTorchChoice):
+def add_encoder(encoder: BaseEncoder) -> None:
+    _addons.add_component(encoder)
+
+
+class EncoderChoice(autoPyTorchChoice):
     """
-    Allows for dynamically choosing scaling component at runtime
+    Allows for dynamically choosing encoding component at runtime
     """
 
     def get_components(self) -> Dict[str, autoPyTorchComponent]:
-        """Returns the available scaler components
+        """Returns the available encoder components
 
         Args:
             None
 
         Returns:
-            Dict[str, autoPyTorchComponent]: all BaseScalers components available
-                as choices for scaling
+            Dict[str, autoPyTorchComponent]: all BaseEncoder components available
+                as choices for encoding the categorical columns
         """
         components = OrderedDict()
-        components.update(_scalers)
+        components.update(_encoders)
         components.update(_addons.components)
         return components
 
@@ -55,32 +55,37 @@ class ScalerChoice(autoPyTorchChoice):
         if dataset_properties is None:
             dataset_properties = dict()
 
-        dataset_properties.update(self.dataset_properties)
+        dataset_properties = {**self.dataset_properties, **dataset_properties}
 
         available_preprocessors = self.get_available_components(dataset_properties=dataset_properties,
                                                                 include=include,
                                                                 exclude=exclude)
 
         if len(available_preprocessors) == 0:
-            raise ValueError("no rescalers found, please add a rescaler")
+            raise ValueError("no encoders found, please add a encoder")
 
         if default is None:
-            defaults = ['Normalizer', 'StandardScaler', 'MinMaxScaler', 'NoScaler']
+            defaults = ['OneHotEncoder', 'OrdinalEncoder', 'NoEncoder']
             for default_ in defaults:
                 if default_ in available_preprocessors:
+                    if include is not None and default_ not in include:
+                        continue
+                    if exclude is not None and default_ in exclude:
+                        continue
                     default = default_
                     break
 
-        # add only no scaler to choice hyperparameters in case the dataset is only categorical
-        if not dataset_properties['numerical_columns']:
-            default = 'NoScaler'
+        # add only no encoder to choice hyperparameters in case the dataset is only categorical
+        if not dataset_properties['categorical_columns']:
+            default = 'NoEncoder'
             preprocessor = CSH.CategoricalHyperparameter('__choice__',
-                                                         ['NoScaler'],
+                                                         ['NoEncoder'],
                                                          default_value=default)
         else:
             preprocessor = CSH.CategoricalHyperparameter('__choice__',
                                                          list(available_preprocessors.keys()),
                                                          default_value=default)
+
         cs.add_hyperparameter(preprocessor)
 
         # add only child hyperparameters of preprocessor choices
@@ -105,5 +110,7 @@ class ScalerChoice(autoPyTorchChoice):
 
         """
         super()._check_dataset_properties(dataset_properties)
-        assert 'numerical_columns' in dataset_properties.keys() and 'categorical_columns' in dataset_properties.keys(),\
-            "Dataset properties must contain information about the type of columns"
+        assert 'numerical_columns' in dataset_properties.keys(), \
+            "Dataset properties must contain information about numerical columns"
+        assert 'categorical_columns' in dataset_properties.keys(), \
+            "Dataset properties must contain information about categorical columns"

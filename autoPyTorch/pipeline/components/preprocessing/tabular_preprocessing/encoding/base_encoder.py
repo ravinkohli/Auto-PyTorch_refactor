@@ -4,10 +4,12 @@ import numpy as np
 
 import torch
 
-from autoPyTorch.pipeline.components.preprocessing.base_preprocessing import autoPyTorchPreprocessingComponent
+from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.base_tabular_preprocessing import (
+    autoPyTorchTabularPreprocessingComponent
+)
 
 
-class BaseEncoder(autoPyTorchPreprocessingComponent):
+class BaseEncoder(autoPyTorchTabularPreprocessingComponent):
     """
     Base class for encoder
     """

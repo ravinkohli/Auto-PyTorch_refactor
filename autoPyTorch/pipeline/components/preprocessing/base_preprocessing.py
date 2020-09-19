@@ -4,9 +4,6 @@ from ConfigSpace.configuration_space import ConfigurationSpace
 
 import numpy as np
 
-from sklearn.base import BaseEstimator
-from sklearn.compose import ColumnTransformer
-
 import torch
 
 from autoPyTorch.pipeline.components.base_component import autoPyTorchComponent
@@ -16,9 +13,6 @@ class autoPyTorchPreprocessingComponent(autoPyTorchComponent):
     """
      Provides abstract interface for preprocessing algorithms in AutoPyTorch.
     """
-    def __init__(self) -> None:
-        self.preprocessor: Union[Dict[str, BaseEstimator], Optional[BaseEstimator]] = None
-        self.column_transformer: Optional[ColumnTransformer] = None
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -43,16 +37,6 @@ class autoPyTorchPreprocessingComponent(autoPyTorchComponent):
             Union[np.ndarray, torch.tensor]: Transformed data tensor
         """
         raise NotImplementedError()
-
-    def get_column_transformer(self) -> ColumnTransformer:
-        """
-        Get fitted column transformer that is wrapped around
-        the sklearn preprocessor. Can only be called if fit()
-        has been called on the object.
-        Returns:
-            BaseEstimator: Fitted sklearn column transformer
-        """
-        return self.column_transformer
 
     def check_requirements(self, X: Dict[str, Any], y: Any = None) -> None:
         """
