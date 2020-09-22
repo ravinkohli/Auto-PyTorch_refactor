@@ -1,7 +1,9 @@
 import copy
 import unittest
 
-from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.encoding.base_encoder_choice import EncoderChoice
+from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.encoding.base_encoder_choice import (
+    EncoderChoice
+)
 
 
 class TestEncoderChoice(unittest.TestCase):

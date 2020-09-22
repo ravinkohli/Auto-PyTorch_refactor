@@ -8,17 +8,17 @@ from sklearn.base import ClassifierMixin
 
 from autoPyTorch.pipeline.base_pipeline import BasePipeline
 from autoPyTorch.pipeline.components.base_choice import autoPyTorchChoice
-from autoPyTorch.pipeline.components.preprocessing.image_preprocessing.padding.base_pad_choice import PadChoice
 from autoPyTorch.pipeline.components.preprocessing.image_preprocessing.normalise.base_normalizer_choice import (
     NormalizerChoice
 )
+from autoPyTorch.pipeline.components.preprocessing.image_preprocessing.padding.base_pad_choice import PadChoice
 from autoPyTorch.pipeline.components.setup.preprocessor.Preprocessing import Preprocessing
-from autoPyTorch.pipeline.components.setup.lr_scheduler.base_scheduler_choice import SchedulerChoice
-from autoPyTorch.pipeline.components.setup.network.base_network_choice import NetworkChoice
-from autoPyTorch.pipeline.components.setup.optimizer.base_optimizer_choice import OptimizerChoice
-from autoPyTorch.pipeline.components.setup.network_initializer.base_network_init_choice import (
-    NetworkInitializerChoice
-)
+# from autoPyTorch.pipeline.components.setup.lr_scheduler.base_scheduler_choice import SchedulerChoice
+# from autoPyTorch.pipeline.components.setup.network.base_network_choice import NetworkChoice
+# from autoPyTorch.pipeline.components.setup.optimizer.base_optimizer_choice import OptimizerChoice
+# from autoPyTorch.pipeline.components.setup.network_initializer.base_network_init_choice import (
+#     NetworkInitializerChoice
+# )
 
 
 class ImageClassificationPipeline(ClassifierMixin, BasePipeline):
@@ -186,14 +186,14 @@ class ImageClassificationPipeline(ClassifierMixin, BasePipeline):
             default_dataset_properties.update(dataset_properties)
 
         steps.extend([
-                    ("pad", PadChoice(dataset_properties)),
-                    ("normalizer", NormalizerChoice(default_dataset_properties)),
-                    ("preprocessing", Preprocessing()),
-                    # ("network", NetworkChoice(default_dataset_properties)),
-                    # ("network_init", NetworkInitializerChoice(default_dataset_properties)),
-                    # ("optimizer", OptimizerChoice(default_dataset_properties)),
-                    # ("lr_scheduler", SchedulerChoice(default_dataset_properties)),
-                ])
+            ("pad", PadChoice(dataset_properties)),
+            ("normalizer", NormalizerChoice(default_dataset_properties)),
+            ("preprocessing", Preprocessing()),
+            # ("network", NetworkChoice(default_dataset_properties)),
+            # ("network_init", NetworkInitializerChoice(default_dataset_properties)),
+            # ("optimizer", OptimizerChoice(default_dataset_properties)),
+            # ("lr_scheduler", SchedulerChoice(default_dataset_properties)),
+        ])
         return steps
 
     def _get_estimator_hyperparameter_name(self) -> str:

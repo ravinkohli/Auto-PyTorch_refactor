@@ -3,6 +3,8 @@
 Image Classification
 ======================
 """
+import numpy as np
+
 import torchvision.datasets
 
 from autoPyTorch.pipeline.image_classification import ImageClassificationPipeline
@@ -10,15 +12,10 @@ from autoPyTorch.pipeline.image_classification import ImageClassificationPipelin
 
 # Get the training data for tabular classification
 trainset = torchvision.datasets.FashionMNIST(root='../datasets/', train=True, download=True)
-X_train = trainset.data.numpy().reshape(-1, trainset.data.shape[1]*trainset.data.shape[2])
-
-numerical_columns = list(range(X_train.shape[1]))
-categorical_columns = []
+data = trainset.data.numpy()
+data = np.expand_dims(data, axis=3)
 # Create a proof of concept pipeline!
-dataset_properties = {
-    'categorical_columns': categorical_columns,
-    'numerical_columns': numerical_columns
-}
+dataset_properties = dict()
 pipeline = ImageClassificationPipeline(dataset_properties=dataset_properties)
 
 # Configuration space
@@ -31,13 +28,14 @@ pipeline.set_hyperparameters(config)
 # Fit the pipeline
 print("Fitting the pipeline...")
 
-pipeline.fit(X={
-    'categorical_columns': categorical_columns,
-    'numerical_columns': numerical_columns,
-    'num_features': len(numerical_columns),
-    'num_classes': 10,
-    'train': X_train
-})
+pipeline.fit(X=dict(train=data,
+                    is_small_preprocess=True,
+                    channelwise_mean=np.array([np.mean(data[:, :, :, i]) for i in range(1)]),
+                    channelwise_std=np.array([np.std(data[:, :, :, i]) for i in range(1)]),
+                    num_classes=10,
+                    num_features=data.shape[1] * data.shape[2]
+                    )
+             )
 
 # Showcase some components of the pipeline
 print(pipeline)

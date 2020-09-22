@@ -1,7 +1,7 @@
 import unittest
 
 import numpy as np
-from numpy.testing import assert_array_equal, assert_allclose
+from numpy.testing import assert_allclose, assert_array_equal
 
 from autoPyTorch.pipeline.components.preprocessing.image_preprocessing.normalise.ImageNormalizer import ImageNormalizer
 from autoPyTorch.pipeline.components.preprocessing.image_preprocessing.normalise.NoNormalizer import NoNormalizer

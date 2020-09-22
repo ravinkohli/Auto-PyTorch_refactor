@@ -1,10 +1,4 @@
-from typing import Any, Dict, Optional, Union
-
-from ConfigSpace.configuration_space import ConfigurationSpace
-
-import numpy as np
-
-import torch
+from typing import Any, Dict, Optional
 
 from autoPyTorch.pipeline.components.preprocessing.base_preprocessing import autoPyTorchPreprocessingComponent
 

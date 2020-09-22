@@ -13,13 +13,13 @@ from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.encodin
 )
 from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.imputation.SimpleImputer import SimpleImputer
 from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.scaling.base_scaler_choice import ScalerChoice
-from autoPyTorch.pipeline.components.setup.preprocessor.Preprocessing import Preprocessing
 from autoPyTorch.pipeline.components.setup.lr_scheduler.base_scheduler_choice import SchedulerChoice
 from autoPyTorch.pipeline.components.setup.network.base_network_choice import NetworkChoice
-from autoPyTorch.pipeline.components.setup.optimizer.base_optimizer_choice import OptimizerChoice
 from autoPyTorch.pipeline.components.setup.network_initializer.base_network_init_choice import (
     NetworkInitializerChoice
 )
+from autoPyTorch.pipeline.components.setup.optimizer.base_optimizer_choice import OptimizerChoice
+from autoPyTorch.pipeline.components.setup.preprocessor.Preprocessing import Preprocessing
 
 
 class TabularClassificationPipeline(ClassifierMixin, BasePipeline):

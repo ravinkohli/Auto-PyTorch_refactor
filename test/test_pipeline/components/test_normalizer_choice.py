@@ -1,10 +1,12 @@
 import copy
 import unittest
 
-from autoPyTorch.pipeline.components.preprocessing.image_preprocessing.normalise.base_normalizer_choice import NormalizerChoice
+from autoPyTorch.pipeline.components.preprocessing.image_preprocessing.normalise.base_normalizer_choice import (
+    NormalizerChoice
+)
 
 
-class TestRescalerChoice(unittest.TestCase):
+class TestNormalizerChoice(unittest.TestCase):
 
     def test_get_set_config_space(self):
         """Make sure that we can setup a valid choice in the encoder

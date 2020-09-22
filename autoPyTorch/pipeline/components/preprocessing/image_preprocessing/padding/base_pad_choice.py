@@ -16,8 +16,8 @@ from autoPyTorch.pipeline.components.preprocessing.image_preprocessing.padding.b
 
 normalise_directory = os.path.split(__file__)[0]
 _padders = find_components(__package__,
-                               normalise_directory,
-                               BasePad)
+                           normalise_directory,
+                           BasePad)
 
 _addons = ThirdPartyComponents(BasePad)
 

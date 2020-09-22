@@ -3,8 +3,8 @@ import unittest
 import numpy as np
 from numpy.testing import assert_array_equal
 
-from autoPyTorch.pipeline.components.preprocessing.image_preprocessing.padding.Pad import Pad
 from autoPyTorch.pipeline.components.preprocessing.image_preprocessing.padding.NoPad import NoPad
+from autoPyTorch.pipeline.components.preprocessing.image_preprocessing.padding.Pad import Pad
 
 
 class TestPad(unittest.TestCase):

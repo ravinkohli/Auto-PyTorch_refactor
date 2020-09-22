@@ -2,8 +2,8 @@ from typing import Any, Dict, Optional, Union
 
 from ConfigSpace.configuration_space import ConfigurationSpace
 from ConfigSpace.hyperparameters import (
+    CategoricalHyperparameter,
     UniformIntegerHyperparameter,
-    CategoricalHyperparameter
 )
 
 import numpy as np

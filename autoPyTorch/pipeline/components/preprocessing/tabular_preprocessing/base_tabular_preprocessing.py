@@ -1,11 +1,7 @@
-from typing import Any, Dict, Optional, Union
-
-import numpy as np
+from typing import Dict, Optional, Union
 
 from sklearn.base import BaseEstimator
 from sklearn.compose import ColumnTransformer
-
-import torch
 
 from autoPyTorch.pipeline.components.preprocessing.base_preprocessing import autoPyTorchPreprocessingComponent
 
