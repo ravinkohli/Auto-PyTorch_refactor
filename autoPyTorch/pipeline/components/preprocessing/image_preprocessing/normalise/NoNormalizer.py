@@ -4,16 +4,21 @@ import numpy as np
 
 import torch.tensor
 
-from autoPyTorch.pipeline.components.preprocessing.image_preprocessing.padding.base_pad import (
-    BasePad
+from autoPyTorch.pipeline.components.preprocessing.image_preprocessing.normalise.base_normalizer import (
+    BaseNormalizer
+
 )
 
 
-class NoPad(BasePad):
-
+class NoNormalizer(BaseNormalizer):
     def __init__(self, random_state: Optional[Union[np.random.RandomState, int]] = None
                  ):
         self.random_state = random_state
+
+    def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
+
+        X.update({'normalise': self})
+        return X
 
     def __call__(self, X: Union[np.ndarray, torch.tensor]) -> Union[np.ndarray, torch.tensor]:
         """
@@ -32,6 +37,6 @@ class NoPad(BasePad):
     def get_properties(dataset_properties: Optional[Dict[str, str]] = None
                        ) -> Dict[str, Any]:
         return {
-            'shortname': 'pad',
-            'name': 'Padding Node',
+            'shortname': 'no-normalize',
+            'name': 'No Normalizer Node',
         }

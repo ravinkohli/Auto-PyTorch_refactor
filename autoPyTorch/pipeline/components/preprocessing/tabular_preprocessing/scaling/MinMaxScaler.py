@@ -15,6 +15,7 @@ class MinMaxScaler(BaseScaler):
     def __init__(self,
                  random_state: Optional[Union[np.random.RandomState, int]] = None,
                  feature_range: Tuple[Union[int, float], Union[int, float]] = (0, 1)):
+        super().__init__()
         self.random_state = random_state
         self.feature_range = feature_range
 

@@ -25,6 +25,7 @@ class Normalizer(BaseScaler):
             subsampling and smoothing noise.
             norm (str): {mean_abs, mean_squared, max} default: mean_squared
         """
+        super().__init__()
         self.random_state = random_state
         self.norm = norm
 

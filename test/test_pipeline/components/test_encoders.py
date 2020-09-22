@@ -3,9 +3,9 @@ import unittest
 import numpy as np
 from numpy.testing import assert_array_equal
 
-from autoPyTorch.pipeline.components.preprocessing.encoding.NoEncoder import NoEncoder
-from autoPyTorch.pipeline.components.preprocessing.encoding.OneHotEncoder import OneHotEncoder
-from autoPyTorch.pipeline.components.preprocessing.encoding.OrdinalEncoder import OrdinalEncoder
+from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.encoding.NoEncoder import NoEncoder
+from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.encoding.OneHotEncoder import OneHotEncoder
+from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.encoding.OrdinalEncoder import OrdinalEncoder
 
 
 class TestEncoders(unittest.TestCase):

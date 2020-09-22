@@ -5,10 +5,10 @@ from numpy.testing import assert_allclose
 
 from sklearn.base import clone
 
-from autoPyTorch.pipeline.components.preprocessing.scaling.MinMaxScaler import MinMaxScaler
-from autoPyTorch.pipeline.components.preprocessing.scaling.NoScaler import NoScaler
-from autoPyTorch.pipeline.components.preprocessing.scaling.Normalizer import Normalizer
-from autoPyTorch.pipeline.components.preprocessing.scaling.StandardScaler import StandardScaler
+from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.scaling.MinMaxScaler import MinMaxScaler
+from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.scaling.NoScaler import NoScaler
+from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.scaling.Normalizer import Normalizer
+from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.scaling.StandardScaler import StandardScaler
 
 
 class TestNormalizer(unittest.TestCase):

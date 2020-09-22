@@ -5,7 +5,7 @@ from numpy.testing import assert_array_equal
 
 from sklearn.base import clone
 
-from autoPyTorch.pipeline.components.preprocessing.imputation.SimpleImputer import SimpleImputer
+from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.imputation.SimpleImputer import SimpleImputer
 
 
 class TestSimpleImputer(unittest.TestCase):
