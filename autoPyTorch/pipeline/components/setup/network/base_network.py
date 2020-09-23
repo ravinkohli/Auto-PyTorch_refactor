@@ -15,12 +15,9 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
 
     def __init__(
         self,
-        intermediate_activation: str,
-        final_activation: Optional[str],
         random_state: Optional[np.random.RandomState] = None,
     ) -> None:
         self.network = None
-        self.intermediate_activation = intermediate_activation
         self.random_state = random_state
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -119,25 +116,6 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
         assert isinstance(X['num_classes'], numbers.Integral), "num_classes: {}".format(
             type(X['num_classes'])
         )
-
-    @classmethod
-    def get_activations_dict(cls) -> Dict[str, torch.nn.Module]:
-        """
-        This method highlights the activations that can be used,
-        when dynamically building a network.
-        """
-        return {
-            'relu': torch.nn.ReLU,
-            'sigmoid': torch.nn.Sigmoid,
-            'tanh': torch.nn.Tanh,
-            'leakyrelu': torch.nn.LeakyReLU,
-            'selu': torch.nn.SELU,
-            'rrelu': torch.nn.RReLU,
-            'tanhshrink': torch.nn.Tanhshrink,
-            'hardtanh': torch.nn.Hardtanh,
-            'elu': torch.nn.ELU,
-            'prelu': torch.nn.PReLU,
-        }
 
     def get_network_weights(self) -> torch.nn.parameter.Parameter:
         """Returns the weights of the network"""
