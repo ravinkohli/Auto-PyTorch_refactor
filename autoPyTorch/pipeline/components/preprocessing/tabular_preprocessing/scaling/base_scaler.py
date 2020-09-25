@@ -1,8 +1,4 @@
-from typing import Any, Dict, Union
-
-import numpy as np
-
-import torch
+from typing import Any, Dict
 
 from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.base_tabular_preprocessing import (
     autoPyTorchTabularPreprocessingComponent
@@ -23,27 +19,10 @@ class BaseScaler(autoPyTorchTabularPreprocessingComponent):
         Returns:
             (Dict[str, Any]): the updated 'X' dictionary
         """
-        if self.column_transformer is None:
+        if self.preprocessor['numerical'] is None and self.preprocessor['categorical'] is None:
             raise ValueError("cant call transform on {} without fitting first."
                              .format(self.__class__.__name__))
-        X.update({'scaler': self})
-        return X
-
-    def __call__(self, X: Union[np.ndarray, torch.tensor]) -> Union[np.ndarray, torch.tensor]:
-        """
-        Makes the autoPyTorchPreprocessingComponent Callable. Calling the component
-        calls the transform function of the underlying preprocessor and
-        returns the transformed array.
-        Args:
-            X (Union[np.ndarray, torch.tensor]): input data tensor
-
-        Returns:
-            Union[np.ndarray, torch.tensor]: Transformed data tensor
-        """
-        if self.column_transformer is None:
-            raise ValueError("cant call {} without fitting the column transformer first."
-                             .format(self.__class__.__name__))
-        X = self.column_transformer.transform(X)
+        X.update({'scaler': self.preprocessor})
         return X
 
     def check_requirements(self, X: Dict[str, Any], y: Any = None) -> None:

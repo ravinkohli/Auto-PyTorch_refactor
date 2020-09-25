@@ -34,6 +34,8 @@ class BaseNormalizer(autoPyTorchImagePreprocessingComponent):
                              "must contain channelwise_std of type "
                              "np.ndarray but only contains {}".format(X.keys())
                              )
+        if 0 in X['channelwise_std']:
+            raise ZeroDivisionError("Can't normalise when std is zero")
 
     def __str__(self) -> str:
         """ Allow a nice understanding of what components where used """

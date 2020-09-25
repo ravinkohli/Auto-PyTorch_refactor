@@ -2,8 +2,6 @@ from typing import Any, Dict, Optional, Union
 
 import numpy as np
 
-import torch
-
 from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.scaling.base_scaler import BaseScaler
 
 
@@ -14,6 +12,7 @@ class NoScaler(BaseScaler):
     def __init__(self,
                  random_state: Optional[Union[np.random.RandomState, int]] = None
                  ):
+        super().__init__()
         self.random_state = random_state
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> BaseScaler:
@@ -43,10 +42,7 @@ class NoScaler(BaseScaler):
         Returns:
             np.ndarray: Transformed features
         """
-        X.update({'scaler': self})
-        return X
-
-    def __call__(self, X: Union[np.ndarray, torch.tensor]) -> Union[np.ndarray, torch.tensor]:
+        X.update({'scaler': self.preprocessor})
         return X
 
     @staticmethod

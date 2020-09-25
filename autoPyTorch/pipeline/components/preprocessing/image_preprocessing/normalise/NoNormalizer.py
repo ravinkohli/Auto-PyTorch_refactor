@@ -15,6 +15,19 @@ class NoNormalizer(BaseNormalizer):
                  ):
         self.random_state = random_state
 
+    def fit(self, X: Dict[str, Any], y: Optional[Any] = None) -> "NoNormalizer":
+        """
+        Initialises preprocessor and returns self.
+        Args:
+            X (Dict[str, Any]): 'X' dictionary
+
+        Returns:
+            autoPyTorchImagePreprocessingComponent: self
+        """
+        self.check_requirements(X, y)
+
+        return self
+
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
 
         X.update({'normalise': self})

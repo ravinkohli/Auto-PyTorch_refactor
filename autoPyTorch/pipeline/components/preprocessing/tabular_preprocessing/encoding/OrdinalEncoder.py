@@ -2,7 +2,6 @@ from typing import Any, Dict, Optional, Union
 
 import numpy as np
 
-from sklearn.compose import make_column_transformer
 from sklearn.preprocessing import OrdinalEncoder as OE
 
 from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.encoding.base_encoder import BaseEncoder
@@ -20,10 +19,7 @@ class OrdinalEncoder(BaseEncoder):
 
         self.check_requirements(X, y)
 
-        self.preprocessor = OE(categories='auto')
-        self.column_transformer = make_column_transformer((self.preprocessor, X['categorical_columns']),
-                                                          remainder='passthrough')
-        self.column_transformer.fit(X['train'])  # TODO read data from local file.
+        self.preprocessor['categorical'] = OE(categories='auto')
         return self
 
     @staticmethod

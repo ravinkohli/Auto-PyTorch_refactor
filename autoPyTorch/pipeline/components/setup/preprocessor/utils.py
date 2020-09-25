@@ -9,13 +9,10 @@ from autoPyTorch.pipeline.components.preprocessing.base_preprocessing import aut
 
 def get_preprocess_transforms(X: Dict[str, Any]) -> torchvision.transforms.Compose:
     transforms = list()  # type: List[autoPyTorchPreprocessingComponent]
-    delete_keys = list()  # type: List[str]
     for key, value in X.items():
         if isinstance(value, autoPyTorchPreprocessingComponent):
             transforms.append(value)
-            delete_keys.append(key)
-    for key in delete_keys:
-        X.pop(key, None)
+
     return torchvision.transforms.Compose(transforms)
 
 

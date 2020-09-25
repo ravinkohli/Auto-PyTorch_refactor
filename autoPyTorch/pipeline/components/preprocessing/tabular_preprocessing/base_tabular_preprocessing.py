@@ -1,7 +1,6 @@
-from typing import Dict, Optional, Union
+from typing import Dict, Optional
 
 from sklearn.base import BaseEstimator
-from sklearn.compose import ColumnTransformer
 
 from autoPyTorch.pipeline.components.preprocessing.base_preprocessing import autoPyTorchPreprocessingComponent
 
@@ -11,18 +10,22 @@ class autoPyTorchTabularPreprocessingComponent(autoPyTorchPreprocessingComponent
      Provides abstract interface for preprocessing algorithms in AutoPyTorch.
     """
     def __init__(self) -> None:
-        self.preprocessor: Union[Dict[str, BaseEstimator], Optional[BaseEstimator]] = None
-        self.column_transformer: Optional[ColumnTransformer] = None
+        self.preprocessor: Dict[str, Optional[BaseEstimator, None]] = dict(numerical=None, categorical=None)
 
-    def get_column_transformer(self) -> ColumnTransformer:
+    def get_preprocessor_dict(self) -> Dict[str, BaseEstimator]:
         """
-        Get fitted column transformer that is wrapped around
-        the sklearn preprocessor. Can only be called if fit()
-        has been called on the object.
+        Returns preprocessor dictionary containing the sklearn numerical
+        and categorical preprocessor with "numerical" and "categorical"
+        keys. May contain None for a key if preprocessor does not
+        handle the datatype defined by key
+
         Returns:
-            BaseEstimator: Fitted sklearn column transformer
+            Dict[str, BaseEstimator]: preprocessor dictionary
         """
-        return self.column_transformer
+        if (self.preprocessor['numerical'] and self.preprocessor['categorical']) is None:
+            raise AttributeError("{} can't return preprocessor dict without fitting first"
+                                 .format(self.__class__.__name__))
+        return self.preprocessor
 
     def __str__(self) -> str:
         """ Allow a nice understanding of what components where used """
@@ -30,7 +33,8 @@ class autoPyTorchTabularPreprocessingComponent(autoPyTorchPreprocessingComponent
         info = vars(self)
         # Remove unwanted info
         info.pop('preprocessor', None)
-        info.pop('column_transformer')
+        info.pop('column_transformer', None)
         info.pop('random_state', None)
-        string += " (" + str(info) + ")"
+        if len(info.keys()) != 0:
+            string += " (" + str(info) + ")"
         return string

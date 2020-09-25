@@ -10,7 +10,8 @@ import torch.nn as nn
 
 import autoPyTorch.pipeline.components.setup.lr_scheduler.base_scheduler_choice as lr_components
 import autoPyTorch.pipeline.components.setup.network.base_network_choice as network_components
-import autoPyTorch.pipeline.components.setup.network_initializer.base_network_init_choice as network_initializer_components
+import autoPyTorch.pipeline.components.setup.network_initializer.base_network_init_choice as \
+    network_initializer_components
 import autoPyTorch.pipeline.components.setup.optimizer.base_optimizer_choice as optimizer_components
 from autoPyTorch.pipeline.components.setup.lr_scheduler.base_scheduler_choice import (
     BaseLRComponent,
@@ -21,13 +22,13 @@ from autoPyTorch.pipeline.components.setup.network.base_network_choice import (
     BaseNetworkComponent,
     NetworkChoice
 )
-from autoPyTorch.pipeline.components.setup.optimizer.base_optimizer_choice import (
-    BaseOptimizerComponent,
-    OptimizerChoice
-)
 from autoPyTorch.pipeline.components.setup.network_initializer.base_network_init_choice import (
     BaseNetworkInitializerComponent,
     NetworkInitializerChoice
+)
+from autoPyTorch.pipeline.components.setup.optimizer.base_optimizer_choice import (
+    BaseOptimizerComponent,
+    OptimizerChoice
 )
 
 
@@ -104,7 +105,7 @@ class SchedulerTest(unittest.TestCase):
         This also test that we can properly initialize each one
         of them
         """
-        scheduler_choice = SchedulerChoice()
+        scheduler_choice = SchedulerChoice(dataset_properties={})
 
         # Make sure all components are returned
         self.assertEqual(len(scheduler_choice.get_components().keys()), 7)
@@ -139,7 +140,7 @@ class SchedulerTest(unittest.TestCase):
     def test_get_set_config_space(self):
         """Make sure that we can setup a valid choice in the scheduler
         choice"""
-        scheduler_choice = SchedulerChoice()
+        scheduler_choice = SchedulerChoice(dataset_properties={})
         cs = scheduler_choice.get_hyperparameter_search_space()
 
         # Make sure that all hyperparameters are part of the serach space
@@ -177,7 +178,7 @@ class SchedulerTest(unittest.TestCase):
         # Then make sure the scheduler can be added and query'ed
         lr_components.add_scheduler(DummyLR)
         self.assertEqual(len(lr_components._addons.components), 1)
-        cs = SchedulerChoice().get_hyperparameter_search_space()
+        cs = SchedulerChoice(dataset_properties={}).get_hyperparameter_search_space()
         self.assertIn('DummyLR', str(cs))
 
 
@@ -190,7 +191,7 @@ class OptimizerTest(unittest.TestCase):
         This also test that we can properly initialize each one
         of them
         """
-        optimizer_choice = OptimizerChoice()
+        optimizer_choice = OptimizerChoice(dataset_properties={})
 
         # Make sure all components are returned
         self.assertEqual(len(optimizer_choice.get_components().keys()), 4)
@@ -225,7 +226,7 @@ class OptimizerTest(unittest.TestCase):
     def test_get_set_config_space(self):
         """Make sure that we can setup a valid choice in the optimizer
         choice"""
-        optimizer_choice = OptimizerChoice()
+        optimizer_choice = OptimizerChoice(dataset_properties={})
         cs = optimizer_choice.get_hyperparameter_search_space()
 
         # Make sure that all hyperparameters are part of the serach space
@@ -263,7 +264,7 @@ class OptimizerTest(unittest.TestCase):
         # Then make sure the optimizer can be added and query'ed
         optimizer_components.add_optimizer(DummyOptimizer)
         self.assertEqual(len(optimizer_components._addons.components), 1)
-        cs = OptimizerChoice().get_hyperparameter_search_space()
+        cs = OptimizerChoice(dataset_properties={}).get_hyperparameter_search_space()
         self.assertIn('DummyOptimizer', str(cs))
 
 
@@ -276,7 +277,7 @@ class NetworkTest(unittest.TestCase):
         This also test that we can properly initialize each one
         of them
         """
-        network_choice = NetworkChoice()
+        network_choice = NetworkChoice(dataset_properties={})
 
         # Make sure all components are returned
         self.assertEqual(len(network_choice.get_components().keys()), 4)
@@ -311,7 +312,7 @@ class NetworkTest(unittest.TestCase):
     def test_get_set_config_space(self):
         """Make sure that we can setup a valid choice in the network
         choice"""
-        network_choice = NetworkChoice()
+        network_choice = NetworkChoice(dataset_properties={})
         cs = network_choice.get_hyperparameter_search_space()
 
         # Make sure that all hyperparameters are part of the serach space
@@ -353,7 +354,7 @@ class NetworkTest(unittest.TestCase):
         # Then make sure the scheduler can be added and query'ed
         network_components.add_network(DummyNet)
         self.assertEqual(len(network_components._addons.components), 1)
-        cs = NetworkChoice().get_hyperparameter_search_space()
+        cs = NetworkChoice(dataset_properties={}).get_hyperparameter_search_space()
         self.assertIn('DummyNet', str(cs))
 
     def test_mlp_network_builder(self):
@@ -458,7 +459,7 @@ class NetworkInitializerTest(unittest.TestCase):
         This also test that we can properly initialize each one
         of them
         """
-        network_initializer_choice = NetworkInitializerChoice()
+        network_initializer_choice = NetworkInitializerChoice(dataset_properties={})
 
         # Make sure all components are returned
         self.assertEqual(len(network_initializer_choice.get_components().keys()), 5)
@@ -493,7 +494,7 @@ class NetworkInitializerTest(unittest.TestCase):
     def test_get_set_config_space(self):
         """Make sure that we can setup a valid choice in the network_initializer
         choice"""
-        network_initializer_choice = NetworkInitializerChoice()
+        network_initializer_choice = NetworkInitializerChoice(dataset_properties={})
         cs = network_initializer_choice.get_hyperparameter_search_space()
 
         # Make sure that all hyperparameters are part of the serach space
@@ -531,7 +532,7 @@ class NetworkInitializerTest(unittest.TestCase):
         # Then make sure the network_initializer can be added and query'ed
         network_initializer_components.add_network_initializer(DummyNetworkInitializer)
         self.assertEqual(len(network_initializer_components._addons.components), 1)
-        cs = NetworkInitializerChoice().get_hyperparameter_search_space()
+        cs = NetworkInitializerChoice(dataset_properties={}).get_hyperparameter_search_space()
         self.assertIn('DummyNetworkInitializer', str(cs))
 
 

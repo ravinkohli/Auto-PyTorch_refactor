@@ -2,8 +2,6 @@ from typing import Any, Dict, Optional, Union
 
 import numpy as np
 
-import torch
-
 from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.encoding.base_encoder import BaseEncoder
 
 
@@ -14,6 +12,7 @@ class NoEncoder(BaseEncoder):
     def __init__(self,
                  random_state: Optional[Union[np.random.RandomState, int]] = None
                  ):
+        super().__init__()
         self.random_state = random_state
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> BaseEncoder:
@@ -40,10 +39,7 @@ class NoEncoder(BaseEncoder):
         Returns:
             (Dict[str, Any]): the updated 'X' dictionary
         """
-        X.update({'encoder': self})
-        return X
-
-    def __call__(self, X: Union[np.ndarray, torch.tensor]) -> Union[np.ndarray, torch.tensor]:
+        X.update({'encoder': self.preprocessor})
         return X
 
     @staticmethod

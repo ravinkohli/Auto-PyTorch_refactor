@@ -3,7 +3,8 @@ import unittest
 import numpy as np
 from numpy.testing import assert_allclose
 
-from sklearn.base import clone
+from sklearn.base import BaseEstimator
+from sklearn.compose import make_column_transformer
 
 from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.scaling.MinMaxScaler import MinMaxScaler
 from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.scaling.NoScaler import NoScaler
@@ -12,29 +13,6 @@ from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.scaling
 
 
 class TestNormalizer(unittest.TestCase):
-
-    def test_get_config_space(self):
-        config = Normalizer.get_hyperparameter_search_space().sample_configuration()
-        estimator = Normalizer(**config)
-        estimator_clone = clone(estimator)
-        estimator_clone_params = estimator_clone.get_params()
-
-        # Make sure all keys are copied properly
-        for k, v in estimator.get_params().items():
-            self.assertIn(k, estimator_clone_params)
-
-        # Make sure the params getter of estimator are honored
-        klass = estimator.__class__
-        new_object_params = estimator.get_params(deep=False)
-        for name, param in new_object_params.items():
-            new_object_params[name] = clone(param, safe=False)
-        new_object = klass(**new_object_params)
-        params_set = new_object.get_params(deep=False)
-
-        for name in new_object_params:
-            param1 = new_object_params[name]
-            param2 = params_set[name]
-            self.assertEqual(param1, param2)
 
     def test_l2_norm(self):
         data = np.array([[1, 2, 3],
@@ -56,11 +34,17 @@ class TestNormalizer(unittest.TestCase):
 
         scaler_component = scaler_component.fit(X)
         X = scaler_component.transform(X)
+        scaler = X['scaler']['numerical']
 
-        # check if scaler added to X is instance of self
-        self.assertEqual(X['scaler'], scaler_component)
+        # check if the fit dictionary X is modified as expected
+        self.assertIsInstance(X['scaler'], dict)
+        self.assertIsInstance(scaler, BaseEstimator)
+        self.assertIsNone(X['scaler']['categorical'])
 
-        transformed = scaler_component(data[test_indices])
+        # make column transformer with returned encoder to fit on data
+        column_transformer = make_column_transformer((scaler, X['numerical_columns']), remainder='passthrough')
+        column_transformer = column_transformer.fit(X['train'])
+        transformed = column_transformer.transform(data[test_indices])
 
         assert_allclose(transformed, np.array([[0.50257071, 0.57436653, 0.64616234],
                                                [0.54471514, 0.5767572, 0.60879927],
@@ -86,10 +70,17 @@ class TestNormalizer(unittest.TestCase):
 
         scaler_component = scaler_component.fit(X)
         X = scaler_component.transform(X)
+        scaler = X['scaler']['numerical']
 
-        # check if scaler added to X is instance of self
-        self.assertEqual(X['scaler'], scaler_component)
-        transformed = scaler_component(data[test_indices])
+        # check if the fit dictionary X is modified as expected
+        self.assertIsInstance(X['scaler'], dict)
+        self.assertIsInstance(scaler, BaseEstimator)
+        self.assertIsNone(X['scaler']['categorical'])
+
+        # make column transformer with returned encoder to fit on data
+        column_transformer = make_column_transformer((scaler, X['numerical_columns']), remainder='passthrough')
+        column_transformer = column_transformer.fit(X['train'])
+        transformed = column_transformer.transform(data[test_indices])
 
         assert_allclose(transformed, np.array([[0.29166667, 0.33333333, 0.375],
                                                [0.31481481, 0.33333333, 0.35185185],
@@ -115,10 +106,17 @@ class TestNormalizer(unittest.TestCase):
 
         scaler_component = scaler_component.fit(X)
         X = scaler_component.transform(X)
+        scaler = X['scaler']['numerical']
 
-        # check if scaler added to X is instance of self
-        self.assertEqual(X['scaler'], scaler_component)
-        transformed = scaler_component(data[test_indices])
+        # check if the fit dictionary X is modified as expected
+        self.assertIsInstance(X['scaler'], dict)
+        self.assertIsInstance(scaler, BaseEstimator)
+        self.assertIsNone(X['scaler']['categorical'])
+
+        # make column transformer with returned encoder to fit on data
+        column_transformer = make_column_transformer((scaler, X['numerical_columns']), remainder='passthrough')
+        column_transformer = column_transformer.fit(X['train'])
+        transformed = column_transformer.transform(data[test_indices])
 
         assert_allclose(transformed, np.array([[0.77777778, 0.88888889, 1],
                                               [0.89473684, 0.94736842, 1],
@@ -147,11 +145,18 @@ class TestMinMaxScaler(unittest.TestCase):
 
         scaler_component = scaler_component.fit(X)
         X = scaler_component.transform(X)
+        scaler = X['scaler']['numerical']
 
-        # check if scaler added to X is instance of self
-        self.assertEqual(X['scaler'], scaler_component)
+        # check if the fit dictionary X is modified as expected
+        self.assertIsInstance(X['scaler'], dict)
+        self.assertIsInstance(scaler, BaseEstimator)
+        self.assertIsNone(X['scaler']['categorical'])
 
-        transformed = scaler_component(data[test_indices])
+        # make column transformer with returned encoder to fit on data
+        column_transformer = make_column_transformer((scaler, X['numerical_columns']), remainder='passthrough')
+        column_transformer = column_transformer.fit(X['train'])
+        transformed = column_transformer.transform(data[test_indices])
+
         assert_allclose(transformed, np.array([[0.46153846, 0.46153846, 0.46153846],
                                               [1.23076923, 1.23076923, 1.23076923],
                                               [0.76923077, 0.76923077, 0.76923077]]))
@@ -179,11 +184,17 @@ class TestStandardScaler(unittest.TestCase):
 
         scaler_component = scaler_component.fit(X)
         X = scaler_component.transform(X)
+        scaler = X['scaler']['numerical']
 
-        # check if scaler added to X is instance of self
-        self.assertEqual(X['scaler'], scaler_component)
+        # check if the fit dictionary X is modified as expected
+        self.assertIsInstance(X['scaler'], dict)
+        self.assertIsInstance(scaler, BaseEstimator)
+        self.assertIsNone(X['scaler']['categorical'])
 
-        transformed = scaler_component(data[test_indices])
+        # make column transformer with returned encoder to fit on data
+        column_transformer = make_column_transformer((scaler, X['numerical_columns']), remainder='passthrough')
+        column_transformer = column_transformer.fit(X['train'])
+        transformed = column_transformer.transform(data[test_indices])
 
         assert_allclose(transformed, np.array([[0.11995203, 0.11995203, 0.11995203],
                                               [1.91923246, 1.91923246, 1.91923246],
@@ -200,7 +211,6 @@ class TestNoneScaler(unittest.TestCase):
                         [17, 18, 19],
                         [14, 15, 16]])
         train_indices = np.array([0, 2, 5])
-        test_indices = np.array([1, 4, 3])
         categorical_columns = list()
         numerical_columns = [0, 1, 2]
         X = {
@@ -213,8 +223,7 @@ class TestNoneScaler(unittest.TestCase):
         scaler_component = scaler_component.fit(X)
         X = scaler_component.transform(X)
 
-        # check if scaler added to X is instance of self
-        self.assertEqual(X['scaler'], scaler_component)
-        transformed = scaler_component(data[test_indices])
-
-        assert_allclose(transformed, transformed)
+        # check if the fit dictionary X is modified as expected
+        self.assertIsInstance(X['scaler'], dict)
+        self.assertIsNone(X['scaler']['categorical'])
+        self.assertIsNone(X['scaler']['numerical'])

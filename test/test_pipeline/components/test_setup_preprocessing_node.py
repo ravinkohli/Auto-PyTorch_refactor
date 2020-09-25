@@ -21,10 +21,7 @@ class TabularPreprocessingTest(unittest.TestCase):
         pipeline = TabularClassificationPipeline(dataset_properties=dataset_properties)
         pipeline = pipeline.fit(X)
         X = pipeline.transform(X)
-        self.assertNotIn('preprocess_transforms', X)
-        self.assertNotIn('imputer', X)
-        self.assertNotIn('encoder', X)
-        self.assertNotIn('scaler', X)
+        self.assertNotIn('preprocess_transforms', X.keys())
 
     def test_tabular_no_preprocess(self):
         X = dict(train=np.random.random((10, 15)),
@@ -39,11 +36,8 @@ class TabularPreprocessingTest(unittest.TestCase):
         pipeline = TabularClassificationPipeline(dataset_properties=dataset_properties)
         pipeline = pipeline.fit(X)
         X = pipeline.transform(X)
-        self.assertIn('preprocess_transforms', X)
+        self.assertIn('preprocess_transforms', X.keys())
         self.assertIsInstance(X['preprocess_transforms'], torchvision.transforms.Compose)
-        self.assertNotIn('imputer', X)
-        self.assertNotIn('encoder', X)
-        self.assertNotIn('scaler', X)
 
 
 class ImagePreprocessingTest(unittest.TestCase):
@@ -58,9 +52,7 @@ class ImagePreprocessingTest(unittest.TestCase):
         pipeline = ImageClassificationPipeline(dataset_properties=dataset_properties)
         pipeline = pipeline.fit(X)
         X = pipeline.transform(X)
-        self.assertNotIn('preprocess_transforms', X)
-        self.assertNotIn('pad', X)
-        self.assertNotIn('normalizer', X)
+        self.assertNotIn('preprocess_transforms', X.keys())
 
     def test_image_no_preprocess(self):
         data = np.random.random((10, 2, 2, 3))
@@ -73,10 +65,8 @@ class ImagePreprocessingTest(unittest.TestCase):
         pipeline = ImageClassificationPipeline(dataset_properties=dataset_properties)
         pipeline = pipeline.fit(X)
         X = pipeline.transform(X)
-        self.assertIn('preprocess_transforms', X)
+        self.assertIn('preprocess_transforms', X.keys())
         self.assertIsInstance(X['preprocess_transforms'], torchvision.transforms.Compose)
-        self.assertNotIn('pad', X)
-        self.assertNotIn('normalizer', X)
 
 
 if __name__ == '__main__':

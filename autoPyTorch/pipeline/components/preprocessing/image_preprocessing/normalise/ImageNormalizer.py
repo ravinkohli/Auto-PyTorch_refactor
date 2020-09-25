@@ -40,10 +40,7 @@ class ImageNormalizer(BaseNormalizer):
         Returns:
             Union[np.ndarray, torch.tensor]: Transformed data tensor
         """
-        X, mean, std = [np.array(a, np.float32) for a in (X, self.mean, self.std)]
-        X -= mean
-        epsilon = 1e-8
-        X *= 1.0 / (epsilon + std)
+        X = (X - self.mean) / self.std
         return X
 
     @staticmethod
