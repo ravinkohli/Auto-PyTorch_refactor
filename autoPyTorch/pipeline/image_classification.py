@@ -186,7 +186,7 @@ class ImageClassificationPipeline(ClassifierMixin, BasePipeline):
             default_dataset_properties.update(dataset_properties)
 
         steps.extend([
-            ("pad", PadChoice(dataset_properties)),
+            ("pad", PadChoice(default_dataset_properties)),
             ("normalizer", NormalizerChoice(default_dataset_properties)),
             ("preprocessing", Preprocessing()),
             # ("network", NetworkChoice(default_dataset_properties)),

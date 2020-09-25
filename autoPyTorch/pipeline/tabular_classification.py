@@ -8,6 +8,9 @@ from sklearn.base import ClassifierMixin
 
 from autoPyTorch.pipeline.base_pipeline import BasePipeline
 from autoPyTorch.pipeline.components.base_choice import autoPyTorchChoice
+from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.TabularColumnTransformer import (
+    TabularColumnTransformer
+)
 from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.encoding.base_encoder_choice import (
     EncoderChoice
 )
@@ -190,6 +193,7 @@ class TabularClassificationPipeline(ClassifierMixin, BasePipeline):
             ("imputer", SimpleImputer()),
             ("encoder", EncoderChoice(default_dataset_properties)),
             ("scaler", ScalerChoice(default_dataset_properties)),
+            ("tabular_transformer", TabularColumnTransformer()),
             ("preprocessing", Preprocessing()),
             ("network", NetworkChoice(default_dataset_properties)),
             ("network_init", NetworkInitializerChoice(default_dataset_properties)),

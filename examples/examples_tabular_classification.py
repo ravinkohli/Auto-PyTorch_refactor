@@ -3,6 +3,8 @@
 Tabular Classification
 ======================
 """
+import numpy as np
+
 import sklearn.datasets
 import sklearn.model_selection
 
@@ -18,10 +20,14 @@ X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(
     random_state=1
 )
 
+numerical = X.columns.to_list()
+categorical = []
+# numerical.remove('att214')
+
 # Create a proof of concept pipeline!
 dataset_properties = {
-    'categorical_columns': ['A1', 'A4', 'A5', 'A6', 'A8', 'A9', 'A11', 'A12'],
-    'numerical_columns': ['A2', 'A3', 'A7', 'A10', 'A13', 'A14']
+    'categorical_columns': categorical,
+    'numerical_columns': numerical
 }
 pipeline = TabularClassificationPipeline(dataset_properties=dataset_properties)
 
@@ -34,14 +40,12 @@ pipeline.set_hyperparameters(config)
 
 # Fit the pipeline
 print("Fitting the pipeline...")
-numerical = X.columns.to_list()
-categorical = ['att214']
-numerical.remove('att214')
 pipeline.fit(X={
     'categorical_columns': categorical,
     'numerical_columns': numerical,
-    'num_features': 14,
-    'num_classes': 2,
+    'num_features': len(X),
+    'num_classes': len(np.unique(y)),
+    'is_small_preprocess': True,
     'train': X_train
 })
 
