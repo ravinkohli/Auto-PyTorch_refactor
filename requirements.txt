@@ -3,6 +3,6 @@ ConfigSpace
 scikit-learn
 pandas
 torchvision
-pytorch-lightning==0.9.0
+pytorch-lightning
 numpy
 scipy
