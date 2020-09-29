@@ -8,7 +8,19 @@ import torch.tensor
 from autoPyTorch.pipeline.components.training.metrics.base_metric import autoPyTorchMetric
 
 
-class AUROC(autoPyTorchMetric):
+class PrecisionRecall(autoPyTorchMetric):
+    """
+    Computes the precision, recall scores for classification
+    Args:
+        pos_label (int):
+        reduce_group:
+        reduce_op:
+    Returns:
+        precision (torch.tensor)
+        recall (torch.tensor)
+        threshold (torch.tensor)
+    """
+
     def __init__(self,
                  pos_label: int = 1,
                  reduce_group: Optional[Any] = None,
@@ -18,9 +30,9 @@ class AUROC(autoPyTorchMetric):
         self.pos_label = pos_label
         self.reduce_op = reduce_op
         self.reduce_group = reduce_group
-        self.metric: Metric = classification.AUROC(pos_label=self.pos_label,
-                                                   reduce_op=self.reduce_op,
-                                                   reduce_group=self.reduce_group)
+        self.metric: Metric = classification.PrecisionRecall(pos_label=self.pos_label,
+                                                             reduce_op=self.reduce_op,
+                                                             reduce_group=self.reduce_group)
 
     def __call__(self,
                  predictions: torch.tensor,
@@ -31,7 +43,7 @@ class AUROC(autoPyTorchMetric):
     @staticmethod
     def get_properties(dataset_properties: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
         return {
-            'shortname': 'AUROC',
-            'name': 'Area under receiver operating charecteristic',
+            'shortname': 'PR',
+            'name': 'Precision Recall',
             'task_type': 'classification'
         }

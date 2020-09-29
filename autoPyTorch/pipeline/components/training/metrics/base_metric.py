@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from pytorch_lightning.metrics.metric import Metric
 
@@ -19,3 +19,7 @@ class autoPyTorchMetric(BaseEstimator):
 
     def get_metric(self) -> Metric:
         return self.metric
+
+    @staticmethod
+    def get_properties(dataset_properties: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
+        raise NotImplementedError()

@@ -1,9 +1,9 @@
 from typing import Any, Dict, Optional
 
-import torch.tensor
-
 from pytorch_lightning.metrics import classification
 from pytorch_lightning.metrics.metric import Metric
+
+import torch.tensor
 
 from autoPyTorch.pipeline.components.training.metrics.base_metric import autoPyTorchMetric
 
@@ -11,9 +11,10 @@ from autoPyTorch.pipeline.components.training.metrics.base_metric import autoPyT
 class Accuracy(autoPyTorchMetric):
     def __init__(self,
                  num_classes: Optional[int] = None,
-                 reduction: str = 'micro',
+                 reduction: str = 'elementwise_mean',
                  reduce_group: Optional[Any] = None,
                  reduce_op: Optional[Any] = None):
+        super().__init__()
         self.num_classes = num_classes
         self.class_reduction = reduction
         self.reduce_group = reduce_group
@@ -28,9 +29,9 @@ class Accuracy(autoPyTorchMetric):
         return self.metric(predictions, targets)
 
     @staticmethod
-    def get_properties(cls, dataset_properties: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
+    def get_properties(dataset_properties: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
         return {
-            'shortname': 'Metric',
-            'name': 'autopytorch metric {}'.format(cls.metric.__class__.__name__),
+            'shortname': 'Acc',
+            'name': 'Accuracy',
             'task_type': 'classification'
         }
