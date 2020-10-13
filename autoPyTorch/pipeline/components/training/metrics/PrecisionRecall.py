@@ -45,5 +45,6 @@ class PrecisionRecall(autoPyTorchMetric):
         return {
             'shortname': 'PR',
             'name': 'Precision Recall',
-            'task_type': 'classification'
+            'task_type': 'classification',
+            'objective': 'maximise'
         }

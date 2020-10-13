@@ -33,5 +33,6 @@ class AveragePrecision(autoPyTorchMetric):
         return {
             'shortname': 'AP',
             'name': 'AveragePrecision',
-            'task_type': 'classification'
+            'task_type': 'classification',
+            'objective': 'maximise'
         }

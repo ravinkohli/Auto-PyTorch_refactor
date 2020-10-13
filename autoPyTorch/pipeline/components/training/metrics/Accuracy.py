@@ -33,5 +33,6 @@ class Accuracy(autoPyTorchMetric):
         return {
             'shortname': 'Acc',
             'name': 'Accuracy',
-            'task_type': 'classification'
+            'task_type': 'classification',
+            'objective': 'maximise'
         }

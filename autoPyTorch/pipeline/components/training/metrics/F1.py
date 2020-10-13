@@ -9,6 +9,15 @@ from autoPyTorch.pipeline.components.training.metrics.base_metric import autoPyT
 
 
 class F1(autoPyTorchMetric):
+    """
+    Computes the F1 score, which is the harmonic mean of the precision and recall.
+    It ranges between 1 and 0, where 1 is perfect and the worst value is 0.
+    Args:
+        num_classes (Optional[int]) – number of classes
+        reduction (str) – a method for reducing accuracies over labels (default: takes the mean)
+        reduce_group (Optional[Any]) – the process group to reduce metric results from DDP
+        reduce_op (Optional[Any]) – the operation to perform for ddp reduction
+    """
     def __init__(self,
                  num_classes: Optional[int] = None,
                  reduction: str = 'elementwise_mean',
@@ -33,5 +42,6 @@ class F1(autoPyTorchMetric):
         return {
             'shortname': 'F1',
             'name': 'F1 measure',
-            'task_type': 'classification'
+            'task_type': 'classification',
+            'objective': 'maximise'
         }

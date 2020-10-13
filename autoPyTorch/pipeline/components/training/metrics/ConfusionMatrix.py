@@ -43,5 +43,6 @@ class ConfusionMatrix(autoPyTorchMetric):
         return {
             'shortname': 'ConfusionMatrix',
             'name': 'Confusion Matrix',
-            'task_type': 'classification'
+            'task_type': 'classification',
+            'objective': 'none'
         }

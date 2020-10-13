@@ -8,24 +8,22 @@ import torch.tensor
 from autoPyTorch.pipeline.components.training.metrics.base_metric import autoPyTorchMetric
 
 
-class RMSLE(autoPyTorchMetric):
+class MSE(autoPyTorchMetric):
     """
-    Computes the root mean squared log error. The log transform is
-    applied on the pred and target and then the root mean square
-    error is calculated for the transformed input.
+    Computes Mean Square Error
     Args:
-        reduction (str): a method for reducing error over labels, Available reduction methods:
+    reduction (str): a method for reducing error over labels, Available reduction methods:
 
-                        elementwise_mean: takes the mean
-                        none: pass array
-                        sum: add elements
+                    elementwise_mean: takes the mean
+                    none: pass array
+                    sum: add elements
     """
     def __init__(self,
                  reduction: str = 'elementwise_mean',
                  ):
         super().__init__()
         self.reduction = reduction
-        self.metric: Metric = regression.RMSLE(reduction=self.reduction)
+        self.metric: Metric = regression.RMSE(reduction=self.reduction)
 
     def __call__(self,
                  predictions: torch.tensor,
@@ -36,8 +34,8 @@ class RMSLE(autoPyTorchMetric):
     @staticmethod
     def get_properties(dataset_properties: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
         return {
-            'shortname': 'RMSLE',
-            'name': 'Root Mean Squared Log Error',
+            'shortname': 'MSE',
+            'name': 'Mean Squared Error',
             'task_type': 'regression',
             'objective': 'minimise'
         }

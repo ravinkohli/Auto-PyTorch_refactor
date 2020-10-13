@@ -8,7 +8,7 @@ import torch.tensor
 from autoPyTorch.pipeline.components.training.metrics.base_metric import autoPyTorchMetric
 
 
-class AUROC(autoPyTorchMetric):
+class AUC(autoPyTorchMetric):
     def __init__(self,
                  pos_label: int = 1,
                  reduce_group: Optional[Any] = None,
@@ -31,7 +31,8 @@ class AUROC(autoPyTorchMetric):
     @staticmethod
     def get_properties(dataset_properties: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
         return {
-            'shortname': 'AUROC',
-            'name': 'Area under receiver operating charecteristic',
-            'task_type': 'classification'
+            'shortname': 'AUC',
+            'name': 'Area Under Curve',
+            'task_type': 'classification',
+            'objective': 'maximise'
         }

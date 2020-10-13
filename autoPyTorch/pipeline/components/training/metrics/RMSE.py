@@ -9,6 +9,15 @@ from autoPyTorch.pipeline.components.training.metrics.base_metric import autoPyT
 
 
 class RMSE(autoPyTorchMetric):
+    """
+    Computes Root Mean Square Error
+    Args:
+    reduction (str): a method for reducing error over labels, Available reduction methods:
+
+                    elementwise_mean: takes the mean
+                    none: pass array
+                    sum: add elements
+    """
     def __init__(self,
                  reduction: str = 'elementwise_mean',
                  ):
@@ -27,5 +36,6 @@ class RMSE(autoPyTorchMetric):
         return {
             'shortname': 'RMSE',
             'name': 'Root Mean Squared Error',
-            'task_type': 'regression'
+            'task_type': 'regression',
+            'objective': 'minimise'
         }
