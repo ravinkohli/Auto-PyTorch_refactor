@@ -1,10 +1,10 @@
 from typing import Any, Dict, Optional, Type
 
 from torch.nn.modules.loss import (
-    CrossEntropyLoss,
     BCEWithLogitsLoss,
-    MSELoss,
-    L1Loss
+    CrossEntropyLoss,
+    L1Loss,
+    MSELoss
 )
 from torch.nn.modules.loss import _Loss as Loss
 

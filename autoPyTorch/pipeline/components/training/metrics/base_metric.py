@@ -8,7 +8,7 @@ import torch.tensor
 
 
 class autoPyTorchMetric(BaseEstimator):
-    def __init__(self):
+    def __init__(self) -> None:
         self.metric: Optional[Metric] = None
 
     def __call__(self,

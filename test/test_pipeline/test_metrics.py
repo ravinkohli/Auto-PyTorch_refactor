@@ -3,8 +3,7 @@ import unittest
 import torch
 
 from autoPyTorch.pipeline.components.training.metrics.base_metric import autoPyTorchMetric
-from autoPyTorch.pipeline.components.training.metrics.utils import get_metrics
-from autoPyTorch.pipeline.components.training.metrics.utils import get_supported_metrics
+from autoPyTorch.pipeline.components.training.metrics.utils import get_components, get_metrics, get_supported_metrics
 
 
 class MetricsTest(unittest.TestCase):
@@ -30,6 +29,15 @@ class MetricsTest(unittest.TestCase):
         except ValueError as msg:
             self.assertRegex(str(msg), r"Invalid name entered for task [a-z]+_[a-z]+, "
                                        r"currently supported metrics for task include .*")
+
+    def test_get_properties(self):
+        metric_dict = get_components()
+        for key, value in metric_dict.items():
+            properties = value.get_properties()
+            self.assertIn('name', properties.keys())
+            self.assertIn('shortname', properties.keys())
+            self.assertIn('task_type', properties.keys())
+            self.assertIn('objective', properties.keys())
 
     def test_metrics(self):
         dataset_properties = {'task_type': 'tabular_classification'}

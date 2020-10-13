@@ -21,14 +21,14 @@ def add_metric(metric: autoPyTorchMetric) -> None:
 
 
 def get_components() -> Dict[str, autoPyTorchMetric]:
-    """Returns the available encoder components
+    """Returns the available metric components
 
     Args:
         None
 
     Returns:
-        Dict[str, autoPyTorchComponent]: all BaseEncoder components available
-            as choices for encoding the categorical columns
+        Dict[str, autoPyTorchMetric]: all autoPyTorchMetric components available
+            as choices
     """
     components = OrderedDict()
     components.update(_encoders)
