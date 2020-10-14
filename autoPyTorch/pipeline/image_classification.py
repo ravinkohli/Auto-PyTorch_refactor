@@ -12,7 +12,7 @@ from autoPyTorch.pipeline.components.preprocessing.image_preprocessing.normalise
     NormalizerChoice
 )
 from autoPyTorch.pipeline.components.preprocessing.image_preprocessing.padding.base_pad_choice import PadChoice
-from autoPyTorch.pipeline.components.setup.preprocessor.Preprocessing import Preprocessing
+from autoPyTorch.pipeline.components.setup.early_preprocessor.EarlyPreprocessing import EarlyPreprocessing
 # from autoPyTorch.pipeline.components.setup.lr_scheduler.base_scheduler_choice import SchedulerChoice
 # from autoPyTorch.pipeline.components.setup.network.base_network_choice import NetworkChoice
 # from autoPyTorch.pipeline.components.setup.optimizer.base_optimizer_choice import OptimizerChoice
@@ -188,7 +188,7 @@ class ImageClassificationPipeline(ClassifierMixin, BasePipeline):
         steps.extend([
             ("pad", PadChoice(default_dataset_properties)),
             ("normalizer", NormalizerChoice(default_dataset_properties)),
-            ("preprocessing", Preprocessing()),
+            ("preprocessing", EarlyPreprocessing()),
             # ("network", NetworkChoice(default_dataset_properties)),
             # ("network_init", NetworkInitializerChoice(default_dataset_properties)),
             # ("optimizer", OptimizerChoice(default_dataset_properties)),

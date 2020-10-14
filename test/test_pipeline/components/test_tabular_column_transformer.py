@@ -45,7 +45,7 @@ class TabularPipeline(TabularClassificationPipeline):
 
 class TabularTransformerTest(unittest.TestCase):
 
-    def test_tabular_preprocess(self):
+    def test_tabular_preprocess_only_numerical(self):
         X = dict(train=np.random.random((10, 15)),
                  is_small_preprocess=True,
                  numerical_columns=list(range(15)),
@@ -54,6 +54,30 @@ class TabularTransformerTest(unittest.TestCase):
                  num_classes=2
                  )
         dataset_properties = dict(numerical_columns=list(range(15)), categorical_columns=[],)
+        pipeline = TabularPipeline(dataset_properties=dataset_properties)
+        pipeline = pipeline.fit(X)
+        X = pipeline.transform(X)
+        column_transformer = X['tabular_transformer']
+
+        # check if transformer was added to fit dictionary
+        self.assertIn('tabular_transformer', X.keys())
+        # check if transformer is of expected type
+        self.assertIsInstance(column_transformer, ColumnTransformer)
+
+        data = column_transformer.fit_transform(X['train'])
+        self.assertIsInstance(data, np.ndarray)
+
+    def test_tabular_preprocess_only_categorical(self):
+        X = dict(train=np.array([['male', 'germany'],
+                                ['female', 'germany'],
+                                ['male', 'germany']], dtype=object),
+                 is_small_preprocess=True,
+                 numerical_columns=[],
+                 categorical_columns=list(range(2)),
+                 num_features=15,
+                 num_classes=2
+                 )
+        dataset_properties = dict(numerical_columns=[], categorical_columns=list(range(2)))
         pipeline = TabularPipeline(dataset_properties=dataset_properties)
         pipeline = pipeline.fit(X)
         X = pipeline.transform(X)

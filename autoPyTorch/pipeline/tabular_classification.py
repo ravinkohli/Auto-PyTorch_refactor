@@ -22,7 +22,7 @@ from autoPyTorch.pipeline.components.setup.network_initializer.base_network_init
     NetworkInitializerChoice
 )
 from autoPyTorch.pipeline.components.setup.optimizer.base_optimizer_choice import OptimizerChoice
-from autoPyTorch.pipeline.components.setup.preprocessor.Preprocessing import Preprocessing
+from autoPyTorch.pipeline.components.setup.early_preprocessor.EarlyPreprocessing import EarlyPreprocessing
 
 
 class TabularClassificationPipeline(ClassifierMixin, BasePipeline):
@@ -194,7 +194,7 @@ class TabularClassificationPipeline(ClassifierMixin, BasePipeline):
             ("encoder", EncoderChoice(default_dataset_properties)),
             ("scaler", ScalerChoice(default_dataset_properties)),
             ("tabular_transformer", TabularColumnTransformer()),
-            ("preprocessing", Preprocessing()),
+            ("preprocessing", EarlyPreprocessing()),
             ("network", NetworkChoice(default_dataset_properties)),
             ("network_init", NetworkInitializerChoice(default_dataset_properties)),
             ("optimizer", OptimizerChoice(default_dataset_properties)),
