@@ -1,14 +1,4 @@
-from typing import Any, Callable, Dict, List, Optional
-
-import ConfigSpace as CS
-from ConfigSpace.configuration_space import ConfigurationSpace
-from ConfigSpace.hyperparameters import (
-    CategoricalHyperparameter,
-    UniformFloatHyperparameter,
-    UniformIntegerHyperparameter
-)
-
-import numpy as np
+from typing import Callable
 
 import torch
 
@@ -31,7 +21,7 @@ class KaimingInit(BaseNetworkInitializerComponent):
         self.config is a dictionary created form a given config in the config space.
         It contains the necessary information to build a network.
         """
-        def initialization(m):
+        def initialization(m: torch.nn.Module) -> None:
             if isinstance(m, (torch.nn.Conv1d,
                               torch.nn.Conv2d,
                               torch.nn.Conv3d,
