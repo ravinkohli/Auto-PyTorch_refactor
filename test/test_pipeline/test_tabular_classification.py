@@ -50,7 +50,7 @@ class PipelineTest(unittest.TestCase):
              'numerical_columns': list(range(num_features)),
              'categorical_columns': [],
              'categories': []
-        }
+             }
         )
 
     def test_network_optimizer_lr_handshake(self):

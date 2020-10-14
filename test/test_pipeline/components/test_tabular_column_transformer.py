@@ -70,8 +70,8 @@ class TabularTransformerTest(unittest.TestCase):
 
     def test_tabular_preprocess_only_categorical(self):
         X = dict(X_train=np.array([['male', 'germany'],
-                                ['female', 'germany'],
-                                ['male', 'germany']], dtype=object),
+                                   ['female', 'germany'],
+                                   ['male', 'germany']], dtype=object),
                  is_small_preprocess=True,
                  numerical_columns=[],
                  categorical_columns=list(range(2)),
