@@ -82,7 +82,7 @@ class NormalizerChoice(autoPyTorchChoice):
 
         cs.add_hyperparameter(preprocessor)
 
-        # add only child hyperparameters of preprocessor choices
+        # add only child hyperparameters of early_preprocessor choices
         for name in preprocessor.choices:
             preprocessor_configuration_space = available_preprocessors[name].\
                 get_hyperparameter_search_space(dataset_properties)

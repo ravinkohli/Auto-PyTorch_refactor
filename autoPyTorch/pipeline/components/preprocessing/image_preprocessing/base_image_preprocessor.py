@@ -10,7 +10,7 @@ class autoPyTorchImagePreprocessingComponent(autoPyTorchPreprocessingComponent):
 
     def fit(self, X: Dict[str, Any], y: Optional[Any] = None) -> "autoPyTorchImagePreprocessingComponent":
         """
-        Initialises preprocessor and returns self.
+        Initialises early_preprocessor and returns self.
         Args:
             X (Dict[str, Any]): 'X' dictionary
 

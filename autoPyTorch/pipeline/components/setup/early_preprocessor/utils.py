@@ -17,9 +17,5 @@ def get_preprocess_transforms(X: Dict[str, Any]) -> torchvision.transforms.Compo
 
 
 def preprocess(dataset: np.ndarray, transforms: torchvision.transforms.Compose) -> np.ndarray:
-    # uncomment next 2 lines if dataset is not np array
-    # dataset = copy.copy(dataset)
-    # dataset.data = transforms(dataset.data)
-
     dataset = transforms(dataset)
     return dataset

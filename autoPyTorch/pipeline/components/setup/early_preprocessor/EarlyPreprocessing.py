@@ -5,16 +5,17 @@ from ConfigSpace.configuration_space import ConfigurationSpace
 import numpy as np
 
 from autoPyTorch.pipeline.components.setup.base_setup import autoPyTorchSetupComponent
-from autoPyTorch.pipeline.components.setup.preprocessor.utils import get_preprocess_transforms, preprocess
+from autoPyTorch.pipeline.components.setup.early_preprocessor.utils import get_preprocess_transforms, preprocess
 
 
-class Preprocessing(autoPyTorchSetupComponent):
+class EarlyPreprocessing(autoPyTorchSetupComponent):
 
     def __init__(self, random_state: Optional[np.random.RandomState] = None):
         self.random_state = random_state
 
-    def fit(self, X: Dict[str, Any], y: Any = None) -> "Preprocessing":
+    def fit(self, X: Dict[str, Any], y: Any = None) -> "EarlyPreprocessing":
         self.check_requirements(X, y)
+
         return self
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
@@ -22,7 +23,8 @@ class Preprocessing(autoPyTorchSetupComponent):
         transforms = get_preprocess_transforms(X)
 
         if X['is_small_preprocess']:
-            X['train'] = preprocess(dataset=X['train'], transforms=transforms)
+            X['X_train'] = preprocess(dataset=X['X_train'], transforms=transforms)
+            X['X_val'] = preprocess(dataset=X['X_val'], transforms=transforms)
         else:
             X.update({'preprocess_transforms': transforms})
         return X

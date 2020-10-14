@@ -16,7 +16,7 @@ class autoPyTorchPreprocessingComponent(autoPyTorchComponent):
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Adds the fitted preprocessor into the 'X' dictionary and returns it.
+        Adds the fitted early_preprocessor into the 'X' dictionary and returns it.
         Args:
             X (Dict[str, Any]): 'X' dictionary
 
@@ -28,7 +28,7 @@ class autoPyTorchPreprocessingComponent(autoPyTorchComponent):
     def __call__(self, X: Union[np.ndarray, torch.tensor]) -> Union[np.ndarray, torch.tensor]:
         """
         Makes the autoPyTorchPreprocessingComponent Callable. Calling the component
-        calls the transform function of the underlying preprocessor and
+        calls the transform function of the underlying early_preprocessor and
         returns the transformed array.
         Args:
             X (Union[np.ndarray, torch.tensor]): input data tensor
@@ -50,9 +50,13 @@ class autoPyTorchPreprocessingComponent(autoPyTorchComponent):
                 so that further stages can be properly fitted
         """
         super().check_requirements(X, y)
-        if 'train' not in X:
-            raise ValueError("To fit a preprocessor, the fit dictionary "
+        if 'X_train' not in X:
+            raise ValueError("To fit a early_preprocessor, the fit dictionary "
                              "Must contain a reference to the training data"
+                             )
+        if 'X_val' not in X:
+            raise ValueError("To fit a early_preprocessor, the fit dictionary "
+                             "Must contain a reference to the validation data"
                              )
 
     @staticmethod

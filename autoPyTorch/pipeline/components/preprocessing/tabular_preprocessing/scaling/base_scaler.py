@@ -12,7 +12,7 @@ class BaseScaler(autoPyTorchTabularPreprocessingComponent):
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Adds the fitted preprocessor into the 'X' dictionary and returns it.
+        Adds the fitted early_preprocessor into the 'X' dictionary and returns it.
         Args:
             X (Dict[str, Any]): 'X' dictionary
 

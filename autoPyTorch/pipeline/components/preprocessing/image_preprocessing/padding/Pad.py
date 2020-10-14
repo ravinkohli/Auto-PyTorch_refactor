@@ -25,7 +25,7 @@ class Pad(BasePad):
     def __call__(self, X: Union[np.ndarray, torch.tensor]) -> Union[np.ndarray, torch.tensor]:
         """
         Makes the autoPyTorchPreprocessingComponent Callable. Calling the component
-        calls the transform function of the underlying preprocessor and
+        calls the transform function of the underlying early_preprocessor and
         returns the transformed array.
         Args:
             X (Union[np.ndarray, torch.tensor]): input data tensor

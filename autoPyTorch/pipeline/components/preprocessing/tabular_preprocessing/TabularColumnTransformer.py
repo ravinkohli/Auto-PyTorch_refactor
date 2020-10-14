@@ -22,7 +22,7 @@ class TabularColumnTransformer(autoPyTorchTabularPreprocessingComponent):
     def get_column_transformer(self) -> ColumnTransformer:
         """
         Get fitted column transformer that is wrapped around
-        the sklearn preprocessor. Can only be called if fit()
+        the sklearn early_preprocessor. Can only be called if fit()
         has been called on the object.
         Returns:
             BaseEstimator: Fitted sklearn column transformer
@@ -44,14 +44,23 @@ class TabularColumnTransformer(autoPyTorchTabularPreprocessingComponent):
         """
         self.check_requirements(X, y)
 
+        numerical_pipeline = 'drop'
+        categorical_pipeline = 'drop'
+
         preprocessors = get_tabular_preprocessers(X)
-        numerical_pipeline = make_pipeline(*preprocessors['numerical'])
-        categorical_pipeline = make_pipeline(*preprocessors['categorical'])
+        if len(X['numerical_columns']):
+            numerical_pipeline = make_pipeline(*preprocessors['numerical'])
+        if len(X['categorical_columns']):
+            categorical_pipeline = make_pipeline(*preprocessors['categorical'])
 
         self.column_transformer = make_column_transformer((numerical_pipeline, X['numerical_columns']),
                                                           (categorical_pipeline, X['categorical_columns']),
                                                           remainder='passthrough')
-        self.column_transformer.fit(X['train'])
+        self.column_transformer.fit(X['X_train'])
+        self.column_transformer.fit(X['X_val'])
+        if 'X_test' in X:
+            self.column_transformer.fit(X['X_test'])
+
         return self
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
