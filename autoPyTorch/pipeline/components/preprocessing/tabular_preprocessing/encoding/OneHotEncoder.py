@@ -19,7 +19,7 @@ class OneHotEncoder(BaseEncoder):
 
         self.check_requirements(X, y)
 
-        self.preprocessor['categorical'] = OHE(categories='auto', sparse=False, handle_unknown='error')
+        self.preprocessor['categorical'] = OHE(categories=X['categories'], sparse=False, handle_unknown='error')
         return self
 
     @staticmethod

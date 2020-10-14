@@ -26,7 +26,7 @@ class TestNormalizer(unittest.TestCase):
         categorical_columns = list()
         numerical_columns = [0, 1, 2]
         X = {
-            'train': data[train_indices],
+            'X_train': data[train_indices],
             'categorical_columns': categorical_columns,
             'numerical_columns': numerical_columns,
         }
@@ -43,7 +43,7 @@ class TestNormalizer(unittest.TestCase):
 
         # make column transformer with returned encoder to fit on data
         column_transformer = make_column_transformer((scaler, X['numerical_columns']), remainder='passthrough')
-        column_transformer = column_transformer.fit(X['train'])
+        column_transformer = column_transformer.fit(X['X_train'])
         transformed = column_transformer.transform(data[test_indices])
 
         assert_allclose(transformed, np.array([[0.50257071, 0.57436653, 0.64616234],
@@ -62,7 +62,7 @@ class TestNormalizer(unittest.TestCase):
         categorical_columns = list()
         numerical_columns = [0, 1, 2]
         X = {
-            'train': data[train_indices],
+            'X_train': data[train_indices],
             'categorical_columns': categorical_columns,
             'numerical_columns': numerical_columns,
         }
@@ -79,7 +79,7 @@ class TestNormalizer(unittest.TestCase):
 
         # make column transformer with returned encoder to fit on data
         column_transformer = make_column_transformer((scaler, X['numerical_columns']), remainder='passthrough')
-        column_transformer = column_transformer.fit(X['train'])
+        column_transformer = column_transformer.fit(X['X_train'])
         transformed = column_transformer.transform(data[test_indices])
 
         assert_allclose(transformed, np.array([[0.29166667, 0.33333333, 0.375],
@@ -98,7 +98,7 @@ class TestNormalizer(unittest.TestCase):
         categorical_columns = list()
         numerical_columns = [0, 1, 2]
         X = {
-            'train': data[train_indices],
+            'X_train': data[train_indices],
             'categorical_columns': categorical_columns,
             'numerical_columns': numerical_columns,
         }
@@ -115,7 +115,7 @@ class TestNormalizer(unittest.TestCase):
 
         # make column transformer with returned encoder to fit on data
         column_transformer = make_column_transformer((scaler, X['numerical_columns']), remainder='passthrough')
-        column_transformer = column_transformer.fit(X['train'])
+        column_transformer = column_transformer.fit(X['X_train'])
         transformed = column_transformer.transform(data[test_indices])
 
         assert_allclose(transformed, np.array([[0.77777778, 0.88888889, 1],
@@ -137,7 +137,7 @@ class TestMinMaxScaler(unittest.TestCase):
         categorical_columns = list()
         numerical_columns = [0, 1, 2]
         X = {
-            'train': data[train_indices],
+            'X_train': data[train_indices],
             'categorical_columns': categorical_columns,
             'numerical_columns': numerical_columns,
         }
@@ -154,7 +154,7 @@ class TestMinMaxScaler(unittest.TestCase):
 
         # make column transformer with returned encoder to fit on data
         column_transformer = make_column_transformer((scaler, X['numerical_columns']), remainder='passthrough')
-        column_transformer = column_transformer.fit(X['train'])
+        column_transformer = column_transformer.fit(X['X_train'])
         transformed = column_transformer.transform(data[test_indices])
 
         assert_allclose(transformed, np.array([[0.46153846, 0.46153846, 0.46153846],
@@ -176,7 +176,7 @@ class TestStandardScaler(unittest.TestCase):
         categorical_columns = list()
         numerical_columns = [0, 1, 2]
         X = {
-            'train': data[train_indices],
+            'X_train': data[train_indices],
             'categorical_columns': categorical_columns,
             'numerical_columns': numerical_columns,
         }
@@ -193,7 +193,7 @@ class TestStandardScaler(unittest.TestCase):
 
         # make column transformer with returned encoder to fit on data
         column_transformer = make_column_transformer((scaler, X['numerical_columns']), remainder='passthrough')
-        column_transformer = column_transformer.fit(X['train'])
+        column_transformer = column_transformer.fit(X['X_train'])
         transformed = column_transformer.transform(data[test_indices])
 
         assert_allclose(transformed, np.array([[0.11995203, 0.11995203, 0.11995203],
@@ -214,7 +214,7 @@ class TestNoneScaler(unittest.TestCase):
         categorical_columns = list()
         numerical_columns = [0, 1, 2]
         X = {
-            'train': data[train_indices],
+            'X_train': data[train_indices],
             'categorical_columns': categorical_columns,
             'numerical_columns': numerical_columns,
         }

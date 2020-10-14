@@ -46,10 +46,11 @@ class TabularPipeline(TabularClassificationPipeline):
 class TabularTransformerTest(unittest.TestCase):
 
     def test_tabular_preprocess_only_numerical(self):
-        X = dict(train=np.random.random((10, 15)),
+        X = dict(X_train=np.random.random((10, 15)),
                  is_small_preprocess=True,
                  numerical_columns=list(range(15)),
                  categorical_columns=[],
+                 categories=[],
                  num_features=15,
                  num_classes=2
                  )
@@ -64,16 +65,17 @@ class TabularTransformerTest(unittest.TestCase):
         # check if transformer is of expected type
         self.assertIsInstance(column_transformer, ColumnTransformer)
 
-        data = column_transformer.fit_transform(X['train'])
+        data = column_transformer.fit_transform(X['X_train'])
         self.assertIsInstance(data, np.ndarray)
 
     def test_tabular_preprocess_only_categorical(self):
-        X = dict(train=np.array([['male', 'germany'],
+        X = dict(X_train=np.array([['male', 'germany'],
                                 ['female', 'germany'],
                                 ['male', 'germany']], dtype=object),
                  is_small_preprocess=True,
                  numerical_columns=[],
                  categorical_columns=list(range(2)),
+                 categories=[['male', 'female'], ['germany']],
                  num_features=15,
                  num_classes=2
                  )
@@ -88,7 +90,7 @@ class TabularTransformerTest(unittest.TestCase):
         # check if transformer is of expected type
         self.assertIsInstance(column_transformer, ColumnTransformer)
 
-        data = column_transformer.fit_transform(X['train'])
+        data = column_transformer.fit_transform(X['X_train'])
         self.assertIsInstance(data, np.ndarray)
 
 

@@ -24,7 +24,6 @@ class EarlyPreprocessing(autoPyTorchSetupComponent):
 
         if X['is_small_preprocess']:
             X['X_train'] = preprocess(dataset=X['X_train'], transforms=transforms)
-            X['X_val'] = preprocess(dataset=X['X_val'], transforms=transforms)
         else:
             X.update({'preprocess_transforms': transforms})
         return X

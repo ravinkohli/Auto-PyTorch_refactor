@@ -46,7 +46,7 @@ pipeline.fit(X={
     'num_features': len(X),
     'num_classes': len(np.unique(y)),
     'is_small_preprocess': True,
-    'train': X_train
+    'X_train': X_train,
 })
 
 # Showcase some components of the pipeline

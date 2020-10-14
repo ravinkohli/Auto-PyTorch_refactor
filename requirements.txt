@@ -1,6 +1,6 @@
 torch
 ConfigSpace
-scikit-learn
+scikit-learn>=0.22.0,<0.23
 pandas
 torchvision
 pytorch-lightning

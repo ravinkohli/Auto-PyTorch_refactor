@@ -57,9 +57,6 @@ class TabularColumnTransformer(autoPyTorchTabularPreprocessingComponent):
                                                           (categorical_pipeline, X['categorical_columns']),
                                                           remainder='passthrough')
         self.column_transformer.fit(X['X_train'])
-        self.column_transformer.fit(X['X_val'])
-        if 'X_test' in X:
-            self.column_transformer.fit(X['X_test'])
 
         return self
 

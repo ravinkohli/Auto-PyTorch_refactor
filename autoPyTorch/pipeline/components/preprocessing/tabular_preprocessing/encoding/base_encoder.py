@@ -38,7 +38,13 @@ class BaseEncoder(autoPyTorchTabularPreprocessingComponent):
         """
         super().check_requirements(X, y)
         if 'categorical_columns' not in X:
-            raise ValueError("To fit a scaler, the fit dictionary "
+            raise ValueError("To fit an encoder, the fit dictionary "
                              "must contain a list of the categorical "
                              "columns of the data but only contains {}".format(X.keys())
+                             )
+        if 'categories' not in X:
+            raise ValueError("To fit an encoder, the fit dictionary "
+                             "must contain a array_like of the categories "
+                             "of the data of shape (n_features,) but only "
+                             "contains {}".format(X.keys())
                              )

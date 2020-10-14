@@ -28,7 +28,7 @@ pipeline.set_hyperparameters(config)
 # Fit the pipeline
 print("Fitting the pipeline...")
 
-pipeline.fit(X=dict(train=data,
+pipeline.fit(X=dict(X_train=data,
                     is_small_preprocess=True,
                     channelwise_mean=np.array([np.mean(data[:, :, :, i]) for i in range(1)]),
                     channelwise_std=np.array([np.std(data[:, :, :, i]) for i in range(1)]),

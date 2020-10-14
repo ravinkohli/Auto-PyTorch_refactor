@@ -48,7 +48,7 @@ class TestSimpleImputer(unittest.TestCase):
         train_indices = np.array([0, 2, 3])
         test_indices = np.array([1, 4, 5])
         X = {
-            'train': data[train_indices],
+            'X_train': data[train_indices],
             'categorical_columns': categorical_columns,
             'numerical_columns': numerical_columns,
         }
@@ -68,7 +68,7 @@ class TestSimpleImputer(unittest.TestCase):
         column_transformer = make_column_transformer((categorical_imputer, X['categorical_columns']),
                                                      (numerical_imputer, X['numerical_columns']),
                                                      remainder='passthrough')
-        column_transformer = column_transformer.fit(X['train'])
+        column_transformer = column_transformer.fit(X['X_train'])
         transformed = column_transformer.transform(data[test_indices])
 
         assert_array_equal(transformed.astype(str), np.array([[1.0, 8.0, 9.0],
@@ -87,7 +87,7 @@ class TestSimpleImputer(unittest.TestCase):
         train_indices = np.array([0, 2, 3])
         test_indices = np.array([1, 4, 5])
         X = {
-            'train': data[train_indices],
+            'X_train': data[train_indices],
             'categorical_columns': categorical_columns,
             'numerical_columns': numerical_columns,
         }
@@ -107,7 +107,7 @@ class TestSimpleImputer(unittest.TestCase):
         column_transformer = make_column_transformer((categorical_imputer, X['categorical_columns']),
                                                      (numerical_imputer, X['numerical_columns']),
                                                      remainder='passthrough')
-        column_transformer = column_transformer.fit(X['train'])
+        column_transformer = column_transformer.fit(X['X_train'])
         transformed = column_transformer.transform(data[test_indices])
 
         assert_array_equal(transformed.astype(str), np.array([[1.0, 8.0, 9.0],
@@ -126,7 +126,7 @@ class TestSimpleImputer(unittest.TestCase):
         train_indices = np.array([0, 2, 3])
         test_indices = np.array([1, 4, 5])
         X = {
-            'train': data[train_indices],
+            'X_train': data[train_indices],
             'categorical_columns': categorical_columns,
             'numerical_columns': numerical_columns,
         }
@@ -147,7 +147,7 @@ class TestSimpleImputer(unittest.TestCase):
         column_transformer = make_column_transformer((categorical_imputer, X['categorical_columns']),
                                                      (numerical_imputer, X['numerical_columns']),
                                                      remainder='passthrough')
-        column_transformer = column_transformer.fit(X['train'])
+        column_transformer = column_transformer.fit(X['X_train'])
         transformed = column_transformer.transform(data[test_indices])
 
         assert_array_equal(transformed.astype(str), np.array([[1.0, 8, 9],
@@ -166,7 +166,7 @@ class TestSimpleImputer(unittest.TestCase):
         train_indices = np.array([0, 2, 3])
         test_indices = np.array([1, 4, 5])
         X = {
-            'train': data[train_indices],
+            'X_train': data[train_indices],
             'categorical_columns': categorical_columns,
             'numerical_columns': numerical_columns,
         }
@@ -187,7 +187,7 @@ class TestSimpleImputer(unittest.TestCase):
         column_transformer = make_column_transformer((categorical_imputer, X['categorical_columns']),
                                                      (numerical_imputer, X['numerical_columns']),
                                                      remainder='passthrough')
-        column_transformer = column_transformer.fit(X['train'])
+        column_transformer = column_transformer.fit(X['X_train'])
         transformed = column_transformer.transform(data[test_indices])
         assert_array_equal(transformed.astype(str), np.array([['!missing!', 8, 9],
                                                              [7.0, '0', 9],

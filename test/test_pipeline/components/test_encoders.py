@@ -25,9 +25,10 @@ class TestEncoders(unittest.TestCase):
         train_indices = np.array([0, 2, 3])
         test_indices = np.array([1, 4])
         X = {
-            'train': data[train_indices],
+            'X_train': data[train_indices],
             'categorical_columns': categorical_columns,
             'numerical_columns': numerical_columns,
+            'categories': [['female', 'male']]
         }
         encoder_component = OneHotEncoder()
         encoder_component.fit(X)
@@ -41,7 +42,7 @@ class TestEncoders(unittest.TestCase):
 
         # make column transformer with returned encoder to fit on data
         column_transformer = make_column_transformer((encoder, X['categorical_columns']), remainder='passthrough')
-        column_transformer = column_transformer.fit(X['train'])
+        column_transformer = column_transformer.fit(X['X_train'])
         transformed = column_transformer.transform(data[test_indices])
 
         # check if the transform is correct
@@ -60,9 +61,10 @@ class TestEncoders(unittest.TestCase):
         train_indices = np.array([0, 2, 3])
         test_indices = np.array([1, 4])
         X = {
-            'train': data[train_indices],
+            'X_train': data[train_indices],
             'categorical_columns': categorical_columns,
             'numerical_columns': numerical_columns,
+            'categories': [['female', 'male']]
         }
         encoder_component = OrdinalEncoder()
         encoder_component.fit(X)
@@ -77,7 +79,7 @@ class TestEncoders(unittest.TestCase):
 
         # make column transformer with returned encoder to fit on data
         column_transformer = make_column_transformer((encoder, X['categorical_columns']), remainder='passthrough')
-        column_transformer = column_transformer.fit(X['train'])
+        column_transformer = column_transformer.fit(X['X_train'])
         transformed = column_transformer.transform(data[test_indices])
 
         # check if we got the expected transformed array
@@ -95,9 +97,10 @@ class TestEncoders(unittest.TestCase):
         numerical_columns = [0]
         train_indices = np.array([0, 2, 3])
         X = {
-            'train': data[train_indices],
+            'X_train': data[train_indices],
             'categorical_columns': categorical_columns,
             'numerical_columns': numerical_columns,
+            'categories': [['female', 'male', 'unknown']]
         }
         encoder_component = NoEncoder()
         encoder_component.fit(X)

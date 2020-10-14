@@ -23,7 +23,7 @@ class StandardScaler(BaseScaler):
 
         self.check_requirements(X, y)
 
-        with_mean, with_std = (False, False) if issparse(X['train']) else (True, True)
+        with_mean, with_std = (False, False) if issparse(X['X_train']) else (True, True)
         self.preprocessor['numerical'] = SklearnStandardScaler(with_mean=with_mean, with_std=with_std, copy=False)
         return self
 

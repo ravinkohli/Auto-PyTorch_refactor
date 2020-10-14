@@ -28,7 +28,8 @@ class PipelineTest(unittest.TestCase):
                  'numerical_columns': list(range(num_features)),
                  'categorical_columns': [],
                  'is_small_preprocess': True,
-                 'train': train_data}
+                 'X_train': train_data,
+                 'categories': []}
             )
 
     def test_default_configuration(self):
@@ -44,10 +45,12 @@ class PipelineTest(unittest.TestCase):
         pipeline.fit(
             {'num_features': num_features,
              'num_classes': num_classes,
-             'train': train_data,
+             'X_train': train_data,
              'is_small_preprocess': True,
              'numerical_columns': list(range(num_features)),
-             'categorical_columns': []}
+             'categorical_columns': [],
+             'categories': []
+        }
         )
 
     def test_network_optimizer_lr_handshake(self):

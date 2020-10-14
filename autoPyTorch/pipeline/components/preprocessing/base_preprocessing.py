@@ -54,10 +54,6 @@ class autoPyTorchPreprocessingComponent(autoPyTorchComponent):
             raise ValueError("To fit a early_preprocessor, the fit dictionary "
                              "Must contain a reference to the training data"
                              )
-        if 'X_val' not in X:
-            raise ValueError("To fit a early_preprocessor, the fit dictionary "
-                             "Must contain a reference to the validation data"
-                             )
 
     @staticmethod
     def get_hyperparameter_search_space(
