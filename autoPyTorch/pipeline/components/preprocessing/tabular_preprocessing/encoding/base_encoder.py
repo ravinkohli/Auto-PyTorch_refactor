@@ -1,13 +1,11 @@
-from typing import Any, Dict, Union
+from typing import Any, Dict
 
-import numpy as np
-
-import torch
-
-from autoPyTorch.pipeline.components.preprocessing.base_preprocessing import autoPyTorchPreprocessingComponent
+from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.base_tabular_preprocessing import (
+    autoPyTorchTabularPreprocessingComponent
+)
 
 
-class BaseEncoder(autoPyTorchPreprocessingComponent):
+class BaseEncoder(autoPyTorchTabularPreprocessingComponent):
     """
     Base class for encoder
     """
@@ -21,30 +19,10 @@ class BaseEncoder(autoPyTorchPreprocessingComponent):
         Returns:
             (Dict[str, Any]): the updated 'X' dictionary
         """
-        if self.column_transformer is None:
+        if self.preprocessor['numerical'] is None and self.preprocessor['categorical'] is None:
             raise ValueError("cant call transform on {} without fitting first."
                              .format(self.__class__.__name__))
-        X.update({'encoder': self})
-        return X
-
-    def __call__(self, X: Union[np.ndarray, torch.tensor]) -> Union[np.ndarray, torch.tensor]:
-        """
-        Makes the autoPyTorchPreprocessingComponent Callable. Calling the component
-        calls the transform function of the underlying preprocessor and
-        returns the transformed array.
-        Args:
-            X (Union[np.ndarray, torch.tensor]): input data tensor
-
-        Returns:
-            Union[np.ndarray, torch.tensor]: Transformed data tensor
-        """
-        if self.column_transformer is None:
-            raise ValueError("cant call {} without fitting the column transformer first."
-                             .format(self.__class__.__name__))
-        try:
-            X = self.column_transformer.transform(X)
-        except ValueError as msg:
-            raise ValueError('{} in {}'.format(msg, self.__class__))
+        X.update({'encoder': self.preprocessor})
         return X
 
     def check_requirements(self, X: Dict[str, Any], y: Any = None) -> None:
@@ -60,7 +38,13 @@ class BaseEncoder(autoPyTorchPreprocessingComponent):
         """
         super().check_requirements(X, y)
         if 'categorical_columns' not in X:
-            raise ValueError("To fit a scaler, the fit dictionary "
+            raise ValueError("To fit an encoder, the fit dictionary "
                              "must contain a list of the categorical "
                              "columns of the data but only contains {}".format(X.keys())
+                             )
+        if 'categories' not in X:
+            raise ValueError("To fit an encoder, the fit dictionary "
+                             "must contain a array_like of the categories "
+                             "of the data of shape (n_features,) but only "
+                             "contains {}".format(X.keys())
                              )

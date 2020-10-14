@@ -2,21 +2,20 @@ from typing import Any, Dict, Optional, Union
 
 import numpy as np
 
-import torch
-
-from autoPyTorch.pipeline.components.preprocessing.scaling.base_scaler import BaseScaler
+from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.encoding.base_encoder import BaseEncoder
 
 
-class NoScaler(BaseScaler):
+class NoEncoder(BaseEncoder):
     """
-    No scaling performed
+    Don't perform encoding on categorical features
     """
     def __init__(self,
                  random_state: Optional[Union[np.random.RandomState, int]] = None
                  ):
+        super().__init__()
         self.random_state = random_state
 
-    def fit(self, X: Dict[str, Any], y: Any = None) -> BaseScaler:
+    def fit(self, X: Dict[str, Any], y: Any = None) -> BaseEncoder:
         """
         The fit function calls the fit function of the underlying model
         and returns the transformed array.
@@ -27,31 +26,25 @@ class NoScaler(BaseScaler):
         Returns:
             instance of self
         """
-
         self.check_requirements(X, y)
 
         return self
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
         """
-        The transform function calls the transform function of the
-        underlying model and returns the transformed array.
-
+        Adds the self into the 'X' dictionary and returns it.
         Args:
-            X (np.ndarray): input features
+            X (Dict[str, Any]): 'X' dictionary
 
         Returns:
-            np.ndarray: Transformed features
+            (Dict[str, Any]): the updated 'X' dictionary
         """
-        X.update({'scaler': self})
-        return X
-
-    def __call__(self, X: Union[np.ndarray, torch.tensor]) -> Union[np.ndarray, torch.tensor]:
+        X.update({'encoder': self.preprocessor})
         return X
 
     @staticmethod
     def get_properties(dataset_properties: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
         return {
-            'shortname': 'NoScaler',
-            'name': 'No Scaler',
+            'shortname': 'NoEncoder',
+            'name': 'No Encoder',
         }

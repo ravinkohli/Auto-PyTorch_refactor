@@ -11,7 +11,7 @@ from autoPyTorch.pipeline.components.base_component import (
     autoPyTorchComponent,
     find_components,
 )
-from autoPyTorch.pipeline.components.preprocessing.scaling.base_scaler import BaseScaler
+from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.scaling.base_scaler import BaseScaler
 
 scaling_directory = os.path.split(__file__)[0]
 _scalers = find_components(__package__,
@@ -83,7 +83,7 @@ class ScalerChoice(autoPyTorchChoice):
                                                          default_value=default)
         cs.add_hyperparameter(preprocessor)
 
-        # add only child hyperparameters of preprocessor choices
+        # add only child hyperparameters of early_preprocessor choices
         for name in preprocessor.choices:
             preprocessor_configuration_space = available_preprocessors[name].\
                 get_hyperparameter_search_space(dataset_properties)

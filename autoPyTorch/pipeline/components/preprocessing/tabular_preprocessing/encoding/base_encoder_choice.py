@@ -11,7 +11,7 @@ from autoPyTorch.pipeline.components.base_component import (
     autoPyTorchComponent,
     find_components,
 )
-from autoPyTorch.pipeline.components.preprocessing.encoding.base_encoder import BaseEncoder
+from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.encoding.base_encoder import BaseEncoder
 
 
 encoding_directory = os.path.split(__file__)[0]
@@ -88,7 +88,7 @@ class EncoderChoice(autoPyTorchChoice):
 
         cs.add_hyperparameter(preprocessor)
 
-        # add only child hyperparameters of preprocessor choices
+        # add only child hyperparameters of early_preprocessor choices
         for name in preprocessor.choices:
             preprocessor_configuration_space = available_preprocessors[name].\
                 get_hyperparameter_search_space(dataset_properties)

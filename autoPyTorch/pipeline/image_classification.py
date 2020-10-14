@@ -8,24 +8,19 @@ from sklearn.base import ClassifierMixin
 
 from autoPyTorch.pipeline.base_pipeline import BasePipeline
 from autoPyTorch.pipeline.components.base_choice import autoPyTorchChoice
-from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.TabularColumnTransformer import (
-    TabularColumnTransformer
+from autoPyTorch.pipeline.components.preprocessing.image_preprocessing.normalise.base_normalizer_choice import (
+    NormalizerChoice
 )
-from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.encoding.base_encoder_choice import (
-    EncoderChoice
-)
-from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.imputation.SimpleImputer import SimpleImputer
-from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.scaling.base_scaler_choice import ScalerChoice
 from autoPyTorch.pipeline.components.setup.early_preprocessor.EarlyPreprocessing import EarlyPreprocessing
-from autoPyTorch.pipeline.components.setup.lr_scheduler.base_scheduler_choice import SchedulerChoice
-from autoPyTorch.pipeline.components.setup.network.base_network_choice import NetworkChoice
-from autoPyTorch.pipeline.components.setup.network_initializer.base_network_init_choice import (
-    NetworkInitializerChoice
-)
-from autoPyTorch.pipeline.components.setup.optimizer.base_optimizer_choice import OptimizerChoice
+# from autoPyTorch.pipeline.components.setup.lr_scheduler.base_scheduler_choice import SchedulerChoice
+# from autoPyTorch.pipeline.components.setup.network.base_network_choice import NetworkChoice
+# from autoPyTorch.pipeline.components.setup.optimizer.base_optimizer_choice import OptimizerChoice
+# from autoPyTorch.pipeline.components.setup.network_initializer.base_network_init_choice import (
+#     NetworkInitializerChoice
+# )
 
 
-class TabularClassificationPipeline(ClassifierMixin, BasePipeline):
+class ImageClassificationPipeline(ClassifierMixin, BasePipeline):
     """This class is a proof of concept to integrate AutoSklearn Components
 
     It implements a pipeline, which includes as steps:
@@ -156,9 +151,9 @@ class TabularClassificationPipeline(ClassifierMixin, BasePipeline):
         if dataset_properties is None or not isinstance(dataset_properties, dict):
             dataset_properties = dict()
         if 'target_type' not in dataset_properties:
-            dataset_properties['target_type'] = 'tabular_classification'
-        if dataset_properties['target_type'] != 'tabular_classification':
-            dataset_properties['target_type'] = 'tabular_classification'
+            dataset_properties['target_type'] = 'image_classification'
+        if dataset_properties['target_type'] != 'image_classification':
+            dataset_properties['target_type'] = 'image_classification'
         # get the base search space given this
         # dataset properties. Then overwrite with custom
         # classification requirements
@@ -185,20 +180,17 @@ class TabularClassificationPipeline(ClassifierMixin, BasePipeline):
         """
         steps = []  # type: List[Tuple[str, autoPyTorchChoice]]
 
-        default_dataset_properties = {'target_type': 'tabular_classification'}
+        default_dataset_properties = {'target_type': 'image_classification'}
         if dataset_properties is not None:
             default_dataset_properties.update(dataset_properties)
 
         steps.extend([
-            ("imputer", SimpleImputer()),
-            ("encoder", EncoderChoice(default_dataset_properties)),
-            ("scaler", ScalerChoice(default_dataset_properties)),
-            ("tabular_transformer", TabularColumnTransformer()),
+            ("normalizer", NormalizerChoice(default_dataset_properties)),
             ("preprocessing", EarlyPreprocessing()),
-            ("network", NetworkChoice(default_dataset_properties)),
-            ("network_init", NetworkInitializerChoice(default_dataset_properties)),
-            ("optimizer", OptimizerChoice(default_dataset_properties)),
-            ("lr_scheduler", SchedulerChoice(default_dataset_properties)),
+            # ("network", NetworkChoice(default_dataset_properties)),
+            # ("network_init", NetworkInitializerChoice(default_dataset_properties)),
+            # ("optimizer", OptimizerChoice(default_dataset_properties)),
+            # ("lr_scheduler", SchedulerChoice(default_dataset_properties)),
         ])
         return steps
 
@@ -209,4 +201,4 @@ class TabularClassificationPipeline(ClassifierMixin, BasePipeline):
         Returns:
             str: name of the pipeline type
         """
-        return "tabular_classifier"
+        return "image_classifier"

@@ -2,21 +2,20 @@ from typing import Any, Dict, Optional, Union
 
 import numpy as np
 
-import torch
-
-from autoPyTorch.pipeline.components.preprocessing.encoding.base_encoder import BaseEncoder
+from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.scaling.base_scaler import BaseScaler
 
 
-class NoEncoder(BaseEncoder):
+class NoScaler(BaseScaler):
     """
-    Don't perform encoding on categorical features
+    No scaling performed
     """
     def __init__(self,
                  random_state: Optional[Union[np.random.RandomState, int]] = None
                  ):
+        super().__init__()
         self.random_state = random_state
 
-    def fit(self, X: Dict[str, Any], y: Any = None) -> BaseEncoder:
+    def fit(self, X: Dict[str, Any], y: Any = None) -> BaseScaler:
         """
         The fit function calls the fit function of the underlying model
         and returns the transformed array.
@@ -27,28 +26,28 @@ class NoEncoder(BaseEncoder):
         Returns:
             instance of self
         """
+
         self.check_requirements(X, y)
 
         return self
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Adds the self into the 'X' dictionary and returns it.
+        The transform function calls the transform function of the
+        underlying model and returns the transformed array.
+
         Args:
-            X (Dict[str, Any]): 'X' dictionary
+            X (np.ndarray): input features
 
         Returns:
-            (Dict[str, Any]): the updated 'X' dictionary
+            np.ndarray: Transformed features
         """
-        X.update({'encoder': self})
-        return X
-
-    def __call__(self, X: Union[np.ndarray, torch.tensor]) -> Union[np.ndarray, torch.tensor]:
+        X.update({'scaler': self.preprocessor})
         return X
 
     @staticmethod
     def get_properties(dataset_properties: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
         return {
-            'shortname': 'NoEncoder',
-            'name': 'No Encoder',
+            'shortname': 'NoScaler',
+            'name': 'No Scaler',
         }
