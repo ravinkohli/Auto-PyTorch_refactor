@@ -9,7 +9,7 @@ from torch.nn.modules.loss import (
 from torch.nn.modules.loss import _Loss as Loss
 
 from autoPyTorch.constants import BINARY, CLASSIFICATION_TASKS, CONTINUOUS, MULTICLASS, REGRESSION_TASKS, \
-    STRING_TO_OUTPUT_TYPES, STRING_TO_TASK_TYPES
+    STRING_TO_OUTPUT_TYPES, STRING_TO_TASK_TYPES, TASK_TYPES_TO_STRING
 
 losses = dict(classification=dict(
     CrossEntropyLoss=dict(
@@ -25,11 +25,13 @@ losses = dict(classification=dict(
 default_losses = dict(classification=CrossEntropyLoss, regression=MSELoss)
 
 
-def get_default(task: str) -> Type[Loss]:
+def get_default(task: int) -> Type[Loss]:
     if task in CLASSIFICATION_TASKS:
         return default_losses['classification']
     elif task in REGRESSION_TASKS:
         return default_losses['regression']
+    else:
+        raise ValueError("Invalid task type {}".format(TASK_TYPES_TO_STRING[task]))
 
 
 def get_supported_losses(task: int, output_type: int) -> Dict[str, Type[Loss]]:
