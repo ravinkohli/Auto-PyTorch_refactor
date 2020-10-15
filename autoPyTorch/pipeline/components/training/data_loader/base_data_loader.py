@@ -208,6 +208,9 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
                                      X
                                  )
                                  )
+        if 'is_small_preprocess' not in X:
+            raise ValueError("is_small_pre-process is required to know if the data was preprocessed"
+                             " or if the data-loader should transform it while loading a batch")
 
         # We expect this class to be a base for image/tabular/time
         # And the difference among this data types should be mainly

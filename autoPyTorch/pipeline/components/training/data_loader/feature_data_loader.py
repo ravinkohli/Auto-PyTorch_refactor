@@ -32,12 +32,14 @@ class FeatureDataLoader(BaseDataLoaderComponent):
         #   + scaler
         # This transformations apply for both train/val/test, so no
         # distinction is performed
-        return torchvision.transforms.Compose([
-            X['imputer'],
-            X['scaler'],
-            X['encoder'],
-            torchvision.transforms.ToTensor(),
-        ])
+        transformations = []
+        if not X['is_small_preprocess']:
+            transformations.append(X['preprocess_transforms'])
+
+        # Transform to tensor
+        transformations.append(torchvision.transforms.ToTensor())
+
+        return torchvision.transforms.Compose(transformations)
 
     def _check_transform_requirements(self, X: Dict[str, Any], y: Any = None) -> None:
         """
@@ -50,8 +52,5 @@ class FeatureDataLoader(BaseDataLoaderComponent):
                 mechanism, in which during a transform, a components adds relevant information
                 so that further stages can be properly fitted
         """
-        for requirement in ['imputer', 'scaler', 'encoder']:
-            if requirement not in X:
-                raise ValueError("Cannot find the {} in the fit dictionary".format(
-                    requirement
-                ))
+        if not X['is_small_preprocess'] and 'preprocess_transforms' not in X:
+            raise ValueError("Cannot find the preprocess_transforms in the fit dictionary")

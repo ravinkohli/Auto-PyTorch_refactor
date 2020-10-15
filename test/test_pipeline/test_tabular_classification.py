@@ -27,12 +27,12 @@ class PipelineTest(unittest.TestCase):
                  'num_classes': num_classes,
                  'numerical_columns': list(range(num_features)),
                  'categorical_columns': [],
-                 'is_small_preprocess': True,
                  'categories': [],
                  'X_train': train_data,
                  'y_train': np.random.random(num_datapoints),
                  'train_indices': range(num_datapoints // 2),
                  'val_indices': range(num_datapoints // 2, num_datapoints),
+                 'is_small_preprocess': False,
                  }
             )
 
@@ -51,10 +51,10 @@ class PipelineTest(unittest.TestCase):
              'num_classes': num_classes,
              'X_train': train_data,
              'y_train': np.random.random(num_datapoints),
-             'is_small_preprocess': True,
              'train_indices': range(num_datapoints // 2),
              'val_indices': range(num_datapoints // 2, num_datapoints),
              'numerical_columns': list(range(num_features)),
+             'is_small_preprocess': False,
              'categorical_columns': [],
              'categories': []
              }

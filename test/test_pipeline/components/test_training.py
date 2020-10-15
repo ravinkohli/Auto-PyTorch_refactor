@@ -75,6 +75,7 @@ class BaseDataLoaderTest(unittest.TestCase):
             'y_train': np.array([0, 1, 0]),
             'train_indices': [0, 1],
             'val_indices': [2],
+            'is_small_preprocess': False,
         }
 
         # Mock child classes requirements

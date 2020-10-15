@@ -22,10 +22,11 @@ X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(
 )
 
 train_indices, val_indices = sklearn.model_selection.train_test_split(
-    list(range(len(X_train))),
+    list(range(X_train.shape[0])),
     random_state=1,
     test_size=0.25,
 )
+print(f"X_train={X_train.shape} train_indices={train_indices}")
 
 numerical = X.columns.to_list()
 categorical = []

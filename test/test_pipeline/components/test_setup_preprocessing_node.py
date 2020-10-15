@@ -11,6 +11,9 @@ from autoPyTorch.pipeline.tabular_classification import TabularClassificationPip
 class TabularPreprocessingTest(unittest.TestCase):
     def test_tabular_preprocess(self):
         X = dict(X_train=np.random.random((10, 15)),
+                 y_train=np.random.random(10),
+                 train_indices=[0, 1, 2, 3, 4, 5],
+                 val_indices=[6, 7, 8, 9],
                  is_small_preprocess=True,
                  numerical_columns=list(range(15)),
                  categorical_columns=[],
@@ -26,6 +29,9 @@ class TabularPreprocessingTest(unittest.TestCase):
 
     def test_tabular_no_preprocess(self):
         X = dict(X_train=np.random.random((10, 15)),
+                 y_train=np.random.random(10),
+                 train_indices=[0, 1, 2, 3, 4, 5],
+                 val_indices=[6, 7, 8, 9],
                  is_small_preprocess=False,
                  numerical_columns=list(range(15)),
                  categorical_columns=[],
@@ -46,6 +52,9 @@ class ImagePreprocessingTest(unittest.TestCase):
     def test_image_preprocess(self):
         data = np.random.random((10, 2, 2, 3))
         X = dict(X_train=data,
+                 y_train=np.random.random(10),
+                 train_indices=[0, 1, 2, 3, 4, 5],
+                 val_indices=[6, 7, 8, 9],
                  is_small_preprocess=True,
                  channelwise_mean=np.array([np.mean(data[:, :, :, i]) for i in range(3)]),
                  channelwise_std=np.array([np.std(data[:, :, :, i]) for i in range(3)]),
@@ -59,6 +68,9 @@ class ImagePreprocessingTest(unittest.TestCase):
     def test_image_no_preprocess(self):
         data = np.random.random((10, 2, 2, 3))
         X = dict(X_train=data,
+                 y_train=np.random.random(10),
+                 train_indices=[0, 1, 2, 3, 4, 5],
+                 val_indices=[6, 7, 8, 9],
                  is_small_preprocess=False,
                  channelwise_mean=np.array([np.mean(data[:, :, :, i]) for i in range(3)]),
                  channelwise_std=np.array([np.std(data[:, :, :, i]) for i in range(3)]),
