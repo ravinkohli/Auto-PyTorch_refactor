@@ -2,6 +2,7 @@ import os
 from collections import OrderedDict
 from typing import Any, Dict, Iterable, List, Optional
 
+from autoPyTorch.constants import CLASSIFICATION_TASKS, REGRESSION_TASKS, STRING_TO_TASK_TYPES
 from autoPyTorch.pipeline.components.base_component import (
     ThirdPartyComponents,
     find_components,
@@ -59,19 +60,21 @@ def get_metrics(dataset_properties: Dict[str, Any],
     default_metrics = dict(classification='Accuracy',
                            regression='RMSE')
 
-    task_type = dataset_properties['task_type']
     supported_metrics = get_supported_metrics(dataset_properties)
     metrics = list()  # type: List[autoPyTorchMetric]
     if names is not None:
         for name in names:
             if name not in supported_metrics.keys():
                 raise ValueError("Invalid name entered for task {}, currently "
-                                 "supported metrics for task include {}".format(task_type,
+                                 "supported metrics for task include {}".format(dataset_properties['task_type'],
                                                                                 list(supported_metrics.keys())))
             else:
                 metric = supported_metrics[name]
                 metrics.append(metric)
     else:
-        metrics.append(supported_metrics[default_metrics[task_type.split('_')[-1]]])
+        if STRING_TO_TASK_TYPES[dataset_properties['task_type']] in CLASSIFICATION_TASKS:
+            metrics.append(supported_metrics[default_metrics['classification']])
+        if STRING_TO_TASK_TYPES[dataset_properties['task_type']] in REGRESSION_TASKS:
+            metrics.append(supported_metrics[default_metrics['regression']])
 
     return metrics
