@@ -30,7 +30,7 @@ class LossTest(unittest.TestCase):
 
     def test_losses(self):
         list_properties = [{'task_type': 'tabular_classification', 'output_type': 'multi-class'},
-                           {'task_type': 'tabular_classification', 'output_type': 'binary-class'},
+                           {'task_type': 'tabular_classification', 'output_type': 'binary'},
                            {'task_type': 'tabular_regression', 'output_type': 'continuous'}]
         pred_cross_entropy = torch.randn(4, 4, requires_grad=True)
         list_predictions = [pred_cross_entropy, torch.empty(4).random_(2), torch.randn(4)]
