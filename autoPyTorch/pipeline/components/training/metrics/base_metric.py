@@ -2,12 +2,10 @@ from typing import Any, Dict, Optional
 
 from pytorch_lightning.metrics.metric import Metric
 
-from sklearn.base import BaseEstimator
-
 import torch.tensor
 
 
-class autoPyTorchMetric(BaseEstimator):
+class autoPyTorchMetric(object):
     def __init__(self) -> None:
         self.metric: Optional[Metric] = None
 
