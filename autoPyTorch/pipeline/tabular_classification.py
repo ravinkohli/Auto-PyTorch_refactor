@@ -23,6 +23,7 @@ from autoPyTorch.pipeline.components.setup.network_initializer.base_network_init
     NetworkInitializerChoice
 )
 from autoPyTorch.pipeline.components.setup.optimizer.base_optimizer_choice import OptimizerChoice
+from autoPyTorch.pipeline.components.training.data_loader.feature_data_loader import FeatureDataLoader
 
 
 class TabularClassificationPipeline(ClassifierMixin, BasePipeline):
@@ -199,6 +200,7 @@ class TabularClassificationPipeline(ClassifierMixin, BasePipeline):
             ("network_init", NetworkInitializerChoice(default_dataset_properties)),
             ("optimizer", OptimizerChoice(default_dataset_properties)),
             ("lr_scheduler", SchedulerChoice(default_dataset_properties)),
+            ("data_loader", FeatureDataLoader()),
         ])
         return steps
 

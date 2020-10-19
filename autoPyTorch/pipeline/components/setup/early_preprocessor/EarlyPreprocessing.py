@@ -23,7 +23,10 @@ class EarlyPreprocessing(autoPyTorchSetupComponent):
         transforms = get_preprocess_transforms(X)
 
         if X['is_small_preprocess']:
-            X['X_train'] = preprocess(dataset=X['X_train'], transforms=transforms)
+            X['X_train'] = preprocess(dataset=X['X_train'], transforms=transforms,
+                                      indices=X['train_indices'])
+            if 'X_test' in X:
+                X['X_test'] = preprocess(dataset=X['X_test'], transforms=transforms)
         else:
             X.update({'preprocess_transforms': transforms})
         return X
@@ -46,6 +49,14 @@ class EarlyPreprocessing(autoPyTorchSetupComponent):
                              "enough to preprocess as is_small_preprocess "
                              "but only contains {}".format(X.keys())
                              )
+
+        if 'X_train' not in X:
+            raise ValueError("We require the train data to be available for fit,  "
+                             "nevertheless X_train was not found in the fit dictionary")
+
+        if 'train_indices' not in X:
+            raise ValueError("We split the data in training and validation, yet  "
+                             "train_indices was not available")
 
     @staticmethod
     def get_hyperparameter_search_space(
