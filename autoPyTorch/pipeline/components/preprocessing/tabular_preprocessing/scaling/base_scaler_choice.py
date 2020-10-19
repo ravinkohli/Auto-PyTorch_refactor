@@ -55,14 +55,14 @@ class ScalerChoice(autoPyTorchChoice):
         if dataset_properties is None:
             dataset_properties = dict()
 
-        dataset_properties.update(self.dataset_properties)
+        dataset_properties = {**self.dataset_properties, **dataset_properties}
 
         available_preprocessors = self.get_available_components(dataset_properties=dataset_properties,
                                                                 include=include,
                                                                 exclude=exclude)
 
         if len(available_preprocessors) == 0:
-            raise ValueError("no rescalers found, please add a rescaler")
+            raise ValueError("no scalers found, please add a scaler")
 
         if default is None:
             defaults = ['Normalizer', 'StandardScaler', 'MinMaxScaler', 'NoScaler']
