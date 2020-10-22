@@ -8,7 +8,6 @@ from scipy.sparse import csr_matrix
 from sklearn.compose import ColumnTransformer
 
 from autoPyTorch.pipeline.components.base_choice import autoPyTorchChoice
-from autoPyTorch.pipeline.components.preprocessing.base_preprocessing import autoPyTorchPreprocessingComponent
 from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.TabularColumnTransformer import (
     TabularColumnTransformer
 )
@@ -102,7 +101,6 @@ class TabularTransformerTest(unittest.TestCase):
         numerical_columns = list(range(2000))
         categorical_columns = []
         train_indices = np.array(range(50))
-        test_indices = np.array(range(50, 100))
         X = {
             'X_train': sparse_X[train_indices],
             'categorical_columns': categorical_columns,
@@ -124,6 +122,7 @@ class TabularTransformerTest(unittest.TestCase):
 
         data = column_transformer.fit_transform(X['X_train'])
         self.assertIsInstance(data, csr_matrix)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -44,7 +44,7 @@ class Normalizer(BaseScaler):
         return cs
 
     @staticmethod
-    def get_properties(dataset_properties: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
+    def get_properties(dataset_properties: Optional[Dict[str, Any]] = None) -> Dict[str, Union[str, bool]]:
         return {
             'shortname': 'Normalizer',
             'name': 'Normalizer',
