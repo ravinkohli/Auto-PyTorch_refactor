@@ -32,4 +32,5 @@ class StandardScaler(BaseScaler):
         return {
             'shortname': 'StandardScaler',
             'name': 'Standard Scaler',
+            'handles_sparse': True
         }

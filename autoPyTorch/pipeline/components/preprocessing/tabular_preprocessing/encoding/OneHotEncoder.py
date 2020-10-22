@@ -27,4 +27,5 @@ class OneHotEncoder(BaseEncoder):
         return {
             'shortname': 'OneHotEncoder',
             'name': 'One Hot Encoder',
+            'handles_sparse': False
         }

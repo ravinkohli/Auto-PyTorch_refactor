@@ -27,4 +27,5 @@ class OrdinalEncoder(BaseEncoder):
         return {
             'shortname': 'OrdinalEncoder',
             'name': 'Ordinal Encoder',
+            'handles_sparse': False
         }

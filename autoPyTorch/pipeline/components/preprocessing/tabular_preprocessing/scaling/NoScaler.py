@@ -50,4 +50,5 @@ class NoScaler(BaseScaler):
         return {
             'shortname': 'NoScaler',
             'name': 'No Scaler',
+            'handles_sparse': True
         }

@@ -47,4 +47,5 @@ class NoEncoder(BaseEncoder):
         return {
             'shortname': 'NoEncoder',
             'name': 'No Encoder',
+            'handles_sparse': True
         }

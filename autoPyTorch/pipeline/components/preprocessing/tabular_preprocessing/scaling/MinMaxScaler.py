@@ -30,4 +30,5 @@ class MinMaxScaler(BaseScaler):
         return {
             'shortname': 'MinMaxScaler',
             'name': 'MinMaxScaler',
+            'handles_sparse': True
         }

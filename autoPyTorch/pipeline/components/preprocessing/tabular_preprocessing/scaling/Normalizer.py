@@ -48,4 +48,5 @@ class Normalizer(BaseScaler):
         return {
             'shortname': 'Normalizer',
             'name': 'Normalizer',
+            'handles_sparse': True
         }

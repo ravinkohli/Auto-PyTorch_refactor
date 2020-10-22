@@ -79,4 +79,5 @@ class SimpleImputer(BaseImputer):
         return {
             'shortname': 'SimpleImputer',
             'name': 'Simple Imputer',
+            'handles_sparse': True
         }
