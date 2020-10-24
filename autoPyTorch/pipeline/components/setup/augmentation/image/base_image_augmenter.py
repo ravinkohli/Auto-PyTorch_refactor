@@ -1,10 +1,10 @@
 from typing import Optional
 
 from imgaug.augmenters.meta import Augmenter
-from autoPyTorch.pipeline.components.setup.augmentation.base_augmenter import BaseAugmenter
+from autoPyTorch.pipeline.components.setup.base_setup import autoPyTorchSetupComponent
 
 
-class BaseImageAugmenter(BaseAugmenter):
+class BaseImageAugmenter(autoPyTorchSetupComponent):
     def __init__(self):
         super().__init__()
         self.augmenter: Optional[Augmenter] = None
