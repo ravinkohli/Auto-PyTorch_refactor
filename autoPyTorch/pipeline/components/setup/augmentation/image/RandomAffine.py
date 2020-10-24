@@ -16,9 +16,9 @@ from autoPyTorch.pipeline.components.setup.augmentation.image.base_image_augment
 
 
 class RandomAffine(BaseImageAugmenter):
-    def __init__(self, scale_min: float, scale_offset: float,
-                 translate_percent_min: float, translate_percent_offset: float,
-                 shear: int, rotate: int, random_state: Optional[int, np.random.RandomState] = None):
+    def __init__(self, scale_min: float = 0, scale_offset: float = 0.2,
+                 translate_percent_min: float = 0, translate_percent_offset: float = 0.3,
+                 shear: int = 30, rotate: int = 45, random_state: Optional[int, np.random.RandomState] = None):
         super().__init__()
         self.random_state = random_state
         self.scale = (scale_min, scale_min + scale_offset)

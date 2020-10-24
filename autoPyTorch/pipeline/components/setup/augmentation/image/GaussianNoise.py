@@ -14,7 +14,7 @@ from autoPyTorch.pipeline.components.setup.augmentation.image.base_image_augment
 
 
 class GaussianNoise(BaseImageAugmenter):
-    def __init__(self, sigma_offset: float,
+    def __init__(self, sigma_offset: float = 0.3,
                  random_state: Optional[Union[int, np.random.RandomState]] = None):
         super().__init__()
         self.random_state = random_state
