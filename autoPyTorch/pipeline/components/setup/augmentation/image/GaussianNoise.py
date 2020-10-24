@@ -21,7 +21,7 @@ class GaussianNoise(BaseImageAugmenter):
         self.sigma = (0, sigma_offset)
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> BaseImageAugmenter:
-        self.augmenter: Augmenter = iaa.AdditiveGaussianNoise(loc=0, scale=self.sigma)
+        self.augmenter: Augmenter = iaa.AdditiveGaussianNoise(scale=self.sigma)
         return self
 
     @staticmethod
