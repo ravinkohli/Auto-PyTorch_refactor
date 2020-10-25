@@ -1,10 +1,8 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 from ConfigSpace.configuration_space import ConfigurationSpace
 from ConfigSpace.hyperparameters import (
-    CategoricalHyperparameter,
     UniformFloatHyperparameter,
-    UniformIntegerHyperparameter
 )
 
 import numpy as np
@@ -16,7 +14,7 @@ from autoPyTorch.pipeline.components.setup.augmentation.image.base_image_augment
 
 
 class RandomCutout(BaseImageAugmenter):
-    def __init__(self, p: float = 0.5, random_state: Optional[int, np.random.RandomState] = None):
+    def __init__(self, p: float = 0.5, random_state: Optional[Union[int, np.random.RandomState]] = None):
         super().__init__()
         self.p = p
         self.random_state = random_state
@@ -32,6 +30,6 @@ class RandomCutout(BaseImageAugmenter):
     ) -> ConfigurationSpace:
 
         cs = ConfigurationSpace()
-        p = UniformFloatHyperparameter('p', lower=0.2, upper=1, default=0.5)
+        p = UniformFloatHyperparameter('p', lower=0.2, upper=1, default_value=0.5)
         cs.add_hyperparameters([p])
         return cs

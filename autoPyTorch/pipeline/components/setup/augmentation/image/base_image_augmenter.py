@@ -1,6 +1,11 @@
-from typing import Optional
+from typing import Optional, Dict
+
+from ConfigSpace.configuration_space import ConfigurationSpace
+
+import numpy as np
 
 from imgaug.augmenters.meta import Augmenter
+
 from autoPyTorch.pipeline.components.setup.base_setup import autoPyTorchSetupComponent
 
 
@@ -33,3 +38,16 @@ class BaseImageAugmenter(autoPyTorchSetupComponent):
     #             so that further stages can be properly fitted
     #     """
     #     super().check_requirements(X, y)
+
+    def __call__(self, X: np.ndarray) -> np.ndarray:
+        if self.augmenter is None:
+            raise ValueError("cant call {} without fitting first."
+                             .format(self.__class__.__name__))
+        return self.augmenter(images=X)
+
+    @staticmethod
+    def get_hyperparameter_search_space(
+            dataset_properties: Optional[Dict[str, str]] = None
+    ) -> ConfigurationSpace:
+        cs = ConfigurationSpace()
+        return cs

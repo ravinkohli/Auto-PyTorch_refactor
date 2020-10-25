@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 from ConfigSpace.configuration_space import ConfigurationSpace
 from ConfigSpace.hyperparameters import (
@@ -14,7 +14,7 @@ from autoPyTorch.pipeline.components.setup.augmentation.image.base_image_augment
 
 
 class ZeroPadAndCrop(BaseImageAugmenter):
-    def __init__(self, percent: float, random_state: Optional[int, np.random.RandomState] = None):
+    def __init__(self, percent: float, random_state: Optional[Union[int, np.random.RandomState]] = None):
         super().__init__()
         self.random_state = random_state
         self.percent = percent

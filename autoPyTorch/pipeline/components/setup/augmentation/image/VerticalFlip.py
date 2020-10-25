@@ -1,9 +1,4 @@
-from typing import Any, Dict, Optional
-
-from ConfigSpace.configuration_space import ConfigurationSpace
-from ConfigSpace.hyperparameters import (
-    UniformFloatHyperparameter,
-)
+from typing import Any, Dict, Optional, Union
 
 import numpy as np
 
@@ -14,7 +9,7 @@ from autoPyTorch.pipeline.components.setup.augmentation.image.base_image_augment
 
 
 class VerticalFlip(BaseImageAugmenter):
-    def __init__(self, random_state: Optional[int, np.random.RandomState] = None):
+    def __init__(self, random_state: Optional[Union[int, np.random.RandomState]] = None):
         super().__init__()
         self.random_state = random_state
 

@@ -1,10 +1,9 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 from ConfigSpace.configuration_space import ConfigurationSpace
 from ConfigSpace.hyperparameters import (
     UniformIntegerHyperparameter,
     UniformFloatHyperparameter,
-    CategoricalHyperparameter
 )
 
 import numpy as np
@@ -18,7 +17,7 @@ from autoPyTorch.pipeline.components.setup.augmentation.image.base_image_augment
 class RandomAffine(BaseImageAugmenter):
     def __init__(self, scale_min: float = 0, scale_offset: float = 0.2,
                  translate_percent_min: float = 0, translate_percent_offset: float = 0.3,
-                 shear: int = 30, rotate: int = 45, random_state: Optional[int, np.random.RandomState] = None):
+                 shear: int = 30, rotate: int = 45, random_state: Optional[Union[int, np.random.RandomState]] = None):
         super().__init__()
         self.random_state = random_state
         self.scale = (scale_min, scale_min + scale_offset)
