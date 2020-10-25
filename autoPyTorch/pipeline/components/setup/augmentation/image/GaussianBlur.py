@@ -35,3 +35,8 @@ class GaussianBlur(BaseImageAugmenter):
         sigma_offset = UniformFloatHyperparameter('sigma_offset', lower=0, upper=3, default_value=0.5)
         cs.add_hyperparameters([sigma_min, sigma_offset])
         return cs
+
+    @staticmethod
+    def get_properties(dataset_properties: Optional[Dict[str, str]] = None
+                       ) -> Dict[str, Any]:
+        return {'name': 'GaussianBlur'}

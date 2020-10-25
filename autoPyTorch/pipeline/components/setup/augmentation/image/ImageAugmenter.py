@@ -79,7 +79,8 @@ class ImageAugmenter(BaseImageAugmenter):
         Returns:
             self: returns an instance of self
         """
-        for name, augmenter in self.available_augmenters.items():
+        available_augmenters = get_components()
+        for name, augmenter in available_augmenters.items():
             new_params = {}
 
             params = configuration.get_dictionary()
@@ -117,3 +118,18 @@ class ImageAugmenter(BaseImageAugmenter):
             cs.add_configuration_space(name, preprocessor_configuration_space)
 
         return cs
+
+    @staticmethod
+    def get_properties(dataset_properties: Optional[Dict[str, str]] = None
+                       ) -> Dict[str, Any]:
+        return {'name': 'ImageAugmenter'}
+
+    def __str__(self) -> str:
+        """ Allow a nice understanding of what components where used """
+        string = self.__class__.__name__
+        info = vars(self)
+        # Remove unwanted info
+        info.pop('random_state', None)
+        info.pop('augmenter', None)
+        string += " (" + str(info) + ")"
+        return string

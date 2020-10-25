@@ -33,3 +33,9 @@ class RandomCutout(BaseImageAugmenter):
         p = UniformFloatHyperparameter('p', lower=0.2, upper=1, default_value=0.5)
         cs.add_hyperparameters([p])
         return cs
+
+    @staticmethod
+    def get_properties(dataset_properties: Optional[Dict[str, str]] = None
+                       ) -> Dict[str, Any]:
+        return {'name': 'RandomCutout'}
+

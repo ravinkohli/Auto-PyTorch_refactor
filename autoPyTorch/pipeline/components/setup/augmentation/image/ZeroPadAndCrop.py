@@ -44,3 +44,8 @@ class ZeroPadAndCrop(BaseImageAugmenter):
         percent = UniformFloatHyperparameter('percent', lower=0, upper=0.5, default_value=0.1)
         cs.add_hyperparameter(percent)
         return cs
+
+    @staticmethod
+    def get_properties(dataset_properties: Optional[Dict[str, str]] = None
+                       ) -> Dict[str, Any]:
+        return {'name': 'ZeroPadAndCrop'}

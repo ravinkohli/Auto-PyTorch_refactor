@@ -34,3 +34,8 @@ class GaussianNoise(BaseImageAugmenter):
         cs.add_hyperparameter(sigma_offset)
 
         return cs
+
+    @staticmethod
+    def get_properties(dataset_properties: Optional[Dict[str, str]] = None
+                       ) -> Dict[str, Any]:
+        return {'name': 'GaussianNoise'}

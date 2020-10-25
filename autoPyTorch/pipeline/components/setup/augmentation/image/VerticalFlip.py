@@ -17,3 +17,8 @@ class VerticalFlip(BaseImageAugmenter):
         self.augmenter: Augmenter = iaa.Flipud(p=0.5)
 
         return self
+
+    @staticmethod
+    def get_properties(dataset_properties: Optional[Dict[str, str]] = None
+                       ) -> Dict[str, Any]:
+        return {'name': 'VerticalFlip'}
