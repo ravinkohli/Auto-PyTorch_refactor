@@ -1,9 +1,9 @@
 from typing import Any, Dict, Optional, Union
 
-import numpy as np
-
 import imgaug.augmenters as iaa
 from imgaug.augmenters.meta import Augmenter
+
+import numpy as np
 
 from autoPyTorch.pipeline.components.setup.augmentation.image.base_image_augmenter import BaseImageAugmenter
 

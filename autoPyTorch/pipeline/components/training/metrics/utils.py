@@ -12,8 +12,8 @@ from autoPyTorch.pipeline.components.training.metrics.base_metric import autoPyT
 
 metrics_directory = os.path.split(__file__)[0]
 _metrics = find_components(__package__,
-                            metrics_directory,
-                            autoPyTorchMetric)
+                           metrics_directory,
+                           autoPyTorchMetric)
 _addons = ThirdPartyComponents(autoPyTorchMetric)
 
 

@@ -1,16 +1,16 @@
-from typing import Optional, Dict
+from typing import Dict, Optional
 
 from ConfigSpace.configuration_space import ConfigurationSpace
 
-import numpy as np
-
 from imgaug.augmenters.meta import Augmenter
+
+import numpy as np
 
 from autoPyTorch.pipeline.components.setup.base_setup import autoPyTorchSetupComponent
 
 
 class BaseImageAugmenter(autoPyTorchSetupComponent):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.augmenter: Optional[Augmenter] = None
 

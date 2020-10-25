@@ -1,14 +1,13 @@
 import os
-from collections import OrderedDict as OD
-from typing import Any, Dict, Optional, OrderedDict, Union
+from collections import OrderedDict
+from typing import Any, Dict, Optional, Union
 
 from ConfigSpace.configuration_space import (
-    ConfigurationSpace,
-    Configuration
+    Configuration,
+    ConfigurationSpace
 )
 
 import imgaug.augmenters as iaa
-from imgaug.augmenters.meta import Augmenter
 
 import numpy as np
 
@@ -30,7 +29,7 @@ def add_augmenter(augmenter: BaseImageAugmenter) -> None:
     _addons.add_component(augmenter)
 
 
-def get_components() -> OrderedDict[str, BaseImageAugmenter]:
+def get_components() -> Dict[str, BaseImageAugmenter]:
     """Returns the available augmenter components
 
     Args:
@@ -40,7 +39,7 @@ def get_components() -> OrderedDict[str, BaseImageAugmenter]:
         Dict[str, BaseImageAugmenter]: all BaseImageAugmenter components available
             as choices
     """
-    components = OD()
+    components = OrderedDict()
     components.update(_augmenters)
     components.update(_addons.components)
     return components
@@ -50,11 +49,12 @@ class ImageAugmenter(BaseImageAugmenter):
 
     def __init__(self, random_state: Optional[Union[int, np.random.RandomState]] = None):
         super().__init__()
-        self.available_augmenters = get_components()  # type: OrderedDict[str, BaseImageAugmenter]
+        self.available_augmenters = get_components()  # type: Dict[str, BaseImageAugmenter]
         self.random_state = random_state
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> BaseImageAugmenter:
-        self.augmenter = iaa.Sequential([augmenter.fit(X).get_image_augmenter() for _, augmenter in self.available_augmenters.items()])
+        self.augmenter = iaa.Sequential([augmenter.fit(X).get_image_augmenter() for _, augmenter in
+                                         self.available_augmenters.items()])
         return self
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
@@ -101,16 +101,18 @@ class ImageAugmenter(BaseImageAugmenter):
 
         return self
 
-    def get_hyperparameter_search_space(self,
-                                        dataset_properties: Optional[Dict[str, str]] = None) -> ConfigurationSpace:
+    @staticmethod
+    def get_hyperparameter_search_space(dataset_properties: Optional[Dict[str, str]] = None) -> ConfigurationSpace:
         cs = ConfigurationSpace()
+
+        available_augmenters = get_components()  # type: Dict[str, BaseImageAugmenter]
 
         if dataset_properties is None:
             dataset_properties = dict()
 
         # add child hyperparameters
-        for name in self.available_augmenters.keys():
-            preprocessor_configuration_space = self.available_augmenters[name].\
+        for name in available_augmenters.keys():
+            preprocessor_configuration_space = available_augmenters[name].\
                 get_hyperparameter_search_space(dataset_properties)
             cs.add_configuration_space(name, preprocessor_configuration_space)
 

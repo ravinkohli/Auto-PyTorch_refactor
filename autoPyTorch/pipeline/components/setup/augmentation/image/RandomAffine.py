@@ -2,14 +2,14 @@ from typing import Any, Dict, Optional, Union
 
 from ConfigSpace.configuration_space import ConfigurationSpace
 from ConfigSpace.hyperparameters import (
-    UniformIntegerHyperparameter,
     UniformFloatHyperparameter,
+    UniformIntegerHyperparameter,
 )
-
-import numpy as np
 
 import imgaug.augmenters as iaa
 from imgaug.augmenters.meta import Augmenter
+
+import numpy as np
 
 from autoPyTorch.pipeline.components.setup.augmentation.image.base_image_augmenter import BaseImageAugmenter
 
@@ -39,7 +39,8 @@ class RandomAffine(BaseImageAugmenter):
         cs = ConfigurationSpace()
         scale_min = UniformFloatHyperparameter('scale_min', lower=0, upper=0.99, default_value=0)
         scale_offset = UniformFloatHyperparameter('scale_offset', lower=0, upper=0.99, default_value=0.2)
-        translate_percent_min = UniformFloatHyperparameter('translate_percent_min', lower=0, upper=0.99, default_value=0)
+        translate_percent_min = UniformFloatHyperparameter('translate_percent_min', lower=0, upper=0.99,
+                                                           default_value=0)
         translate_percent_offset = UniformFloatHyperparameter('translate_percent_offset', lower=0, upper=0.99,
                                                               default_value=0.3)
         shear = UniformIntegerHyperparameter('shear', lower=0, upper=45, default_value=30)

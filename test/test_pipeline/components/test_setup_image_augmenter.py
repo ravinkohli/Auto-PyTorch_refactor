@@ -1,7 +1,8 @@
 import unittest
 
-import numpy as np
 from imgaug.augmenters.meta import Augmenter, Sequential
+
+import numpy as np
 
 from autoPyTorch.pipeline.components.setup.augmentation.image.ImageAugmenter import ImageAugmenter
 
