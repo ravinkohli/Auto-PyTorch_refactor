@@ -1,3 +1,4 @@
+setuptools>=41.0.0
 torch
 torchvision
 ConfigSpace
@@ -7,5 +8,4 @@ torchvision
 pytorch-lightning
 numpy
 scipy
-setuptools>=41.0.0
 imgaug~=0.4.0
