@@ -161,8 +161,6 @@ class TabularClassificationPipeline(ClassifierMixin, BasePipeline):
                       'Proceeding with the default value')
             dataset_properties = dict()
 
-
-
         if 'target_type' not in dataset_properties:
             dataset_properties['target_type'] = 'tabular_classification'
         if dataset_properties['target_type'] != 'tabular_classification':
