@@ -7,5 +7,5 @@ torchvision
 pytorch-lightning
 numpy
 scipy
-setuptools~=49.2.0
+setuptools
 imgaug~=0.4.0
