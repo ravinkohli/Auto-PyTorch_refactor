@@ -1,14 +1,34 @@
 import copy
+import os
+import sys
 import unittest
 import unittest.mock
 
 import numpy as np
 
+from sklearn.base import clone
+
 import torch
 
 from autoPyTorch.pipeline.components.training.data_loader.base_data_loader import (
-    BaseDataLoaderComponent
+    BaseDataLoaderComponent,
 )
+from autoPyTorch.pipeline.components.training.trainer.MixUpTrainer import (
+    MixUpTrainer
+)
+from autoPyTorch.pipeline.components.training.trainer.StandardTrainer import (
+    StandardTrainer
+)
+from autoPyTorch.pipeline.components.training.trainer.base_trainer import (
+    BaseTrainerComponent,
+)
+from autoPyTorch.pipeline.components.training.trainer.base_trainer_choice import (
+    TrainerChoice,
+)
+
+
+sys.path.append(os.path.dirname(__file__))
+from base import BaseTraining  # noqa (E402: module level import not at top of file)
 
 
 class BaseDataLoaderTest(unittest.TestCase):
@@ -98,6 +118,173 @@ class BaseDataLoaderTest(unittest.TestCase):
                          loader.train_data_loader)
         self.assertEqual(transformed_fit_dictionary['val_data_loader'],
                          loader.val_data_loader)
+
+
+class BaseTrainerComponentTest(BaseTraining, unittest.TestCase):
+
+    def test_evaluate(self):
+        """
+        Makes sure we properly evaluate data, returning a proper loss
+        and metric
+        """
+        trainer = BaseTrainerComponent()
+        trainer.prepare(
+            model=self.model,
+            metrics=self.metrics,
+            criterion=self.criterion,
+            budget_tracker=self.budget_tracker,
+            optimizer=self.optimizer,
+            device=self.device,
+            logger=self.logger,
+        )
+
+        prev_loss, prev_metrics = trainer.evaluate(self.loader)
+        self.assertIn('Accuracy', prev_metrics)
+
+        # Fit the model
+        self._overfit_model()
+
+        # Loss and metrics should have improved after fit
+        # And the prediction should be better than random
+        loss, metrics = trainer.evaluate(self.loader)
+        self.assertGreater(prev_loss, loss)
+        self.assertGreater(metrics['Accuracy'], prev_metrics['Accuracy'])
+        self.assertGreater(metrics['Accuracy'], 0.5)
+
+
+class StandartTrainerTest(BaseTraining, unittest.TestCase):
+
+    def test_epoch_training(self):
+        """
+        Makes sure we are able to train a model and produce good
+        training performance
+        """
+        trainer = StandardTrainer()
+        trainer.prepare(
+            model=self.model,
+            metrics=self.metrics,
+            criterion=self.criterion,
+            budget_tracker=self.budget_tracker,
+            optimizer=self.optimizer,
+            device=self.device,
+            logger=self.logger,
+        )
+
+        # Train the model
+        counter = 0
+        accuracy = 0
+        while accuracy < 0.7:
+            loss, metrics = trainer.train(self.loader)
+            counter += 1
+            accuracy = metrics['Accuracy']
+
+            if counter > 1000:
+                self.fail("Could not overfit a dummy binary classification under 1000 epochs")
+
+
+class MixUpTrainerTest(BaseTraining, unittest.TestCase):
+
+    def test_epoch_training(self):
+        """
+        Makes sure we are able to train a model and produce good
+        training performance
+        """
+        trainer = MixUpTrainer(alpha=0.5)
+        trainer.prepare(
+            model=self.model,
+            metrics=self.metrics,
+            criterion=self.criterion,
+            budget_tracker=self.budget_tracker,
+            optimizer=self.optimizer,
+            device=self.device,
+            logger=self.logger,
+        )
+
+        # Train the model
+        counter = 0
+        accuracy = 0
+        while accuracy < 0.7:
+            loss, metrics = trainer.train(self.loader)
+            counter += 1
+            accuracy = metrics['Accuracy']
+
+            if counter > 1000:
+                self.fail("Could not overfit a dummy binary classification under 1000 epochs")
+
+
+class TrainerTest(unittest.TestCase):
+    def test_every_trainer_is_valid(self):
+        """
+        Makes sure that every trainer is a valid estimator.
+        That is, we can fully create an object via get/set params.
+
+        This also test that we can properly initialize each one
+        of them
+        """
+        trainer_choice = TrainerChoice(dataset_properties={})
+
+        # Make sure all components are returned
+        self.assertEqual(len(trainer_choice.get_components().keys()), 2)
+
+        # For every optimizer in the components, make sure
+        # that it complies with the scikit learn estimator.
+        # This is important because usually components are forked to workers,
+        # so the set/get params methods should recreate the same object
+        for name, trainer in trainer_choice.get_components().items():
+            config = trainer.get_hyperparameter_search_space().sample_configuration()
+            estimator = trainer(**config)
+            estimator_clone = clone(estimator)
+            estimator_clone_params = estimator_clone.get_params()
+
+            # Make sure all keys are copied properly
+            for k, v in estimator.get_params().items():
+                self.assertIn(k, estimator_clone_params)
+
+            # Make sure the params getter of estimator are honored
+            klass = estimator.__class__
+            new_object_params = estimator.get_params(deep=False)
+            for name, param in new_object_params.items():
+                new_object_params[name] = clone(param, safe=False)
+            new_object = klass(**new_object_params)
+            params_set = new_object.get_params(deep=False)
+
+            for name in new_object_params:
+                param1 = new_object_params[name]
+                param2 = params_set[name]
+                self.assertEqual(param1, param2)
+
+    def test_get_set_config_space(self):
+        """Make sure that we can setup a valid choice in the trainer
+        choice"""
+        trainer_choice = TrainerChoice(dataset_properties={})
+        cs = trainer_choice.get_hyperparameter_search_space()
+
+        # Make sure that all hyperparameters are part of the serach space
+        self.assertListEqual(
+            sorted(cs.get_hyperparameter('__choice__').choices),
+            sorted(list(trainer_choice.get_components().keys()))
+        )
+
+        # Make sure we can properly set some random configs
+        # Whereas just one iteration will make sure the algorithm works,
+        # doing five iterations increase the confidence. We will be able to
+        # catch component specific crashes
+        for i in range(5):
+            config = cs.sample_configuration()
+            config_dict = copy.deepcopy(config.get_dictionary())
+            trainer_choice.set_hyperparameters(config)
+
+            self.assertEqual(trainer_choice.choice.__class__,
+                             trainer_choice.get_components()[config_dict['__choice__']])
+
+            # Then check the choice configuration
+            selected_choice = config_dict.pop('__choice__', None)
+            for key, value in config_dict.items():
+                # Remove the selected_choice string from the parameter
+                # so we can query in the object for it
+                key = key.replace(selected_choice + ':', '')
+                self.assertIn(key, vars(trainer_choice.choice))
+                self.assertEqual(value, trainer_choice.choice.__dict__[key])
 
 
 if __name__ == '__main__':

@@ -1,3 +1,4 @@
+import warnings
 from collections import OrderedDict
 from typing import Any, Dict, List, Optional
 
@@ -211,6 +212,22 @@ class autoPyTorchChoice(object):
         """
         assert self.choice is not None, "Can not call transform without initialising the component"
         return self.choice.transform(X)
+
+    def check_requirements(self, X: Dict[str, Any], y: Any = None) -> None:
+        """
+        A mechanism in code to ensure the correctness of the fit dictionary
+        It recursively makes sure that the children and parent level requirements
+        are honored before fit.
+
+        Args:
+            X (Dict[str, Any]): Dictionary with fitted parameters. It is a message passing
+                mechanism, in which during a transform, a components adds relevant information
+                so that further stages can be properly fitted
+        """
+        assert isinstance(X, dict), "The input X to the pipeline must be a dictionary"
+
+        if y is not None:
+            warnings.warn("Provided y argument, yet only X is required")
 
     def _check_dataset_properties(self, dataset_properties: Dict[str, Any]) -> None:
         """

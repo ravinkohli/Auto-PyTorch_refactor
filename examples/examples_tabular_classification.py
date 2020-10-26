@@ -7,6 +7,7 @@ import numpy as np
 
 import sklearn.datasets
 import sklearn.model_selection
+from sklearn.utils.multiclass import type_of_target
 
 from autoPyTorch.pipeline.tabular_classification import TabularClassificationPipeline
 
@@ -26,16 +27,21 @@ train_indices, val_indices = sklearn.model_selection.train_test_split(
     random_state=1,
     test_size=0.25,
 )
-print(f"X_train={X_train.shape} train_indices={train_indices}")
 
-numerical = X.columns.to_list()
-categorical = []
-# numerical.remove('att214')
+output_type = type_of_target(y)
+print(f"X_train={X_train.shape} train_indices={train_indices} output_type={output_type}")
+
+# Mock the categories
+categorical_columns = ['A1', 'A4', 'A5', 'A6', 'A8', 'A9', 'A11', 'A12']
+numerical_columns = ['A2', 'A3', 'A7', 'A10', 'A13', 'A14']
+categories = [np.unique(X[a]).tolist() for a in categorical_columns]
 
 # Create a proof of concept pipeline!
 dataset_properties = {
-    'categorical_columns': categorical,
-    'numerical_columns': numerical
+    'task_type': 'tabular_classification',
+    'categorical_columns': categorical_columns,
+    'numerical_columns': numerical_columns,
+    'output_type': output_type,
 }
 pipeline = TabularClassificationPipeline(dataset_properties=dataset_properties)
 
@@ -46,17 +52,12 @@ config = pipeline_cs.sample_configuration()
 print("Pipeline Random Config:\n", '_' * 40, f"\n{config}")
 pipeline.set_hyperparameters(config)
 
-# Mock the categories
-categorical_columns = ['A1', 'A4', 'A5', 'A6', 'A8', 'A9', 'A11', 'A12']
-numerical_columns = ['A2', 'A3', 'A7', 'A10', 'A13', 'A14']
-categories = [np.unique(X[a]).tolist() for a in categorical_columns]
-
 # Fit the pipeline
 print("Fitting the pipeline...")
 pipeline.fit(X={
     'categorical_columns': categorical_columns,
     'numerical_columns': numerical_columns,
-    'num_features': len(X),
+    'num_features': X.shape[1],
     'num_classes': len(np.unique(y)),
     'is_small_preprocess': True,
     'categories': categories,
@@ -66,7 +67,18 @@ pipeline.fit(X={
     'val_indices': val_indices,
     'X_test': X_test,
     'y_test': y_test,
+    'dataset_properties': dataset_properties,
+    # Training configuration
+    'job_id': 'example_tabular_classification_1',
+    'device': 'cpu',
+    'budget_type': 'epochs',
+    'epochs': 100,
+    'torch_num_threads': 1,
+    'early_stopping': 20,
 })
 
 # Showcase some components of the pipeline
 print(pipeline)
+
+# Showcase performance of pipeline
+print(pipeline.named_steps['trainer'].run_summary.repr_last_epoch())

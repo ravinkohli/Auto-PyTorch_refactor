@@ -1,0 +1,328 @@
+import logging
+import time
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
+import numpy as np
+
+import torch
+from torch.autograd import Variable
+
+from autoPyTorch.pipeline.components.training.base_training import autoPyTorchTrainingComponent
+
+
+class BudgetTracker(object):
+    def __init__(self,
+                 budget_type: str,
+                 max_value: int,
+                 ):
+        """
+        An object for tracking when to stop the network training.
+        It handles epoch based criteria as well as training based criteria.
+
+
+        # Maybe it is better to use pynisher? Remember the whole everything gets
+        copied when forking memory, so it makes sense to ask... but also,
+        how to we regulate memory from GPU and CPU?
+        """
+        self.start_time = time.time()
+        self.budget_type = budget_type
+        self.max_value = max_value
+
+    def is_max_epoch_reached(self, epoch: int) -> bool:
+        if self.budget_type == 'epochs' and epoch > self.max_value:
+            return True
+        return False
+
+    def is_max_time_reached(self) -> bool:
+        elapsed_time = time.time() - self.start_time
+        if self.budget_type == 'runtime' and elapsed_time > self.max_value:
+            return True
+        return False
+
+
+class RunSummary(object):
+    def __init__(
+        self,
+        total_parameter_count: float,
+        trainable_parameter_count: float,
+    ):
+        self.performance_tracker = {
+            'start_time': {},
+            'end_time': {},
+        }  # type: Dict[str, Dict]
+
+        self.total_parameter_count = total_parameter_count
+        self.trainable_parameter_count = trainable_parameter_count
+
+        # Allow to track the training performance
+        self.performance_tracker['train_loss'] = {}
+
+        # Allow to track the val performance
+        self.performance_tracker['val_loss'] = {}
+
+        # Allow to track the test performance
+        self.performance_tracker['test_loss'] = {}
+
+        # Allow to track the metrics performance
+        for metric in ['train_metrics', 'val_metrics', 'test_metrics']:
+            self.performance_tracker[metric] = {}
+
+    def add_performance(self,
+                        epoch: int,
+                        start_time: float,
+                        end_time: float,
+                        train_loss: float,
+                        train_metrics: Dict[str, float],
+                        val_metrics: Dict[str, float] = {},
+                        test_metrics: Dict[str, float] = {},
+                        val_loss: Optional[float] = None,
+                        test_loss: Optional[float] = None,
+                        ) -> None:
+        """
+        Tracks performance information about the run, useful for
+        plotting individual runs
+        """
+        self.performance_tracker['train_loss'][epoch] = train_loss
+        self.performance_tracker['val_loss'][epoch] = val_loss
+        self.performance_tracker['test_loss'][epoch] = test_loss
+        self.performance_tracker['start_time'][epoch] = start_time
+        self.performance_tracker['end_time'][epoch] = end_time
+        self.performance_tracker['train_metrics'][epoch] = train_metrics
+        self.performance_tracker['val_metrics'][epoch] = val_metrics
+        self.performance_tracker['test_metrics'][epoch] = test_metrics
+
+    def register_model_statistics(self,
+                                  total_parameter_count: float,
+                                  trainable_parameter_count: float,
+                                  ) -> None:
+        """
+        Utility to register global statistic about the model or training,
+        that are agnostic to epochs
+        """
+        self.total_parameter_count = total_parameter_count
+        self.trainable_parameter_count = trainable_parameter_count
+
+    def get_best_epoch(self, loss_type: str = 'val_loss') -> int:
+        return np.argmin(
+            [self.performance_tracker[loss_type][e] for e in range(1, len(
+                self.performance_tracker[loss_type]) + 1
+            )]
+        )
+
+    def get_last_epoch(self) -> int:
+        if 'train_loss' not in self.performance_tracker:
+            return 0
+        else:
+            return max(self.performance_tracker['train_loss'].keys())
+
+    def repr_last_epoch(self) -> str:
+        """
+        For debug purposes, returns a nice representation of last epoch
+        performance
+
+        Returns:
+            str: A nice representation of the last epoch
+        """
+        last_epoch = len(self.performance_tracker['train_loss'])
+        string = "\n"
+        string += '=' * 40
+        string += f"\n\t\tEpoch {last_epoch}\n"
+        string += '=' * 40
+        string += "\n"
+        for key, value in sorted(self.performance_tracker.items()):
+            if isinstance(value[last_epoch], dict):
+                # Several metrics can be passed
+                string += "\t{}:\n".format(
+                    key,
+                )
+                for sub_key, sub_value in sorted(value[last_epoch].items()):
+                    string += "\t\t{}: {}\n".format(
+                        sub_key,
+                        sub_value,
+                    )
+            else:
+                string += "\t{}: {}\n".format(
+                    key if 'time' in key else key,
+                    value[last_epoch],
+                )
+        string += '=' * 40
+        return string
+
+
+class BaseTrainerComponent(autoPyTorchTrainingComponent):
+
+    def prepare(
+        self,
+        metrics: List[Any],
+        model: torch.nn.Module,
+        criterion: torch.nn.Module,
+        budget_tracker: BudgetTracker,
+        optimizer: torch.nn.Module,
+        device: torch.device,
+        logger: logging.Logger,
+    ) -> None:
+
+        self.logger = logger
+
+        # Save the device to be used
+        self.device = device
+
+        # Setup the metrics
+        self.metrics = metrics
+
+        # Setup the loss function
+        self.criterion = criterion.to(device)
+
+        # setup the model
+        self.model = model.to(device)
+
+        # setup the optimizers
+        self.optimizer = optimizer
+
+        # The budget tracker
+        self.budget_tracker = budget_tracker
+
+    def on_epoch_start(self, X: Dict[str, Any], epoch: int) -> None:
+        """
+        Optional place holder for AutoPytorch Extensions.
+
+        An user can define what happens on every epoch start or every epoch end.
+        """
+        pass
+
+    def on_epoch_end(self, X: Dict[str, Any], epoch: int) -> bool:
+        """
+        Optional place holder for AutoPytorch Extensions.
+        An user can define what happens on every epoch start or every epoch end.
+        If returns True, the training is stopped
+
+        """
+        return False
+
+    def train(self, train_loader: torch.utils.data.DataLoader) -> Tuple[float, Dict[str, float]]:
+        '''
+            Trains the model for a single epoch.
+
+        Args:
+            train_loader (torch.utils.data.DataLoader): generator of features/label
+
+        Returns:
+            float: training loss
+            Dict[str, float]: scores for each desired metric
+        '''
+
+        loss_sum = 0.0
+        N = 0
+        self.model.train()
+        outputs_data = list()
+        targets_data = list()
+
+        for step, (data, targets) in enumerate(train_loader):
+
+            if self.budget_tracker.is_max_time_reached():
+                self.logger.info("Stopping training as max time reached")
+                break
+
+            # prepare
+            data = data.float().to(self.device)
+            targets = targets.long().to(self.device)
+
+            data, criterion_kwargs = self.data_preparation(data, targets)
+            data = Variable(data)
+            batch_size = data.size(0)
+
+            # training
+            self.optimizer.zero_grad()
+            outputs = self.model(data)
+            loss_func = self.criterion_preparation(**criterion_kwargs)
+            loss = loss_func(self.criterion, outputs)
+            loss.backward()
+            self.optimizer.step()
+
+            # save for metric evaluation
+            outputs_data.append(outputs.detach())
+            targets_data.append(targets.detach())
+
+            loss_sum += loss.item() * batch_size
+            N += batch_size
+
+        return loss_sum / N, self.compute_metrics(outputs_data, targets_data)
+
+    def evaluate(self, test_loader: torch.utils.data.DataLoader) -> Tuple[float, Dict[str, float]]:
+        '''
+            Evaluates the model in both metrics and criterion
+
+        Args:
+            test_loader (torch.utils.data.DataLoader): generator of features/label
+
+        Returns:
+            float: test loss
+            Dict[str, float]: scores for each desired metric
+        '''
+        self.model.eval()
+
+        loss_sum = 0.0
+        N = 0
+        outputs_data = list()
+        targets_data = list()
+
+        with torch.no_grad():
+            for _, (data, targets) in enumerate(test_loader):
+
+                batch_size = data.shape[0]
+                data = data.float().to(self.device)
+                targets = targets.long().to(self.device)
+                outputs = self.model(data)
+                loss = self.criterion(outputs, targets)
+                loss_sum += loss.item() * batch_size
+                N += batch_size
+
+                outputs_data.append(outputs.detach())
+                targets_data.append(targets.detach())
+
+        self.model.train()
+        return loss_sum / N, self.compute_metrics(outputs_data, targets_data)
+
+    def compute_metrics(self, outputs_data: np.ndarray, targets_data: np.ndarray
+                        ) -> Dict[str, float]:
+        # TODO: change once Ravin Provides the PR
+        outputs_data = torch.cat(outputs_data, dim=0)
+        targets_data = torch.cat(targets_data, dim=0)
+        return {
+            metric.get_properties()['name']: metric(
+                outputs_data, targets_data) for metric in self.metrics
+        }
+
+    def data_preparation(self, X: np.ndarray, y: np.ndarray,
+                         ) -> Tuple[np.ndarray, Dict[str, np.ndarray]]:
+        """
+        Depending on the trainer choice, data fed to the network might be pre-processed
+        on a different way. That is, in standard training we provide the data to the
+        network as we receive it to the loader. Some regularization techniques, like mixup
+        alter the data.
+
+        Args:
+            X (np.ndarray): The batch training features
+            y (np.ndarray): The batch training labels
+
+        Returns:
+            np.ndarray: that processes data
+            Dict[str, np.ndarray]: arguments to the criterion function
+        """
+        raise NotImplementedError()
+
+    def criterion_preparation(self, y_a: np.ndarray, y_b: np.ndarray = None, lam: float = 1.0
+                              ) -> Callable:  # type: ignore
+        """
+        Depending on the trainer choice, the criterion is not directly applied to the
+        traditional y_pred/y_ground_truth pairs, but rather it might have a slight transformation.
+        For example, in the case of mixup training, we need to account for the lambda mixup
+
+        Args:
+            kwargs (Dict): an expanded dictionary with modifiers to the
+                                  criterion calculation
+
+        Returns:
+            Callable: a lambda that contains the new criterion calculation recipe
+        """
+        raise NotImplementedError()
