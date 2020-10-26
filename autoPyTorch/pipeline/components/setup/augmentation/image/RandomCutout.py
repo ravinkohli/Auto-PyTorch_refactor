@@ -38,4 +38,3 @@ class RandomCutout(BaseImageAugmenter):
     def get_properties(dataset_properties: Optional[Dict[str, str]] = None
                        ) -> Dict[str, Any]:
         return {'name': 'RandomCutout'}
-

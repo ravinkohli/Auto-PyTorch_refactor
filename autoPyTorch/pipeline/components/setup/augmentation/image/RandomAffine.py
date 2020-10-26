@@ -50,8 +50,8 @@ class RandomAffine(BaseImageAugmenter):
         cs.add_hyperparameters([shear, rotate])
 
         return cs
+
     @staticmethod
     def get_properties(dataset_properties: Optional[Dict[str, str]] = None
                        ) -> Dict[str, Any]:
         return {'name': 'RandomAffine'}
-
