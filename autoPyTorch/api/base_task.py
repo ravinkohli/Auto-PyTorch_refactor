@@ -44,6 +44,9 @@ class Task:
         X_test,
         y_test,
     ):
+        #TODO discuss if we should pass the pipeline batch size here
+        y_pred = self._pipeline.predict()
+
         pass
 
     @typing.no_type_check
