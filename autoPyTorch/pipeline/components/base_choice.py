@@ -104,7 +104,10 @@ class autoPyTorchChoice(object):
                 continue
             elif exclude is not None and name in exclude:
                 continue
-
+            if 'issparse' in dataset_properties:
+                if dataset_properties['issparse'] and \
+                        not available_comp[name].get_properties(dataset_properties)['handles_sparse']:
+                    continue
             components_dict[name] = available_comp[name]
 
         return components_dict
