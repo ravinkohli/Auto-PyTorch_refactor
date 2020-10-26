@@ -134,7 +134,7 @@ class TabularClassificationPipeline(ClassifierMixin, BasePipeline):
             dataset_properties: Dict[str, Any],
             include: Optional[Dict[str, Any]] = None,
             exclude: Optional[Dict[str, Any]] = None,
-        ) -> ConfigurationSpace:
+    ) -> ConfigurationSpace:
         """Create the hyperparameter configuration space.
 
         For the given steps, and the Choices within that steps,
