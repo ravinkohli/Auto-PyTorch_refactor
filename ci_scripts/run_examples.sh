@@ -12,3 +12,4 @@ do
         echo "Error running example $script"
         exit $rval
     fi
+done
