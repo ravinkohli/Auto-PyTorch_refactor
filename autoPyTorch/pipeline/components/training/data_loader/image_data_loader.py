@@ -35,6 +35,9 @@ class ImageDataLoader(BaseDataLoaderComponent):
         # These can apply for both train/val/test, so no
         # distinction is performed
 
+        # check if data set is small enough to be preprocessed.
+        # If it is, then no need to add preprocess_transforms to
+        # the data loader as the data is already preprocessed
         if not X['is_small_preprocess']:
             transformations.append(X['preprocess_transforms'])
 
