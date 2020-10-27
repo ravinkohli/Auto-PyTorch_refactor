@@ -96,6 +96,7 @@ class BaseDataLoaderTest(unittest.TestCase):
             'train_indices': [0, 1],
             'val_indices': [2],
             'is_small_preprocess': False,
+            'working_dir': '/tmp',
         }
 
         # Mock child classes requirements
@@ -136,9 +137,10 @@ class BaseTrainerComponentTest(BaseTraining, unittest.TestCase):
             optimizer=self.optimizer,
             device=self.device,
             logger=self.logger,
+            writer=None,
         )
 
-        prev_loss, prev_metrics = trainer.evaluate(self.loader)
+        prev_loss, prev_metrics = trainer.evaluate(self.loader, epoch=1)
         self.assertIn('Accuracy', prev_metrics)
 
         # Fit the model
@@ -146,7 +148,7 @@ class BaseTrainerComponentTest(BaseTraining, unittest.TestCase):
 
         # Loss and metrics should have improved after fit
         # And the prediction should be better than random
-        loss, metrics = trainer.evaluate(self.loader)
+        loss, metrics = trainer.evaluate(self.loader, epoch=1)
         self.assertGreater(prev_loss, loss)
         self.assertGreater(metrics['Accuracy'], prev_metrics['Accuracy'])
         self.assertGreater(metrics['Accuracy'], 0.5)
@@ -168,13 +170,14 @@ class StandartTrainerTest(BaseTraining, unittest.TestCase):
             optimizer=self.optimizer,
             device=self.device,
             logger=self.logger,
+            writer=None,
         )
 
         # Train the model
         counter = 0
         accuracy = 0
         while accuracy < 0.7:
-            loss, metrics = trainer.train(self.loader)
+            loss, metrics = trainer.train(self.loader, epoch=1)
             counter += 1
             accuracy = metrics['Accuracy']
 
@@ -198,13 +201,14 @@ class MixUpTrainerTest(BaseTraining, unittest.TestCase):
             optimizer=self.optimizer,
             device=self.device,
             logger=self.logger,
+            writer=None,
         )
 
         # Train the model
         counter = 0
         accuracy = 0
         while accuracy < 0.7:
-            loss, metrics = trainer.train(self.loader)
+            loss, metrics = trainer.train(self.loader, epoch=1)
             counter += 1
             accuracy = metrics['Accuracy']
 

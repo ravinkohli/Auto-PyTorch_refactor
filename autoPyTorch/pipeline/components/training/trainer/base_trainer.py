@@ -6,6 +6,7 @@ import numpy as np
 
 import torch
 from torch.autograd import Variable
+from torch.utils.tensorboard.writer import SummaryWriter
 
 from autoPyTorch.pipeline.components.training.base_training import autoPyTorchTrainingComponent
 
@@ -142,7 +143,7 @@ class RunSummary(object):
                     )
             else:
                 string += "\t{}: {}\n".format(
-                    key if 'time' in key else key,
+                    key,
                     value[last_epoch],
                 )
         string += '=' * 40
@@ -160,6 +161,7 @@ class BaseTrainerComponent(autoPyTorchTrainingComponent):
         optimizer: torch.nn.Module,
         device: torch.device,
         logger: logging.Logger,
+        writer: Optional[SummaryWriter],
     ) -> None:
 
         self.logger = logger
@@ -182,6 +184,9 @@ class BaseTrainerComponent(autoPyTorchTrainingComponent):
         # The budget tracker
         self.budget_tracker = budget_tracker
 
+        # A summary writer for tensorboard
+        self.writer = writer
+
     def on_epoch_start(self, X: Dict[str, Any], epoch: int) -> None:
         """
         Optional place holder for AutoPytorch Extensions.
@@ -199,12 +204,14 @@ class BaseTrainerComponent(autoPyTorchTrainingComponent):
         """
         return False
 
-    def train(self, train_loader: torch.utils.data.DataLoader) -> Tuple[float, Dict[str, float]]:
+    def train(self, train_loader: torch.utils.data.DataLoader, epoch: int
+              ) -> Tuple[float, Dict[str, float]]:
         '''
             Trains the model for a single epoch.
 
         Args:
             train_loader (torch.utils.data.DataLoader): generator of features/label
+            epoch (int): The current epoch used solely for tracking purposes
 
         Returns:
             float: training loss
@@ -246,14 +253,23 @@ class BaseTrainerComponent(autoPyTorchTrainingComponent):
             loss_sum += loss.item() * batch_size
             N += batch_size
 
+            if self.writer:
+                self.writer.add_scalar(
+                    'Train/loss',
+                    loss.item(),
+                    epoch * len(train_loader) + step,
+                )
+
         return loss_sum / N, self.compute_metrics(outputs_data, targets_data)
 
-    def evaluate(self, test_loader: torch.utils.data.DataLoader) -> Tuple[float, Dict[str, float]]:
+    def evaluate(self, test_loader: torch.utils.data.DataLoader, epoch: int
+                 ) -> Tuple[float, Dict[str, float]]:
         '''
             Evaluates the model in both metrics and criterion
 
         Args:
             test_loader (torch.utils.data.DataLoader): generator of features/label
+            epoch (int): the current epoch for tracking purposes
 
         Returns:
             float: test loss
@@ -267,7 +283,7 @@ class BaseTrainerComponent(autoPyTorchTrainingComponent):
         targets_data = list()
 
         with torch.no_grad():
-            for _, (data, targets) in enumerate(test_loader):
+            for step, (data, targets) in enumerate(test_loader):
 
                 batch_size = data.shape[0]
                 data = data.float().to(self.device)
@@ -279,6 +295,13 @@ class BaseTrainerComponent(autoPyTorchTrainingComponent):
 
                 outputs_data.append(outputs.detach())
                 targets_data.append(targets.detach())
+
+                if self.writer:
+                    self.writer.add_scalar(
+                        'Val/loss',
+                        loss.item(),
+                        epoch * len(test_loader) + step,
+                    )
 
         self.model.train()
         return loss_sum / N, self.compute_metrics(outputs_data, targets_data)

@@ -11,6 +11,7 @@ from ConfigSpace.hyperparameters import (
 import numpy as np
 
 import torch
+from torch.utils.tensorboard.writer import SummaryWriter
 
 from autoPyTorch.pipeline.components.base_choice import autoPyTorchChoice
 from autoPyTorch.pipeline.components.base_component import (
@@ -56,6 +57,7 @@ class TrainerChoice(autoPyTorchChoice):
         super().__init__(dataset_properties=dataset_properties,
                          random_state=random_state)
         self.run_summary = None  # Optional[RunSummary]
+        self.writer = None  # Optional[SummaryWriter]
 
     def get_components(self) -> Dict[str, autoPyTorchComponent]:
         """Returns the available trainer components
@@ -164,7 +166,11 @@ class TrainerChoice(autoPyTorchChoice):
         # Make sure that the prerequisites are there
         self.check_requirements(X, y)
 
+        # Setup a Logger and other logging support
         logger = logging.get_logger(X['job_id'])
+        if 'use_tensorboard_logger' in X and X['use_tensorboard_logger']:
+            self.writer = SummaryWriter(log_dir=X['working_dir'])
+
         if X["torch_num_threads"] > 0:
             torch.set_num_threads(X["torch_num_threads"])
 
@@ -181,6 +187,7 @@ class TrainerChoice(autoPyTorchChoice):
             optimizer=X['optimizer'],
             device=self.get_device(X),
             logger=logger,
+            writer=self.writer,
         )
         total_parameter_count, trainable_parameter_count = self.count_parameters(X['network'])
         self.run_summary = RunSummary(
@@ -199,14 +206,15 @@ class TrainerChoice(autoPyTorchChoice):
 
             # training
             train_loss, train_metrics = self.choice.train(
-                train_loader=X['train_data_loader']
+                train_loader=X['train_data_loader'],
+                epoch=epoch,
             )
 
             val_loss, val_metrics, test_loss, test_metrics = None, {}, None, {}
             if self.eval_valid_each_epoch(X):
-                val_loss, val_metrics = self.choice.evaluate(X['val_data_loader'])
+                val_loss, val_metrics = self.choice.evaluate(X['val_data_loader'], epoch)
                 if 'test_data_loader' in X and X['test_data_loader']:
-                    test_loss, test_metrics = self.choice.evaluate(X['test_data_loader'])
+                    test_loss, test_metrics = self.choice.evaluate(X['test_data_loader'], epoch)
 
             # TODO: does it make sense to call all schedulers here?
             # Some people exhaust the learning rate on every epoch
@@ -237,9 +245,6 @@ class TrainerChoice(autoPyTorchChoice):
 
             if self.choice.on_epoch_end(X=X, epoch=epoch):
                 break
-
-            if 'use_tensorboard_logger' in X and X['use_tensorboard_logger']:
-                self.tensorboard_log()
 
             logger.debug(self.run_summary.repr_last_epoch())
 
@@ -331,6 +336,11 @@ class TrainerChoice(autoPyTorchChoice):
         # make sure the parent requirements are honored
         super().check_requirements(X, y)
 
+        # We need a working dir in where to put our data
+        if 'working_dir' not in X:
+            raise ValueError('Need a working directory to output trainer information, '
+                             "yet 'working_dir' was not found in the fit dictionary")
+
         # Setup Components
         if 'lr_scheduler' not in X:
             raise ValueError("Learning rate scheduler not found in the fit dictionary!")
@@ -386,9 +396,6 @@ class TrainerChoice(autoPyTorchChoice):
         if not torch.cuda.is_available():
             return torch.device('cpu')
         return torch.device(X['device'])
-
-    def tensorboard_log(self) -> str:
-        raise NotImplementedError()
 
     @staticmethod
     def count_parameters(model: torch.nn.Module) -> Tuple[int, int]:

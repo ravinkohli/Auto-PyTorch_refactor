@@ -9,6 +9,8 @@ import numpy as np
 from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_random_state
 
+import torch
+
 from autoPyTorch.pipeline.components.base_choice import autoPyTorchChoice
 from autoPyTorch.pipeline.components.base_component import autoPyTorchComponent
 from autoPyTorch.pipeline.create_searchspace_util import (
@@ -191,6 +193,12 @@ class BasePipeline(Pipeline):
                 exclude=self.exclude,
             )
         return self.config_space
+
+    def get_model(self) -> torch.nn.Module:
+        """
+        Returns the fitted model to the user
+        """
+        return self.named_steps['network'].get_network()
 
     def _get_hyperparameter_search_space(self,
                                          dataset_properties: Dict[str, Any],

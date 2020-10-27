@@ -57,6 +57,7 @@ class PipelineTest(unittest.TestCase):
              'epochs': 5,
              'torch_num_threads': 1,
              'early_stopping': 20,
+             'working_dir': '/tmp',
              }
         )
 
@@ -88,6 +89,7 @@ class PipelineTest(unittest.TestCase):
              'epochs': 5,
              'torch_num_threads': 1,
              'early_stopping': 20,
+             'working_dir': '/tmp',
              }
         )
 
