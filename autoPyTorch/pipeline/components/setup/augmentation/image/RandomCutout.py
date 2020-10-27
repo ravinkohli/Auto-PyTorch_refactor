@@ -16,7 +16,8 @@ from autoPyTorch.pipeline.components.setup.augmentation.image.base_image_augment
 
 
 class RandomCutout(BaseImageAugmenter):
-    def __init__(self, use_augmenter: bool = True, p: float = 0.5, random_state: Optional[Union[int, np.random.RandomState]] = None):
+    def __init__(self, use_augmenter: bool = True, p: float = 0.5,
+                 random_state: Optional[Union[int, np.random.RandomState]] = None):
         super().__init__(use_augmenter=use_augmenter)
         self.p = p
         self.random_state = random_state

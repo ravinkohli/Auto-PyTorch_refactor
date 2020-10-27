@@ -4,8 +4,6 @@ import ConfigSpace as CS
 from ConfigSpace.configuration_space import ConfigurationSpace
 from ConfigSpace.hyperparameters import (
     CategoricalHyperparameter,
-    UniformFloatHyperparameter,
-    UniformIntegerHyperparameter,
 )
 
 import imgaug.augmenters as iaa
@@ -17,7 +15,8 @@ from autoPyTorch.pipeline.components.setup.augmentation.image.base_image_augment
 
 
 class Resize(BaseImageAugmenter):
-    def __init__(self, interpolation: str = 'linear', use_augmenter: bool = True, random_state: Optional[Union[int, np.random.RandomState]] = None):
+    def __init__(self, interpolation: str = 'linear', use_augmenter: bool = True,
+                 random_state: Optional[Union[int, np.random.RandomState]] = None):
         super().__init__(use_augmenter=use_augmenter)
         self.random_state = random_state
         self.interpolation = interpolation

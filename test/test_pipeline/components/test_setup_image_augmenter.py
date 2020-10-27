@@ -27,7 +27,7 @@ class TestImageAugmenter(unittest.TestCase):
             train_aug = augmenter(X['X_train'])
             self.assertIsInstance(train_aug, np.ndarray)
             # check if data was changed
-            self.assertIsNot(train_aug,  X['X_train'])
+            self.assertIsNot(train_aug, X['X_train'])
 
     def test_get_set_config_space(self):
         X = dict(X_train=np.random.randint(0, 255, (8, 3, 16, 16), dtype=np.uint8), image_height=16, image_width=16)
