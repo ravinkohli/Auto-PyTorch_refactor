@@ -12,21 +12,25 @@ class TestImageAugmenter(unittest.TestCase):
         image_augmenter = ImageAugmenter()
         configuration = image_augmenter.get_hyperparameter_search_space().sample_configuration()
         image_augmenter = image_augmenter.set_hyperparameters(configuration=configuration)
+        X = dict(X_train=np.random.randint(0, 255, (8, 3, 16, 16), dtype=np.uint8), image_height=16, image_width=16)
         for name, augmenter in image_augmenter.available_augmenters.items():
-            X = dict(X_train=np.random.randint(0, 255, (8, 3, 16, 16), dtype=np.uint8))
-            # check if correct augmenter is saved in available augmenters
-            self.assertEqual(name, image_augmenter.available_augmenters[name].__class__.__name__)
-
+            if not augmenter.use_augmenter:
+                continue
             augmenter = augmenter.fit(X)
+            print(name)
+            # check if augmenter in the component has correct name
+            self.assertEqual(augmenter.get_image_augmenter().name, name)
             # test if augmenter has an Augmenter attribute
             self.assertIsInstance(augmenter.get_image_augmenter(), Augmenter)
 
             # test if augmenter works on a random image
             train_aug = augmenter(X['X_train'])
             self.assertIsInstance(train_aug, np.ndarray)
+            # check if data was changed
+            self.assertIsNot(train_aug,  X['X_train'])
 
     def test_get_set_config_space(self):
-        X = dict(X_train=np.random.randint(0, 255, (8, 3, 16, 16), dtype=np.uint8))
+        X = dict(X_train=np.random.randint(0, 255, (8, 3, 16, 16), dtype=np.uint8), image_height=16, image_width=16)
         image_augmenter = ImageAugmenter()
         configuration = image_augmenter.get_hyperparameter_search_space().sample_configuration()
         image_augmenter = image_augmenter.set_hyperparameters(configuration=configuration)

@@ -1,7 +1,9 @@
 from typing import Any, Dict, Optional, Union
 
+import ConfigSpace as CS
 from ConfigSpace.configuration_space import ConfigurationSpace
 from ConfigSpace.hyperparameters import (
+    CategoricalHyperparameter,
     UniformFloatHyperparameter,
     UniformIntegerHyperparameter,
 )
@@ -15,10 +17,10 @@ from autoPyTorch.pipeline.components.setup.augmentation.image.base_image_augment
 
 
 class RandomAffine(BaseImageAugmenter):
-    def __init__(self, scale_min: float = 0, scale_offset: float = 0.2,
+    def __init__(self, use_augmenter: bool = True, scale_min: float = 0, scale_offset: float = 0.2,
                  translate_percent_min: float = 0, translate_percent_offset: float = 0.3,
                  shear: int = 30, rotate: int = 45, random_state: Optional[Union[int, np.random.RandomState]] = None):
-        super().__init__()
+        super().__init__(use_augmenter=use_augmenter)
         self.random_state = random_state
         self.scale = (scale_min, scale_min + scale_offset)
         self.translate_percent = (translate_percent_min, translate_percent_min + translate_percent_offset)
@@ -26,8 +28,10 @@ class RandomAffine(BaseImageAugmenter):
         self.rotate = (-rotate, rotate)
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> BaseImageAugmenter:
-        self.augmenter: Augmenter = iaa.Affine(scale=self.scale, translate_percent=self.translate_percent,
-                                               rotate=self.rotate, shear=self.shear, mode='symmetric')
+        if self.use_augmenter:
+            self.augmenter: Augmenter = iaa.Affine(scale=self.scale, translate_percent=self.translate_percent,
+                                                   rotate=self.rotate, shear=self.shear, mode='symmetric',
+                                                   name=self.get_properties()['name'])
 
         return self
 
@@ -46,8 +50,18 @@ class RandomAffine(BaseImageAugmenter):
         shear = UniformIntegerHyperparameter('shear', lower=0, upper=45, default_value=30)
         rotate = UniformIntegerHyperparameter('rotate', lower=0, upper=360, default_value=45)
 
+        use_augmenter = CategoricalHyperparameter('use_augmenter', choices=[True, False])
+
         cs.add_hyperparameters([scale_min, scale_offset, translate_percent_min, translate_percent_offset])
-        cs.add_hyperparameters([shear, rotate])
+        cs.add_hyperparameters([shear, rotate, use_augmenter])
+
+        # only add hyperparameters to configuration space if we are using the augmenter
+        cs.add_condition(CS.EqualsCondition(scale_min, use_augmenter, True))
+        cs.add_condition(CS.EqualsCondition(scale_offset, use_augmenter, True))
+        cs.add_condition(CS.EqualsCondition(translate_percent_min, use_augmenter, True))
+        cs.add_condition(CS.EqualsCondition(translate_percent_offset, use_augmenter, True))
+        cs.add_condition(CS.EqualsCondition(shear, use_augmenter, True))
+        cs.add_condition(CS.EqualsCondition(rotate, use_augmenter, True))
 
         return cs
 

@@ -1,8 +1,11 @@
 from typing import Any, Dict, Optional, Union
 
+import ConfigSpace as CS
 from ConfigSpace.configuration_space import ConfigurationSpace
 from ConfigSpace.hyperparameters import (
-    UniformFloatHyperparameter
+    CategoricalHyperparameter,
+    UniformFloatHyperparameter,
+    UniformIntegerHyperparameter,
 )
 
 import imgaug.augmenters as iaa
@@ -13,25 +16,17 @@ import numpy as np
 from autoPyTorch.pipeline.components.setup.augmentation.image.base_image_augmenter import BaseImageAugmenter
 
 
-class ZeroPadAndCrop(BaseImageAugmenter):
-    def __init__(self, x_position: float = 0, y_position: float = 0,
-                 percent: float = 0.1, random_state: Optional[Union[int, np.random.RandomState]] = None):
-        super().__init__()
+class Resize(BaseImageAugmenter):
+    def __init__(self, interpolation: str = 'linear', use_augmenter: bool = True, random_state: Optional[Union[int, np.random.RandomState]] = None):
+        super().__init__(use_augmenter=use_augmenter)
         self.random_state = random_state
-        self.percent = percent
-        self.position = (x_position, y_position)
-        self.pad_augmenter: Optional[Augmenter] = None
-        self.crop_augmenter: Optional[Augmenter] = None
+        self.interpolation = interpolation
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> BaseImageAugmenter:
         self.check_requirements(X, y)
-        self.pad_augmenter = iaa.Pad(percent=self.percent, keep_size=False)
-        self.crop_augmenter = iaa.CropToFixedSize(height=X['image_height'], width=X['image_width'],
-                                                  position=self.position)
-        self.augmenter: Augmenter = iaa.Sequential([
-            self.pad_augmenter,
-            self.crop_augmenter
-        ], name=self.get_properties()['name'])
+        if self.use_augmenter:
+            self.augmenter: Augmenter = iaa.Resize(size=(X['image_height'], X['image_width']),
+                                                   interpolation=self.interpolation, name=self.get_properties()['name'])
 
         return self
 
@@ -59,13 +54,17 @@ class ZeroPadAndCrop(BaseImageAugmenter):
     ) -> ConfigurationSpace:
 
         cs = ConfigurationSpace()
-        x_position = UniformFloatHyperparameter('x_position', lower=0, upper=1, default_value=0)
-        y_position = UniformFloatHyperparameter('y_position', lower=0, upper=1, default_value=0)
-        percent = UniformFloatHyperparameter('percent', lower=0, upper=0.5, default_value=0.1)
-        cs.add_hyperparameters([x_position, y_position, percent])
+        interpolation = CategoricalHyperparameter('interpolation', choices=['nearest', 'linear', 'area', 'cubic'],
+                                                  default_value='linear')
+        use_augmenter = CategoricalHyperparameter('use_augmenter', choices=[True, False])
+        cs.add_hyperparameters([interpolation, use_augmenter])
+
+        # only add hyperparameters to configuration space if we are using the augmenter
+        cs.add_condition(CS.EqualsCondition(interpolation, use_augmenter, True))
+
         return cs
 
     @staticmethod
     def get_properties(dataset_properties: Optional[Dict[str, str]] = None
                        ) -> Dict[str, Any]:
-        return {'name': 'ZeroPadAndCrop'}
+        return {'name': 'RandomAffine'}

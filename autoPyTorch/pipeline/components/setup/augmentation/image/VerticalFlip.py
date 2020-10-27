@@ -14,7 +14,7 @@ class VerticalFlip(BaseImageAugmenter):
         self.random_state = random_state
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> BaseImageAugmenter:
-        self.augmenter: Augmenter = iaa.Flipud(p=0.5)
+        self.augmenter: Augmenter = iaa.Flipud(p=0.5, name=self.get_properties()['name'])
 
         return self
 

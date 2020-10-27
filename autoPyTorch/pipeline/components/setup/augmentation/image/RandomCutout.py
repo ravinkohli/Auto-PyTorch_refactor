@@ -1,7 +1,9 @@
 from typing import Any, Dict, Optional, Union
 
+import ConfigSpace as CS
 from ConfigSpace.configuration_space import ConfigurationSpace
 from ConfigSpace.hyperparameters import (
+    CategoricalHyperparameter,
     UniformFloatHyperparameter,
 )
 
@@ -14,14 +16,16 @@ from autoPyTorch.pipeline.components.setup.augmentation.image.base_image_augment
 
 
 class RandomCutout(BaseImageAugmenter):
-    def __init__(self, p: float = 0.5, random_state: Optional[Union[int, np.random.RandomState]] = None):
-        super().__init__()
+    def __init__(self, use_augmenter: bool = True, p: float = 0.5, random_state: Optional[Union[int, np.random.RandomState]] = None):
+        super().__init__(use_augmenter=use_augmenter)
         self.p = p
         self.random_state = random_state
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> BaseImageAugmenter:
-        self.augmenter: Augmenter = iaa.Sometimes(self.p, iaa.Cutout(nb_iterations=(1, 10), size=(0.1, 0.5),
-                                                                     random_state=self.random_state))
+        if self.use_augmenter:
+            self.augmenter: Augmenter = iaa.Sometimes(self.p, iaa.Cutout(nb_iterations=(1, 10), size=(0.1, 0.5),
+                                                                         random_state=self.random_state),
+                                                      name=self.get_properties()['name'])
         return self
 
     @staticmethod
@@ -31,7 +35,11 @@ class RandomCutout(BaseImageAugmenter):
 
         cs = ConfigurationSpace()
         p = UniformFloatHyperparameter('p', lower=0.2, upper=1, default_value=0.5)
-        cs.add_hyperparameters([p])
+        use_augmenter = CategoricalHyperparameter('use_augmenter', choices=[True, False])
+        cs.add_hyperparameters([p, use_augmenter])
+
+        # only add hyperparameters to configuration space if we are using the augmenter
+        cs.add_condition(CS.EqualsCondition(p, use_augmenter, True))
         return cs
 
     @staticmethod

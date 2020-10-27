@@ -39,6 +39,10 @@ def get_components() -> Dict[str, BaseImageAugmenter]:
         Dict[str, BaseImageAugmenter]: all BaseImageAugmenter components available
             as choices
     """
+    # Error in implementation of CropToFixedSize augmenter in imgaug
+    # It returns a list of arrays instead of an array
+    if 'ZeroPadAndCrop' in _augmenters:
+        del _augmenters['ZeroPadAndCrop']
     components = OrderedDict()
     components.update(_augmenters)
     components.update(_addons.components)
@@ -53,8 +57,12 @@ class ImageAugmenter(BaseImageAugmenter):
         self.random_state = random_state
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> BaseImageAugmenter:
-        self.augmenter = iaa.Sequential([augmenter.fit(X).get_image_augmenter() for _, augmenter in
-                                         self.available_augmenters.items()])
+        # aggregate all the imgaug augmenters from the fitted augmenter component if they are set to use
+        fitted_augmenters = [augmenter.fit(X).get_image_augmenter() for _, augmenter in
+                             self.available_augmenters.items() if augmenter.use_augmenter]
+
+        # Create sequantial from the fitted augmenters augmenters
+        self.augmenter = iaa.Sequential(fitted_augmenters, name=self.get_properties()['name'])
         return self
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
@@ -128,8 +136,13 @@ class ImageAugmenter(BaseImageAugmenter):
         """ Allow a nice understanding of what components where used """
         string = self.__class__.__name__
         info = vars(self)
+        augmenters = list()
+        for augmenter in info['augmenter']:
+            augmenters.append(augmenter.name)
+        info['augmenters'] = augmenters
         # Remove unwanted info
         info.pop('random_state', None)
+        info.pop('available_augmenters', None)
         info.pop('augmenter', None)
         string += " (" + str(info) + ")"
         return string

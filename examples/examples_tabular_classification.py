@@ -13,7 +13,7 @@ from autoPyTorch.pipeline.tabular_classification import TabularClassificationPip
 
 # Get the training data for tabular classification
 # Move to Australian to showcase numerical vs categorical
-X, y = sklearn.datasets.fetch_openml(data_id=40981, return_X_y=True, as_frame=True)
+X, y = sklearn.datasets.fetch_openml('mnist_784', return_X_y=True, as_frame=True)
 X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(
     X,
     y,
@@ -28,14 +28,14 @@ train_indices, val_indices = sklearn.model_selection.train_test_split(
 )
 print(f"X_train={X_train.shape} train_indices={train_indices}")
 
-numerical = X.columns.to_list()
-categorical = []
+numerical_columns = X.columns.to_list()
+categorical_columns = []
 # numerical.remove('att214')
 
 # Create a proof of concept pipeline!
 dataset_properties = {
-    'categorical_columns': categorical,
-    'numerical_columns': numerical
+    'categorical_columns': categorical_columns,
+    'numerical_columns': numerical_columns
 }
 pipeline = TabularClassificationPipeline(dataset_properties=dataset_properties)
 
@@ -46,10 +46,10 @@ config = pipeline_cs.sample_configuration()
 print("Pipeline Random Config:\n", '_' * 40, f"\n{config}")
 pipeline.set_hyperparameters(config)
 
-# Mock the categories
-categorical_columns = ['A1', 'A4', 'A5', 'A6', 'A8', 'A9', 'A11', 'A12']
-numerical_columns = ['A2', 'A3', 'A7', 'A10', 'A13', 'A14']
-categories = [np.unique(X[a]).tolist() for a in categorical_columns]
+# # Mock the categories
+# categorical_columns = ['A1', 'A4', 'A5', 'A6', 'A8', 'A9', 'A11', 'A12']
+# numerical_columns = ['A2', 'A3', 'A7', 'A10', 'A13', 'A14']
+# categories = [np.unique(X[a]).tolist() for a in categorical_columns]
 
 # Fit the pipeline
 print("Fitting the pipeline...")
@@ -59,7 +59,7 @@ pipeline.fit(X={
     'num_features': len(X),
     'num_classes': len(np.unique(y)),
     'is_small_preprocess': True,
-    'categories': categories,
+    'categories': [],
     'X_train': X_train,
     'y_train': y_train,
     'train_indices': train_indices,

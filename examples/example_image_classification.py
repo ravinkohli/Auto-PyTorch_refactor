@@ -34,7 +34,9 @@ pipeline.fit(X=dict(X_train=data,
                     channelwise_mean=np.array([np.mean(data[:, :, :, i]) for i in range(1)]),
                     channelwise_std=np.array([np.std(data[:, :, :, i]) for i in range(1)]),
                     num_classes=10,
-                    num_features=data.shape[1] * data.shape[2]
+                    num_features=data.shape[1] * data.shape[2],
+                    image_height=data.shape[1],
+                    image_width=data.shape[2]
                     )
              )
 
