@@ -138,6 +138,7 @@ class BaseTrainerComponentTest(BaseTraining, unittest.TestCase):
             device=self.device,
             logger=self.logger,
             writer=None,
+            metrics_during_training=True,
         )
 
         prev_loss, prev_metrics = trainer.evaluate(self.loader, epoch=1)
@@ -171,13 +172,14 @@ class StandartTrainerTest(BaseTraining, unittest.TestCase):
             device=self.device,
             logger=self.logger,
             writer=None,
+            metrics_during_training=True,
         )
 
         # Train the model
         counter = 0
         accuracy = 0
         while accuracy < 0.7:
-            loss, metrics = trainer.train(self.loader, epoch=1)
+            loss, metrics = trainer.train_epoch(self.loader, epoch=1)
             counter += 1
             accuracy = metrics['Accuracy']
 
@@ -202,13 +204,14 @@ class MixUpTrainerTest(BaseTraining, unittest.TestCase):
             device=self.device,
             logger=self.logger,
             writer=None,
+            metrics_during_training=True,
         )
 
         # Train the model
         counter = 0
         accuracy = 0
         while accuracy < 0.7:
-            loss, metrics = trainer.train(self.loader, epoch=1)
+            loss, metrics = trainer.train_epoch(self.loader, epoch=1)
             counter += 1
             accuracy = metrics['Accuracy']
 

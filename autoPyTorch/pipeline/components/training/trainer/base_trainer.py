@@ -6,6 +6,7 @@ import numpy as np
 
 import torch
 from torch.autograd import Variable
+from torch.optim import Optimizer
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from autoPyTorch.pipeline.components.training.base_training import autoPyTorchTrainingComponent
@@ -14,29 +15,39 @@ from autoPyTorch.pipeline.components.training.base_training import autoPyTorchTr
 class BudgetTracker(object):
     def __init__(self,
                  budget_type: str,
-                 max_value: int,
+                 max_epochs: Optional[int] = None,
+                 max_runtime: Optional[int] = None,
                  ):
         """
         An object for tracking when to stop the network training.
         It handles epoch based criteria as well as training based criteria.
 
+        It also allows to define a 'epoch_or_time' budget type, which means,
+        the first of them both which is exhausted, is honored
 
-        # Maybe it is better to use pynisher? Remember the whole everything gets
-        copied when forking memory, so it makes sense to ask... but also,
-        how to we regulate memory from GPU and CPU?
+        In case use_pynisher is set to false, this function allows to
+        still terminate the task with a time domain consideration
         """
         self.start_time = time.time()
         self.budget_type = budget_type
-        self.max_value = max_value
+        self.max_epochs = max_epochs
+        self.max_runtime = max_runtime
 
     def is_max_epoch_reached(self, epoch: int) -> bool:
-        if self.budget_type == 'epochs' and epoch > self.max_value:
+
+        # Make None a method to run without this constrain
+        if self.max_epochs is None:
+            return False
+        if self.budget_type in ['epochs', 'epoch_or_time'] and epoch > self.max_epochs:
             return True
         return False
 
     def is_max_time_reached(self) -> bool:
+        # Make None a method to run without this constrain
+        if self.max_runtime is None:
+            return False
         elapsed_time = time.time() - self.start_time
-        if self.budget_type == 'runtime' and elapsed_time > self.max_value:
+        if self.budget_type in ['runtime', 'epoch_or_time'] and elapsed_time > self.max_runtime:
             return True
         return False
 
@@ -47,6 +58,14 @@ class RunSummary(object):
         total_parameter_count: float,
         trainable_parameter_count: float,
     ):
+        """
+        A useful object to track performance per epoch.
+
+        It allows to track train, validation and test information not only for
+        debug, but for research purposes (Like understanding overfit).
+
+        It does so by tracking a metric/loss at the end of each epoch.
+        """
         self.performance_tracker = {
             'start_time': {},
             'end_time': {},
@@ -91,17 +110,6 @@ class RunSummary(object):
         self.performance_tracker['train_metrics'][epoch] = train_metrics
         self.performance_tracker['val_metrics'][epoch] = val_metrics
         self.performance_tracker['test_metrics'][epoch] = test_metrics
-
-    def register_model_statistics(self,
-                                  total_parameter_count: float,
-                                  trainable_parameter_count: float,
-                                  ) -> None:
-        """
-        Utility to register global statistic about the model or training,
-        that are agnostic to epochs
-        """
-        self.total_parameter_count = total_parameter_count
-        self.trainable_parameter_count = trainable_parameter_count
 
     def get_best_epoch(self, loss_type: str = 'val_loss') -> int:
         return np.argmin(
@@ -158,10 +166,11 @@ class BaseTrainerComponent(autoPyTorchTrainingComponent):
         model: torch.nn.Module,
         criterion: torch.nn.Module,
         budget_tracker: BudgetTracker,
-        optimizer: torch.nn.Module,
+        optimizer: Optimizer,
         device: torch.device,
         logger: logging.Logger,
         writer: Optional[SummaryWriter],
+        metrics_during_training: bool,
     ) -> None:
 
         self.logger = logger
@@ -187,6 +196,9 @@ class BaseTrainerComponent(autoPyTorchTrainingComponent):
         # A summary writer for tensorboard
         self.writer = writer
 
+        # For best performance, we allow option to prevent comparing metrics every time
+        self.metrics_during_training = metrics_during_training
+
     def on_epoch_start(self, X: Dict[str, Any], epoch: int) -> None:
         """
         Optional place holder for AutoPytorch Extensions.
@@ -204,8 +216,8 @@ class BaseTrainerComponent(autoPyTorchTrainingComponent):
         """
         return False
 
-    def train(self, train_loader: torch.utils.data.DataLoader, epoch: int
-              ) -> Tuple[float, Dict[str, float]]:
+    def train_epoch(self, train_loader: torch.utils.data.DataLoader, epoch: int
+                    ) -> Tuple[float, Dict[str, float]]:
         '''
             Trains the model for a single epoch.
 
@@ -230,37 +242,55 @@ class BaseTrainerComponent(autoPyTorchTrainingComponent):
                 self.logger.info("Stopping training as max time reached")
                 break
 
-            # prepare
-            data = data.float().to(self.device)
-            targets = targets.long().to(self.device)
-
-            data, criterion_kwargs = self.data_preparation(data, targets)
-            data = Variable(data)
-            batch_size = data.size(0)
-
-            # training
-            self.optimizer.zero_grad()
-            outputs = self.model(data)
-            loss_func = self.criterion_preparation(**criterion_kwargs)
-            loss = loss_func(self.criterion, outputs)
-            loss.backward()
-            self.optimizer.step()
+            loss, outputs = self.train_step(data, targets)
 
             # save for metric evaluation
             outputs_data.append(outputs.detach())
             targets_data.append(targets.detach())
 
-            loss_sum += loss.item() * batch_size
+            batch_size = data.size(0)
+            loss_sum += loss * batch_size
             N += batch_size
 
             if self.writer:
                 self.writer.add_scalar(
                     'Train/loss',
-                    loss.item(),
+                    loss,
                     epoch * len(train_loader) + step,
                 )
 
-        return loss_sum / N, self.compute_metrics(outputs_data, targets_data)
+        if self.metrics_during_training:
+            return loss_sum / N, self.compute_metrics(outputs_data, targets_data)
+        else:
+            return loss_sum / N, {}
+
+    def train_step(self, data: np.ndarray, targets: np.ndarray) -> Tuple[float, torch.Tensor]:
+        """
+        Allows to train 1 step of gradient descent, given a batch of train/labels
+
+        Args:
+            data (np.ndarray): input features to the network
+            targets (np.ndarray): ground truth to calculate loss
+
+        Returns:
+            torch.Tensor: The predictions of the network
+            float: the loss incurred in the prediction
+        """
+        # prepare
+        data = data.float().to(self.device)
+        targets = targets.long().to(self.device)
+
+        data, criterion_kwargs = self.data_preparation(data, targets)
+        data = Variable(data)
+
+        # training
+        self.optimizer.zero_grad()
+        outputs = self.model(data)
+        loss_func = self.criterion_preparation(**criterion_kwargs)
+        loss = loss_func(self.criterion, outputs)
+        loss.backward()
+        self.optimizer.step()
+        return loss.item(), outputs
 
     def evaluate(self, test_loader: torch.utils.data.DataLoader, epoch: int
                  ) -> Tuple[float, Dict[str, float]]:

@@ -79,9 +79,12 @@ pipeline.fit(X={
     'device': 'cpu',
     'budget_type': 'epochs',
     'epochs': 100,
+    'runtime': 3600,
     'torch_num_threads': 1,
     'early_stopping': 20,
     'use_tensorboard_logger': True,
+    'use_pynisher': False,
+    'metrics_during_training': True,
 })
 
 # Showcase some components of the pipeline

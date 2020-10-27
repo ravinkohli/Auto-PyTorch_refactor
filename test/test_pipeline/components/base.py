@@ -47,7 +47,7 @@ class BaseTraining(unittest.TestCase):
         self.epochs = 20
         self.budget_tracker = BudgetTracker(
             budget_type='epochs',
-            max_value=self.epochs,
+            max_epochs=self.epochs,
         )
 
     def _overfit_model(self):

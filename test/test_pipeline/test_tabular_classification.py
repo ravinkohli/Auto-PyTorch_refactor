@@ -58,6 +58,9 @@ class PipelineTest(unittest.TestCase):
              'torch_num_threads': 1,
              'early_stopping': 20,
              'working_dir': '/tmp',
+             'use_tensorboard_logger': True,
+             'use_pynisher': False,
+             'metrics_during_training': True,
              }
         )
 
@@ -90,6 +93,9 @@ class PipelineTest(unittest.TestCase):
              'torch_num_threads': 1,
              'early_stopping': 20,
              'working_dir': '/tmp',
+             'use_tensorboard_logger': True,
+             'use_pynisher': False,
+             'metrics_during_training': True,
              }
         )
 

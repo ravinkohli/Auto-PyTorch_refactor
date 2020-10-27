@@ -1,7 +1,7 @@
 import collections
 import os
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from ConfigSpace.configuration_space import ConfigurationSpace
 from ConfigSpace.hyperparameters import (
@@ -9,6 +9,8 @@ from ConfigSpace.hyperparameters import (
 )
 
 import numpy as np
+
+import pynisher
 
 import torch
 from torch.utils.tensorboard.writer import SummaryWriter
@@ -29,9 +31,9 @@ from autoPyTorch.pipeline.components.training.trainer.base_trainer import (
 from autoPyTorch.utils import logging_ as logging
 
 
-directory = os.path.split(__file__)[0]
+trainer_directory = os.path.split(__file__)[0]
 _trainers = find_components(__package__,
-                            directory,
+                            trainer_directory,
                             BaseTrainerComponent)
 _addons = ThirdPartyComponents(BaseTrainerComponent)
 
@@ -159,15 +161,58 @@ class TrainerChoice(autoPyTorchChoice):
         Returns:
             A instance of self
         """
+        # Make sure that the prerequisites are there
+        self.check_requirements(X, y)
+
+        # Setup the logger
+        self.logger = logging.get_logger(X['job_id'])
+
+        fit_function = self._fit
+        if X['use_pynisher']:
+            wall_time_in_s = X['runtime'] if 'runtime' in X else None
+            memory_limit = X['cpu_memory_limit'] if 'cpu_memory_limit' in X else None
+            fit_function = pynisher.enforce_limits(
+                wall_time_in_s=wall_time_in_s,
+                mem_in_mb=memory_limit,
+                logger=self.logger
+            )(self._fit)
+
+        # Call the actual fit function.
+        state_dict = fit_function(
+            X=X,
+            y=y,
+            **kwargs
+        )
+
+        if X['use_pynisher']:
+            # Normally the X[network] is a pointer to the object, so at the
+            # end, when we train using X, the pipeline network is updated for free
+            # If we do multiprocessing (because of pynisher) we have to update
+            # X[network] manually. we do so in a way that every pipeline component
+            # can see this new network -- via an update, not overwrite of the pointer
+            state_dict = state_dict.result
+            X['network'].load_state_dict(state_dict)
+
+        # TODO: when have the optimizer code, the pynisher object might have failed
+        # We should process this function as Failure if so trough fit_function.exit_status
+        return cast(autoPyTorchComponent, self.choice)
+
+    def _fit(self, X: Dict[str, Any], y: Any = None, **kwargs: Any) -> torch.nn.Module:
+        """
+        Fits a component by using an input dictionary with pre-requisites
+
+        Args:
+            X (X: Dict[str, Any]): Dependencies needed by current component to perform fit
+            y (Any): not used. To comply with sklearn API
+
+        Returns:
+            A instance of self
+        """
 
         # Comply with mypy
         assert self.choice is not None
 
-        # Make sure that the prerequisites are there
-        self.check_requirements(X, y)
-
         # Setup a Logger and other logging support
-        logger = logging.get_logger(X['job_id'])
         if 'use_tensorboard_logger' in X and X['use_tensorboard_logger']:
             self.writer = SummaryWriter(log_dir=X['working_dir'])
 
@@ -176,7 +221,8 @@ class TrainerChoice(autoPyTorchChoice):
 
         budget_tracker = BudgetTracker(
             budget_type=X['budget_type'],
-            max_value=X['runtime'] if X['budget_type'] == 'runtime' else X['epochs'],
+            max_runtime=X['runtime'] if 'runtime' in X else None,
+            max_epochs=X['epochs'] if 'epochs' in X else None,
         )
 
         self.choice.prepare(
@@ -186,8 +232,9 @@ class TrainerChoice(autoPyTorchChoice):
             budget_tracker=budget_tracker,
             optimizer=X['optimizer'],
             device=self.get_device(X),
-            logger=logger,
+            logger=self.logger,
             writer=self.writer,
+            metrics_during_training=X['metrics_during_training'],
         )
         total_parameter_count, trainable_parameter_count = self.count_parameters(X['network'])
         self.run_summary = RunSummary(
@@ -205,7 +252,7 @@ class TrainerChoice(autoPyTorchChoice):
             self.choice.on_epoch_start(X=X, epoch=epoch)
 
             # training
-            train_loss, train_metrics = self.choice.train(
+            train_loss, train_metrics = self.choice.train_epoch(
                 train_loader=X['train_data_loader'],
                 epoch=epoch,
             )
@@ -246,7 +293,7 @@ class TrainerChoice(autoPyTorchChoice):
             if self.choice.on_epoch_end(X=X, epoch=epoch):
                 break
 
-            logger.debug(self.run_summary.repr_last_epoch())
+            self.logger.debug(self.run_summary.repr_last_epoch())
 
             # Reached max epoch on next iter, don't even go there
             if budget_tracker.is_max_epoch_reached(epoch + 1):
@@ -269,15 +316,15 @@ class TrainerChoice(autoPyTorchChoice):
                 val_loss=val_loss,
                 test_loss=test_loss,
             )
-            logger.debug(self.run_summary.repr_last_epoch())
+            self.logger.debug(self.run_summary.repr_last_epoch())
             self.save_model_for_ensemble()
 
-        logger.info(f"Finished training with {self.run_summary.repr_last_epoch()}")
+        self.logger.info(f"Finished training with {self.run_summary.repr_last_epoch()}")
 
         # Tag as fitted
         self.fitted_ = True
 
-        return self
+        return X['network'].state_dict()
 
     def early_stop_handler(self, X: Dict[str, Any]) -> bool:
         """
@@ -341,6 +388,14 @@ class TrainerChoice(autoPyTorchChoice):
             raise ValueError('Need a working directory to output trainer information, '
                              "yet 'working_dir' was not found in the fit dictionary")
 
+        # For resource allocation, we need to know if pynisher is enabled
+        if 'use_pynisher' not in X:
+            raise ValueError('Missing use_pynisher in the fit dictionary')
+
+        # Whether we should evaluate metrics during training or no
+        if 'metrics_during_training' not in X:
+            raise ValueError('Missing metrics_during_training in the fit dictionary')
+
         # Setup Components
         if 'lr_scheduler' not in X:
             raise ValueError("Learning rate scheduler not found in the fit dictionary!")
@@ -361,11 +416,11 @@ class TrainerChoice(autoPyTorchChoice):
         if 'budget_type' not in X:
             raise ValueError("Budget type not found in the fit dictionary!")
         else:
-            if 'epochs' not in X or 'runtime' not in X:
-                if X['budget_type'] == 'epochs' and 'epochs' not in X:
+            if 'epochs' not in X or 'runtime' not in X or 'epoch_or_time' not in X:
+                if X['budget_type'] in ['epochs', 'epoch_or_time'] and 'epochs' not in X:
                     raise ValueError("Budget type is epochs but "
                                      "no epochs was not found in the fit dictionary!")
-                elif X['budget_type'] == 'runtime' and 'runtime' not in X:
+                elif X['budget_type'] in ['runtime', 'epoch_or_time'] and 'runtime' not in X:
                     raise ValueError("Budget type is runtime but "
                                      "no maximum number of seconds was provided!")
             else:
