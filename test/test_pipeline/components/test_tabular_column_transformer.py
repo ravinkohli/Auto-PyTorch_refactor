@@ -3,6 +3,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
+from scipy.sparse import csr_matrix
+
 from sklearn.compose import ColumnTransformer
 
 from autoPyTorch.pipeline.components.base_choice import autoPyTorchChoice
@@ -54,7 +56,7 @@ class TabularTransformerTest(unittest.TestCase):
                  num_features=15,
                  num_classes=2
                  )
-        dataset_properties = dict(numerical_columns=list(range(15)), categorical_columns=[],)
+        dataset_properties = dict(numerical_columns=list(range(15)), categorical_columns=[], issparse=False)
         pipeline = TabularPipeline(dataset_properties=dataset_properties)
         pipeline = pipeline.fit(X)
         X = pipeline.transform(X)
@@ -79,7 +81,7 @@ class TabularTransformerTest(unittest.TestCase):
                  num_features=15,
                  num_classes=2
                  )
-        dataset_properties = dict(numerical_columns=[], categorical_columns=list(range(2)))
+        dataset_properties = dict(numerical_columns=[], categorical_columns=list(range(2)), issparse=False)
         pipeline = TabularPipeline(dataset_properties=dataset_properties)
         pipeline = pipeline.fit(X)
         X = pipeline.transform(X)
@@ -92,6 +94,34 @@ class TabularTransformerTest(unittest.TestCase):
 
         data = column_transformer.fit_transform(X['X_train'])
         self.assertIsInstance(data, np.ndarray)
+
+    def test_sparse_data(self):
+        X = np.random.binomial(1, 0.1, (100, 2000))
+        sparse_X = csr_matrix(X)
+        numerical_columns = list(range(2000))
+        categorical_columns = []
+        train_indices = np.array(range(50))
+        X = {
+            'X_train': sparse_X[train_indices],
+            'categorical_columns': categorical_columns,
+            'numerical_columns': numerical_columns,
+            'categories': []
+        }
+        dataset_properties = dict(numerical_columns=numerical_columns, categorical_columns=categorical_columns,
+                                  issparse=True)
+        pipeline = TabularPipeline(dataset_properties=dataset_properties)
+
+        pipeline = pipeline.fit(X)
+        X = pipeline.transform(X)
+        column_transformer = X['tabular_transformer']
+
+        # check if transformer was added to fit dictionary
+        self.assertIn('tabular_transformer', X.keys())
+        # check if transformer is of expected type
+        self.assertIsInstance(column_transformer, ColumnTransformer)
+
+        data = column_transformer.fit_transform(X['X_train'])
+        self.assertIsInstance(data, csr_matrix)
 
 
 if __name__ == '__main__':
