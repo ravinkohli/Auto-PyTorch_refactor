@@ -7,6 +7,7 @@ import numpy as np
 import torch
 from torch.autograd import Variable
 from torch.optim import Optimizer
+from torch.optim.lr_scheduler import _LRScheduler
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from autoPyTorch.pipeline.components.training.base_training import autoPyTorchTrainingComponent
@@ -171,6 +172,7 @@ class BaseTrainerComponent(autoPyTorchTrainingComponent):
         logger: logging.Logger,
         writer: Optional[SummaryWriter],
         metrics_during_training: bool,
+        scheduler: _LRScheduler,
     ) -> None:
 
         self.logger = logger
@@ -198,6 +200,9 @@ class BaseTrainerComponent(autoPyTorchTrainingComponent):
 
         # For best performance, we allow option to prevent comparing metrics every time
         self.metrics_during_training = metrics_during_training
+
+        # Scheduler
+        self.scheduler = scheduler
 
     def on_epoch_start(self, X: Dict[str, Any], epoch: int) -> None:
         """
@@ -290,6 +295,12 @@ class BaseTrainerComponent(autoPyTorchTrainingComponent):
         loss = loss_func(self.criterion, outputs)
         loss.backward()
         self.optimizer.step()
+        if self.scheduler:
+            if 'ReduceLROnPlateau' in self.scheduler.__class__.__name__:
+                self.scheduler.step(loss)
+            else:
+                self.scheduler.step()
+
         return loss.item(), outputs
 
     def evaluate(self, test_loader: torch.utils.data.DataLoader, epoch: int

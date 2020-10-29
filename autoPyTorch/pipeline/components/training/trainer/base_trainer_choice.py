@@ -101,7 +101,7 @@ class TrainerChoice(autoPyTorchChoice):
         if dataset_properties is None:
             dataset_properties = {}
 
-        # Compile a list of legal preprocessors for this problem
+        # Compile a list of legal trainers for this problem
         available_trainers = self.get_available_components(
             dataset_properties=dataset_properties,
             include=include, exclude=exclude)
@@ -210,6 +210,9 @@ class TrainerChoice(autoPyTorchChoice):
         """
 
         # Comply with mypy
+        # Notice that choice here stands for the component choice framework,
+        # where we dynamically build the configuration space by selecting the available
+        # component choices. In this case, is what trainer choices are available
         assert self.choice is not None
 
         # Setup a Logger and other logging support
@@ -225,16 +228,22 @@ class TrainerChoice(autoPyTorchChoice):
             max_epochs=X['epochs'] if 'epochs' in X else None,
         )
 
+        # Support additional user metrics
+        additional_metrics = X['additional_metrics'] if 'additional_metrics' in X else None
+        additional_losses = X['additional_losses'] if 'additional_losses' in X else None
         self.choice.prepare(
             model=X['network'],
-            metrics=[m() for m in get_metrics(X['dataset_properties'])],
-            criterion=get_loss_instance(X['dataset_properties']),
+            metrics=[m() for m in get_metrics(dataset_properties=X['dataset_properties'],
+                                              names=additional_metrics)],
+            criterion=get_loss_instance(X['dataset_properties'],
+                                        name=additional_losses),
             budget_tracker=budget_tracker,
             optimizer=X['optimizer'],
             device=self.get_device(X),
             logger=self.logger,
             writer=self.writer,
             metrics_during_training=X['metrics_during_training'],
+            scheduler=X['lr_scheduler'],
         )
         total_parameter_count, trainable_parameter_count = self.count_parameters(X['network'])
         self.run_summary = RunSummary(
@@ -262,15 +271,6 @@ class TrainerChoice(autoPyTorchChoice):
                 val_loss, val_metrics = self.choice.evaluate(X['val_data_loader'], epoch)
                 if 'test_data_loader' in X and X['test_data_loader']:
                     test_loss, test_metrics = self.choice.evaluate(X['test_data_loader'], epoch)
-
-            # TODO: does it make sense to call all schedulers here?
-            # Some people exhaust the learning rate on every epoch
-            # others on a batch basis. Ask!
-            if X['lr_scheduler']:
-                if 'ReduceLROnPlateau' in X['lr_scheduler'].__class__.__name__:
-                    X['lr_scheduler'].step(val_loss)
-                else:
-                    X['lr_scheduler'].step()
 
             # Save training information
             self.run_summary.add_performance(
@@ -339,8 +339,8 @@ class TrainerChoice(autoPyTorchChoice):
             bool: If true, training should be stopped
         """
         assert self.run_summary is not None
-        bad_epochs = self.run_summary.get_best_epoch() - self.run_summary.get_last_epoch()
-        if bad_epochs > X['early_stopping']:
+        epochs_since_best = self.run_summary.get_best_epoch() - self.run_summary.get_last_epoch()
+        if epochs_since_best > X['early_stopping']:
             return True
 
         return False

@@ -139,6 +139,7 @@ class BaseTrainerComponentTest(BaseTraining, unittest.TestCase):
             logger=self.logger,
             writer=None,
             metrics_during_training=True,
+            scheduler=None,
         )
 
         prev_loss, prev_metrics = trainer.evaluate(self.loader, epoch=1)
@@ -164,6 +165,7 @@ class StandartTrainerTest(BaseTraining, unittest.TestCase):
         """
         trainer = StandardTrainer()
         trainer.prepare(
+            scheduler=None,
             model=self.model,
             metrics=self.metrics,
             criterion=self.criterion,
@@ -196,6 +198,7 @@ class MixUpTrainerTest(BaseTraining, unittest.TestCase):
         """
         trainer = MixUpTrainer(alpha=0.5)
         trainer.prepare(
+            scheduler=None,
             model=self.model,
             metrics=self.metrics,
             criterion=self.criterion,
