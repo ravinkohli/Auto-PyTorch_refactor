@@ -9,6 +9,8 @@ import numpy as np
 from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_random_state
 
+import torch
+
 from autoPyTorch.pipeline.components.base_choice import autoPyTorchChoice
 from autoPyTorch.pipeline.components.base_component import autoPyTorchComponent
 from autoPyTorch.pipeline.create_searchspace_util import (
@@ -124,33 +126,9 @@ class BasePipeline(Pipeline):
             np.ndarray: the predicted values given input X
         """
 
-        if batch_size is None:
-            return super().predict(X).astype(self._output_dtype)
-        else:
-            if not isinstance(batch_size, int):
-                raise ValueError("Argument 'batch_size' must be of type int, "
-                                 "but is '%s'" % type(batch_size))
-            if batch_size <= 0:
-                raise ValueError("Argument 'batch_size' must be positive, "
-                                 "but is %d" % batch_size)
-
-            else:
-                if self.num_targets == 1:
-                    y = np.zeros((X.shape[0],), dtype=self._output_dtype)
-                else:
-                    y = np.zeros((X.shape[0], self.num_targets),
-                                 dtype=self._output_dtype)
-
-                # Copied and adapted from the scikit-learn GP code
-                for k in range(max(1, int(np.ceil(
-                    float(X.shape[0]) / batch_size
-                )))):
-                    batch_from = k * batch_size
-                    batch_to = min([(k + 1) * batch_size, X.shape[0]])
-                    y[batch_from:batch_to] = \
-                        self.predict(X[batch_from:batch_to], batch_size=None)
-
-                return y
+        # Pre-process X
+        loader = self.named_steps['data_loader'].get_loader(X=X, batch_size=batch_size)
+        return self.named_steps['network'].predict(loader)
 
     def set_hyperparameters(
         self,
@@ -215,6 +193,12 @@ class BasePipeline(Pipeline):
                 exclude=self.exclude,
             )
         return self.config_space
+
+    def get_model(self) -> torch.nn.Module:
+        """
+        Returns the fitted model to the user
+        """
+        return self.named_steps['network'].get_network()
 
     def _get_hyperparameter_search_space(self,
                                          dataset_properties: Dict[str, Any],

@@ -1,62 +1,101 @@
 import unittest
 import unittest.mock
 
-import numpy as np
+from sklearn.datasets import make_classification
 
 from autoPyTorch.pipeline.tabular_classification import TabularClassificationPipeline
 
 
 class PipelineTest(unittest.TestCase):
 
+    def setUp(self):
+        self.num_features = 4
+        self.num_classes = 2
+        self.X, self.y = make_classification(
+            n_samples=200,
+            n_features=self.num_features,
+            n_informative=3,
+            n_redundant=1,
+            n_repeated=0,
+            n_classes=self.num_classes,
+            n_clusters_per_class=2,
+            shuffle=True,
+            random_state=0
+        )
+        self.dataset_properties = {
+            'task_type': 'tabular_classification',
+            'output_type': 'binary',
+            'numerical_columns': list(range(4)),
+            'categorical_columns': [],
+        }
+
     def test_pipeline_fit(self):
         """This test makes sure that the pipeline is able to fit
         given random combinations of hyperparameters across the pipeline"""
-        number_features = np.random.randint(low=5, high=15, size=20)
-        number_classes = np.random.randint(low=2, high=8, size=20)
-        number_datapoints = np.random.randint(low=4, high=10, size=20)
-        for num_features, num_classes, num_datapoints in zip(number_features, number_classes, number_datapoints):
-            train_data = np.random.random((num_datapoints, num_features))
-            dataset_properties = {'numerical_columns': list(range(num_features)), 'categorical_columns': []}
-            pipeline = TabularClassificationPipeline(dataset_properties=dataset_properties)
-            cs = pipeline.get_hyperparameter_search_space()
-            config = cs.sample_configuration()
-            pipeline.set_hyperparameters(config)
-            print(config)
-            pipeline.fit(
-                {'num_features': num_features,
-                 'num_classes': num_classes,
-                 'numerical_columns': list(range(num_features)),
-                 'categorical_columns': [],
-                 'categories': [],
-                 'X_train': train_data,
-                 'y_train': np.random.random(num_datapoints),
-                 'train_indices': range(num_datapoints // 2),
-                 'val_indices': range(num_datapoints // 2, num_datapoints),
-                 'is_small_preprocess': False,
-                 }
-            )
+
+        pipeline = TabularClassificationPipeline(dataset_properties=self.dataset_properties)
+        cs = pipeline.get_hyperparameter_search_space()
+        config = cs.sample_configuration()
+        pipeline.set_hyperparameters(config)
+        print(config)
+        pipeline.fit(
+            {'num_features': self.num_features,
+             'num_classes': self.num_classes,
+             'numerical_columns': list(range(self.num_features)),
+             'categorical_columns': [],
+             'categories': [],
+             'X_train': self.X,
+             'y_train': self.y,
+             'train_indices': range(self.X.shape[0] // 2),
+             'val_indices': range(self.X.shape[0] // 2, self.X.shape[0]),
+             'is_small_preprocess': False,
+             # Training configuration
+             'dataset_properties': self.dataset_properties,
+             'job_id': 'example_tabular_classification_1',
+             'device': 'cpu',
+             'budget_type': 'epochs',
+             'epochs': 5,
+             'torch_num_threads': 1,
+             'early_stopping': 20,
+             'working_dir': '/tmp',
+             'use_tensorboard_logger': True,
+             'use_pynisher': False,
+             'metrics_during_training': True,
+             }
+        )
+
+        # To make sure we fitted the model, there should be a
+        # run summary object with accuracy
+        self.assertIsNotNone(pipeline.named_steps['trainer'].run_summary)
 
     def test_default_configuration(self):
         """Makes sure that when no config is set, we can trust the
         default configuration from the space"""
-        num_features = 4
-        num_classes = 2
-        num_datapoints = 4
-        train_data = np.random.random((num_datapoints, num_features))
-        dataset_properties = {'numerical_columns': list(range(num_features)), 'categorical_columns': []}
-        pipeline = TabularClassificationPipeline(dataset_properties=dataset_properties)
+        pipeline = TabularClassificationPipeline(dataset_properties=self.dataset_properties)
 
         pipeline.fit(
-            {'num_features': num_features,
-             'num_classes': num_classes,
-             'X_train': train_data,
-             'y_train': np.random.random(num_datapoints),
-             'train_indices': range(num_datapoints // 2),
-             'val_indices': range(num_datapoints // 2, num_datapoints),
-             'numerical_columns': list(range(num_features)),
-             'is_small_preprocess': False,
+            {'num_features': self.num_features,
+             'num_classes': self.num_classes,
+             'numerical_columns': list(range(self.num_features)),
              'categorical_columns': [],
-             'categories': []
+             'categories': [],
+             'X_train': self.X,
+             'y_train': self.y,
+             'train_indices': range(self.X.shape[0] // 2),
+             'val_indices': range(self.X.shape[0] // 2, self.X.shape[0]),
+             'is_small_preprocess': False,
+             # Training configuration
+             'dataset_properties': self.dataset_properties,
+             'job_id': 'example_tabular_classification_1',
+             'device': 'cpu',
+             'budget_type': 'epochs',
+             'epochs': 5,
+             'torch_num_threads': 1,
+             'early_stopping': 20,
+             'working_dir': '/tmp',
+             'use_tensorboard_logger': True,
+             'use_pynisher': False,
+             'metrics_during_training': True,
              }
         )
 

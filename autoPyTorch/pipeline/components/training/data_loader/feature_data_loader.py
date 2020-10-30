@@ -1,5 +1,7 @@
 from typing import Any, Dict
 
+import torch
+
 import torchvision
 
 from autoPyTorch.pipeline.components.training.data_loader.base_data_loader import BaseDataLoaderComponent
@@ -37,7 +39,7 @@ class FeatureDataLoader(BaseDataLoaderComponent):
             transformations.append(X['preprocess_transforms'])
 
         # Transform to tensor
-        transformations.append(torchvision.transforms.ToTensor())
+        transformations.append(torch.from_numpy)
 
         return torchvision.transforms.Compose(transformations)
 
