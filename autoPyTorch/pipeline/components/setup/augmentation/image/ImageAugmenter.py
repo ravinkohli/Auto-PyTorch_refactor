@@ -41,8 +41,8 @@ def get_components() -> Dict[str, BaseImageAugmenter]:
     """
     # Error in implementation of CropToFixedSize augmenter in imgaug
     # It returns a list of arrays instead of an array
-    if 'ZeroPadAndCrop' in _augmenters:
-        del _augmenters['ZeroPadAndCrop']
+    # if 'ZeroPadAndCrop' in _augmenters:
+    #     del _augmenters['ZeroPadAndCrop']
     components = OrderedDict()
     components.update(_augmenters)
     components.update(_addons.components)

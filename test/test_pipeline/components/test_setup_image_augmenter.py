@@ -17,7 +17,6 @@ class TestImageAugmenter(unittest.TestCase):
             if not augmenter.use_augmenter:
                 continue
             augmenter = augmenter.fit(X)
-            print(name)
             # check if augmenter in the component has correct name
             self.assertEqual(augmenter.get_image_augmenter().name, name)
             # test if augmenter has an Augmenter attribute

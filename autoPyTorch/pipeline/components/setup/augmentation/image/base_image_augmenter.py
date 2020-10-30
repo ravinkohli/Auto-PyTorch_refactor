@@ -32,7 +32,8 @@ class BaseImageAugmenter(autoPyTorchSetupComponent):
         if self.augmenter is None:
             raise ValueError("cant call {} without fitting first."
                              .format(self.__class__.__name__))
-        return self.augmenter(images=X)
+        # explicitly converting to np array as currently zeropadandcrop gives a list
+        return np.array(self.augmenter(images=X))
 
     @staticmethod
     def get_hyperparameter_search_space(
