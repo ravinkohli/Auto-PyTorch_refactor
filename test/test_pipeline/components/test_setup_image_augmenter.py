@@ -10,12 +10,10 @@ from autoPyTorch.pipeline.components.setup.augmentation.image.ImageAugmenter imp
 class TestImageAugmenter(unittest.TestCase):
     def test_every_augmenter(self):
         image_augmenter = ImageAugmenter()
-        configuration = image_augmenter.get_hyperparameter_search_space().sample_configuration()
+        configuration = image_augmenter.get_hyperparameter_search_space().get_default_configuration()
         image_augmenter = image_augmenter.set_hyperparameters(configuration=configuration)
         X = dict(X_train=np.random.randint(0, 255, (8, 3, 16, 16), dtype=np.uint8), image_height=16, image_width=16)
         for name, augmenter in image_augmenter.available_augmenters.items():
-            if not augmenter.use_augmenter:
-                continue
             augmenter = augmenter.fit(X)
             # check if augmenter in the component has correct name
             self.assertEqual(augmenter.get_image_augmenter().name, name)

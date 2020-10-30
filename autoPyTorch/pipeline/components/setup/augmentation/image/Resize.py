@@ -1,6 +1,5 @@
 from typing import Any, Dict, Optional, Union
 
-import ConfigSpace as CS
 from ConfigSpace.configuration_space import ConfigurationSpace
 from ConfigSpace.hyperparameters import (
     CategoricalHyperparameter,
@@ -15,17 +14,16 @@ from autoPyTorch.pipeline.components.setup.augmentation.image.base_image_augment
 
 
 class Resize(BaseImageAugmenter):
-    def __init__(self, interpolation: str = 'linear', use_augmenter: bool = True,
+    def __init__(self, use_augmenter: bool = True,
                  random_state: Optional[Union[int, np.random.RandomState]] = None):
         super().__init__(use_augmenter=use_augmenter)
         self.random_state = random_state
-        self.interpolation = interpolation
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> BaseImageAugmenter:
         self.check_requirements(X, y)
         if self.use_augmenter:
             self.augmenter: Augmenter = iaa.Resize(size=(X['image_height'], X['image_width']),
-                                                   interpolation=self.interpolation, name=self.get_properties()['name'])
+                                                   interpolation='linear', name=self.get_properties()['name'])
 
         return self
 
@@ -53,13 +51,8 @@ class Resize(BaseImageAugmenter):
     ) -> ConfigurationSpace:
 
         cs = ConfigurationSpace()
-        interpolation = CategoricalHyperparameter('interpolation', choices=['nearest', 'linear', 'area', 'cubic'],
-                                                  default_value='linear')
         use_augmenter = CategoricalHyperparameter('use_augmenter', choices=[True, False])
-        cs.add_hyperparameters([interpolation, use_augmenter])
-
-        # only add hyperparameters to configuration space if we are using the augmenter
-        cs.add_condition(CS.EqualsCondition(interpolation, use_augmenter, True))
+        cs.add_hyperparameters([use_augmenter])
 
         return cs
 

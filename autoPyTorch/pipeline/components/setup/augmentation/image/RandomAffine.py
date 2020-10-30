@@ -17,13 +17,13 @@ from autoPyTorch.pipeline.components.setup.augmentation.image.base_image_augment
 
 
 class RandomAffine(BaseImageAugmenter):
-    def __init__(self, use_augmenter: bool = True, scale_min: float = 0, scale_offset: float = 0.2,
-                 translate_percent_min: float = 0, translate_percent_offset: float = 0.3,
-                 shear: int = 30, rotate: int = 45, random_state: Optional[Union[int, np.random.RandomState]] = None):
+    def __init__(self, use_augmenter: bool = True, scale_offset: float = 0.2,
+                 translate_percent_offset: float = 0.3, shear: int = 30,
+                 rotate: int = 45, random_state: Optional[Union[int, np.random.RandomState]] = None):
         super().__init__(use_augmenter=use_augmenter)
         self.random_state = random_state
-        self.scale = (scale_min, scale_min + scale_offset)
-        self.translate_percent = (translate_percent_min, translate_percent_min + translate_percent_offset)
+        self.scale = (1, 1 - scale_offset)
+        self.translate_percent = (0, translate_percent_offset)
         self.shear = (-shear, shear)
         self.rotate = (-rotate, rotate)
 
@@ -41,24 +41,20 @@ class RandomAffine(BaseImageAugmenter):
     ) -> ConfigurationSpace:
 
         cs = ConfigurationSpace()
-        scale_min = UniformFloatHyperparameter('scale_min', lower=0, upper=0.99, default_value=0)
-        scale_offset = UniformFloatHyperparameter('scale_offset', lower=0, upper=0.99, default_value=0.2)
-        translate_percent_min = UniformFloatHyperparameter('translate_percent_min', lower=0, upper=0.99,
-                                                           default_value=0)
-        translate_percent_offset = UniformFloatHyperparameter('translate_percent_offset', lower=0, upper=0.99,
-                                                              default_value=0.3)
+        scale_offset = UniformFloatHyperparameter('scale_offset', lower=0, upper=0.4, default_value=0.2)
+
+        translate_percent_offset = UniformFloatHyperparameter('translate_percent_offset', lower=0, upper=0.4,
+                                                              default_value=0.2)
         shear = UniformIntegerHyperparameter('shear', lower=0, upper=45, default_value=30)
         rotate = UniformIntegerHyperparameter('rotate', lower=0, upper=360, default_value=45)
 
         use_augmenter = CategoricalHyperparameter('use_augmenter', choices=[True, False])
 
-        cs.add_hyperparameters([scale_min, scale_offset, translate_percent_min, translate_percent_offset])
+        cs.add_hyperparameters([scale_offset, translate_percent_offset])
         cs.add_hyperparameters([shear, rotate, use_augmenter])
 
         # only add hyperparameters to configuration space if we are using the augmenter
-        cs.add_condition(CS.EqualsCondition(scale_min, use_augmenter, True))
         cs.add_condition(CS.EqualsCondition(scale_offset, use_augmenter, True))
-        cs.add_condition(CS.EqualsCondition(translate_percent_min, use_augmenter, True))
         cs.add_condition(CS.EqualsCondition(translate_percent_offset, use_augmenter, True))
         cs.add_condition(CS.EqualsCondition(shear, use_augmenter, True))
         cs.add_condition(CS.EqualsCondition(rotate, use_augmenter, True))

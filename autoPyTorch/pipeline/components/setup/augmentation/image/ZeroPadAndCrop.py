@@ -14,20 +14,18 @@ from autoPyTorch.pipeline.components.setup.augmentation.image.base_image_augment
 
 
 class ZeroPadAndCrop(BaseImageAugmenter):
-    def __init__(self, x_position: float = 0, y_position: float = 0,
-                 percent: float = 0.1, random_state: Optional[Union[int, np.random.RandomState]] = None):
+    def __init__(self, percent: float = 0.1,
+                 random_state: Optional[Union[int, np.random.RandomState]] = None):
         super().__init__()
         self.random_state = random_state
         self.percent = percent
-        self.position = (x_position, y_position)
         self.pad_augmenter: Optional[Augmenter] = None
         self.crop_augmenter: Optional[Augmenter] = None
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> BaseImageAugmenter:
         self.check_requirements(X, y)
         self.pad_augmenter = iaa.Pad(percent=self.percent, keep_size=False)
-        self.crop_augmenter = iaa.CropToFixedSize(height=X['image_height'], width=X['image_width'],
-                                                  position=self.position)
+        self.crop_augmenter = iaa.CropToFixedSize(height=X['image_height'], width=X['image_width'])
         self.augmenter: Augmenter = iaa.Sequential([
             self.pad_augmenter,
             self.crop_augmenter
@@ -59,10 +57,8 @@ class ZeroPadAndCrop(BaseImageAugmenter):
     ) -> ConfigurationSpace:
 
         cs = ConfigurationSpace()
-        x_position = UniformFloatHyperparameter('x_position', lower=0, upper=1, default_value=0)
-        y_position = UniformFloatHyperparameter('y_position', lower=0, upper=1, default_value=0)
         percent = UniformFloatHyperparameter('percent', lower=0, upper=0.5, default_value=0.1)
-        cs.add_hyperparameters([x_position, y_position, percent])
+        cs.add_hyperparameters([percent])
         return cs
 
     @staticmethod
