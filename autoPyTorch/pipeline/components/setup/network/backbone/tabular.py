@@ -21,7 +21,7 @@ _activations = {
 }
 
 
-class MLP(BaseBackbone):
+class MLPBackbone(BaseBackbone):
     """
     This component automatically creates a Multi Layer Perceptron based on a given config.
 
@@ -73,8 +73,8 @@ class MLP(BaseBackbone):
     @staticmethod
     def get_properties(dataset_properties: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
         return {
-            'shortname': 'MLP',
-            'name': 'Multi Layer Perceptron',
+            'shortname': 'MLPBackbone',
+            'name': 'MLPBackbone',
         }
 
     @staticmethod
@@ -141,7 +141,7 @@ class MLP(BaseBackbone):
         return cs
 
 
-class ShapedMLP(BaseBackbone):
+class ShapedMLPBackbone(BaseBackbone):
     """
         Implementation of a Shaped MLP -- an MLP with the number of units
         arranged so that a given shape is honored
@@ -188,8 +188,8 @@ class ShapedMLP(BaseBackbone):
     @staticmethod
     def get_properties(dataset_properties: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
         return {
-            'shortname': 'ShapedMLP',
-            'name': 'Shaped Multi Layer Perceptron',
+            'shortname': 'ShapedMLPBackbone',
+            'name': 'ShapedMLPBackbone',
         }
 
     @staticmethod

@@ -39,15 +39,11 @@ class ResNet(BaseNetworkComponent):
 
     def __init__(
         self,
-        intermediate_activation: str,
-        final_activation: Optional[str] = None,
         random_state: Optional[np.random.RandomState] = None,
         **kwargs: Any
     ):
 
         super().__init__(
-            intermediate_activation=intermediate_activation,
-            final_activation=final_activation,
             random_state=random_state,
         )
         self.config = kwargs
@@ -130,7 +126,6 @@ class ResNet(BaseNetworkComponent):
                                         min_num_units: int = 10,
                                         max_num_units: int = 1024,
                                         ) -> ConfigurationSpace:
-
         cs = ConfigurationSpace()
 
         # The number of groups that will compose the resnet. That is,

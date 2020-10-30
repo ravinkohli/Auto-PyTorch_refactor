@@ -1,8 +1,13 @@
+from abc import abstractmethod
 from typing import Set, Any, Dict, Tuple
+
 import torch
 from torch import nn
 
-from autoPyTorch.pipeline.components.base_component import autoPyTorchComponent, BaseEstimator
+from autoPyTorch.pipeline.components.base_component import BaseEstimator
+from autoPyTorch.pipeline.components.base_component import (
+    autoPyTorchComponent,
+)
 
 
 class BaseBackbone(autoPyTorchComponent):
@@ -15,12 +20,14 @@ class BaseBackbone(autoPyTorchComponent):
         self.config = kwargs
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> BaseEstimator:
-        input_shape = X["input_shape"]
-        self.backbone = self.build_backbone(input_shape=input_shape)
+        """
+        Not used. Just for API compatibility.
+        """
         return self
 
+    @abstractmethod
     def build_backbone(self, input_shape: Tuple[int, ...]) -> nn.Module:
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def get_output_shape(self, input_shape: Tuple[int, ...]) -> Tuple[int, ...]:
         """
@@ -32,4 +39,4 @@ class BaseBackbone(autoPyTorchComponent):
         placeholder = torch.randn((1, *input_shape), dtype=torch.float)
         with torch.no_grad():
             output = self.backbone(placeholder)
-        return output.shape
+        return tuple(output.shape[1:])

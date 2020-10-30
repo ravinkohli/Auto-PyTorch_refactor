@@ -15,7 +15,6 @@ from autoPyTorch.pipeline.components.base_component import (
 )
 from autoPyTorch.pipeline.components.setup.network.base_network import BaseNetworkComponent
 
-
 directory = os.path.split(__file__)[0]
 _networks = find_components(__package__,
                             directory,
@@ -31,10 +30,8 @@ class NetworkChoice(autoPyTorchChoice):
 
     def get_components(self) -> Dict[str, autoPyTorchComponent]:
         """Returns the available network components
-
         Args:
             None
-
         Returns:
             Dict[str, autoPyTorchComponent]: all baseNetwork components available
                 as choices
@@ -45,14 +42,13 @@ class NetworkChoice(autoPyTorchChoice):
         return components
 
     def get_available_components(
-        self,
-        dataset_properties: Optional[Dict[str, str]] = None,
-        include: List[str] = None,
-        exclude: List[str] = None,
+            self,
+            dataset_properties: Optional[Dict[str, str]] = None,
+            include: List[str] = None,
+            exclude: List[str] = None,
     ) -> Dict[str, autoPyTorchComponent]:
         """Filters out components based on user provided
         include/exclude directives, as well as the dataset properties
-
         Args:
          include (Optional[Dict[str, Any]]): what hyper-parameter configurations
             to honor when creating the configuration space
@@ -60,7 +56,6 @@ class NetworkChoice(autoPyTorchChoice):
              to remove from the configuration space
          dataset_properties (Optional[Dict[str, Union[str, int]]]): Caracteristics
              of the dataset to guide the pipeline choices of components
-
         Returns:
             Dict[str, autoPyTorchComponent]: A filtered dict of Network
                 components
@@ -101,21 +96,19 @@ class NetworkChoice(autoPyTorchChoice):
         return components_dict
 
     def get_hyperparameter_search_space(
-        self,
-        dataset_properties: Optional[Dict[str, str]] = None,
-        default: Optional[str] = None,
-        include: Optional[List[str]] = None,
-        exclude: Optional[List[str]] = None,
+            self,
+            dataset_properties: Optional[Dict[str, str]] = None,
+            default: Optional[str] = None,
+            include: Optional[List[str]] = None,
+            exclude: Optional[List[str]] = None,
     ) -> ConfigurationSpace:
         """Returns the configuration space of the current chosen components
-
         Args:
             dataset_properties (Optional[Dict[str, str]]): Describes the dataset to work on
             default (Optional[str]): Default component to use
             include: Optional[Dict[str, Any]]: what components to include. It is an exhaustive
                 list, and will exclusively use this components.
             exclude: Optional[Dict[str, Any]]: which components to skip
-
         Returns:
             ConfigurationSpace: the configuration space of the hyper-parameters of the
                  chosen component
@@ -134,8 +127,7 @@ class NetworkChoice(autoPyTorchChoice):
             raise ValueError("No Network found")
 
         if default is None:
-            defaults = ['MLPNet',
-                        ]
+            defaults = ['BackboneHeadNet']
             for default_ in defaults:
                 if default_ in available_networks:
                     default = default_

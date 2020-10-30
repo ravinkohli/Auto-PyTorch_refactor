@@ -1,9 +1,7 @@
-import numbers
 from abc import abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Tuple, Optional
 
 import numpy as np
-
 import torch
 
 from autoPyTorch.pipeline.components.setup.base_setup import autoPyTorchSetupComponent
@@ -14,12 +12,14 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
     in Auto-Pytorch"""
 
     def __init__(
-        self,
-        random_state: Optional[np.random.RandomState] = None,
+            self,
+            random_state: Optional[np.random.RandomState] = None,
+            device: Optional[torch.device] = None
     ) -> None:
+        super().__init__()
         self.network = None
         self.random_state = random_state
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") if device is None else device
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> autoPyTorchSetupComponent:
         """
@@ -36,10 +36,11 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
         # information to fit this stage
         self.check_requirements(X, y)
 
-        in_features = X['num_features']
-        out_features = X['num_classes']
+        input_shape = X['input_shape']
+        output_shape = X['output_shape']
 
-        self.network = self.build_network(in_features, out_features)
+        self.network = self.build_network(input_shape=input_shape,
+                                          output_shape=output_shape)
 
         # Properly set the network training device
         self.to(self.device)
@@ -47,14 +48,8 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
         return self
 
     @abstractmethod
-    def build_network(self, in_feature: int, out_features: int) -> torch.nn.Module:
-        """This method returns a pytorch network, that is dynamically built
-        using:
-
-            common network arguments from the base class:
-                * intermediate_activation
-                * final_activation
-
+    def build_network(self, input_shape: Tuple[int, ...], output_shape: Tuple[int, ...]) -> torch.nn.Module:
+        """This method returns a pytorch network, that is dynamically built using
             a self.config that is network specific, and contains the additional
             configuration hyperparameters to build a domain specific network
         """
@@ -92,30 +87,28 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
 
         # For the Network, we need the number of input features,
         # to build the first network layer
-        if 'num_features' not in X.keys():
-            raise ValueError("Could not parse the number of input features in the fit dictionary "
-                             "To fit a network, the number of features is needed to define "
+        if 'input_shape' not in X.keys():
+            raise ValueError("Could not find the input shape in the fit dictionary "
+                             "To fit a network, the input shape is needed to define "
                              "the hidden layers, yet the dict contains only: {}".format(
-                                 X.keys()
-                             )
-                             )
+                X.keys())
+            )
 
-        assert isinstance(X['num_features'], numbers.Integral), "num_features: {}".format(
-            type(X['num_features'])
-        )
+        # assert isinstance(X['input_shape'], numbers.Integral), "num_features: {}".format(
+        #     type(X['num_features'])
+        # )
 
         # For the Network, we need the number of classes,
         # to build the last layer
-        if 'num_classes' not in X:
-            raise ValueError("Could not parse the number of classes in the fit dictionary "
-                             "To fit a network, the number of classes is needed to define "
+        if 'output_shape' not in X:
+            raise ValueError("Could not the output shape in the fit dictionary "
+                             "To fit a network, the output shape is needed to define "
                              "the hidden layers, yet the dict contains only: {}".format(
-                                 X.keys()
-                             )
-                             )
-        assert isinstance(X['num_classes'], numbers.Integral), "num_classes: {}".format(
-            type(X['num_classes'])
-        )
+                X.keys())
+            )
+        # assert isinstance(X['num_classes'], numbers.Integral), "num_classes: {}".format(
+        #     type(X['num_classes'])
+        # )
 
     def get_network_weights(self) -> torch.nn.parameter.Parameter:
         """Returns the weights of the network"""
