@@ -34,7 +34,7 @@ class GaussianBlur(BaseImageAugmenter):
     ) -> ConfigurationSpace:
 
         cs = ConfigurationSpace()
-        use_augmenter = CategoricalHyperparameter('use_augmenter', choices=[True, False])
+        use_augmenter = CategoricalHyperparameter('use_augmenter', choices=[True, False], default_value=True)
         sigma_min = UniformFloatHyperparameter('sigma_min', lower=0, upper=3, default_value=0)
         sigma_offset = UniformFloatHyperparameter('sigma_offset', lower=0, upper=3, default_value=0.5)
         cs.add_hyperparameters([use_augmenter, sigma_min, sigma_offset])

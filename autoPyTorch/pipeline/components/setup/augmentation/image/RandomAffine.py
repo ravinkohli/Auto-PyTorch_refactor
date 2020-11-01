@@ -48,7 +48,7 @@ class RandomAffine(BaseImageAugmenter):
         shear = UniformIntegerHyperparameter('shear', lower=0, upper=45, default_value=30)
         rotate = UniformIntegerHyperparameter('rotate', lower=0, upper=360, default_value=45)
 
-        use_augmenter = CategoricalHyperparameter('use_augmenter', choices=[True, False])
+        use_augmenter = CategoricalHyperparameter('use_augmenter', choices=[True, False], default_value=True)
 
         cs.add_hyperparameters([scale_offset, translate_percent_offset])
         cs.add_hyperparameters([shear, rotate, use_augmenter])

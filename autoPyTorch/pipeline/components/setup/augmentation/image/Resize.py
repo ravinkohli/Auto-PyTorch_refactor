@@ -51,7 +51,7 @@ class Resize(BaseImageAugmenter):
     ) -> ConfigurationSpace:
 
         cs = ConfigurationSpace()
-        use_augmenter = CategoricalHyperparameter('use_augmenter', choices=[True, False])
+        use_augmenter = CategoricalHyperparameter('use_augmenter', choices=[True, False], default_value=True)
         cs.add_hyperparameters([use_augmenter])
 
         return cs

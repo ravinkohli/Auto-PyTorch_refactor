@@ -34,7 +34,7 @@ class GaussianNoise(BaseImageAugmenter):
 
         cs = ConfigurationSpace()
         sigma_offset = UniformFloatHyperparameter('sigma_offset', lower=0, upper=3, default_value=0.3)
-        use_augmenter = CategoricalHyperparameter('use_augmenter', choices=[True, False])
+        use_augmenter = CategoricalHyperparameter('use_augmenter', choices=[True, False], default_value=True)
         cs.add_hyperparameters([use_augmenter, sigma_offset])
         # only add hyperparameters to configuration space if we are using the augmenter
         cs.add_condition(CS.EqualsCondition(sigma_offset, use_augmenter, True))

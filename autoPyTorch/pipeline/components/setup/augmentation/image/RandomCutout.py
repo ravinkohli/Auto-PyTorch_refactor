@@ -36,7 +36,7 @@ class RandomCutout(BaseImageAugmenter):
 
         cs = ConfigurationSpace()
         p = UniformFloatHyperparameter('p', lower=0.2, upper=1, default_value=0.5)
-        use_augmenter = CategoricalHyperparameter('use_augmenter', choices=[True, False])
+        use_augmenter = CategoricalHyperparameter('use_augmenter', choices=[True, False], default_value=True)
         cs.add_hyperparameters([p, use_augmenter])
 
         # only add hyperparameters to configuration space if we are using the augmenter
