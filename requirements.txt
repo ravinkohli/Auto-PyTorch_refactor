@@ -9,3 +9,4 @@ numpy
 scipy
 pynisher
 lockfile
+imgaug>=0.4.0

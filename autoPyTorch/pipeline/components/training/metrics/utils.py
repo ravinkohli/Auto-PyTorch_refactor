@@ -11,9 +11,9 @@ from autoPyTorch.pipeline.components.training.metrics.base_metric import autoPyT
 
 
 metrics_directory = os.path.split(__file__)[0]
-_encoders = find_components(__package__,
-                            metrics_directory,
-                            autoPyTorchMetric)
+_metrics = find_components(__package__,
+                           metrics_directory,
+                           autoPyTorchMetric)
 _addons = ThirdPartyComponents(autoPyTorchMetric)
 
 
@@ -32,7 +32,7 @@ def get_components() -> Dict[str, autoPyTorchMetric]:
             as choices
     """
     components = OrderedDict()
-    components.update(_encoders)
+    components.update(_metrics)
     components.update(_addons.components)
     return components
 
