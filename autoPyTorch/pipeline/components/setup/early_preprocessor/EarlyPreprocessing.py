@@ -67,8 +67,8 @@ class EarlyPreprocessing(autoPyTorchSetupComponent):
     @staticmethod
     def get_properties(dataset_properties: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
         return {
-            'shortname': 'Preprocessing',
-            'name': 'Preprocessing Node',
+            'shortname': 'EarlyPreprocessing',
+            'name': 'Early Preprocessing Node',
         }
 
     def __str__(self) -> str:

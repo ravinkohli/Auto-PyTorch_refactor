@@ -16,7 +16,7 @@ from autoPyTorch.pipeline.tabular_classification import TabularClassificationPip
 
 # Get the training data for tabular classification
 # Move to Australian to showcase numerical vs categorical
-X, y = sklearn.datasets.fetch_openml(data_id=40981, return_X_y=True, as_frame=True)
+X, y = sklearn.datasets.fetch_openml('mnist_784', return_X_y=True, as_frame=True)
 X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(
     X,
     y,
@@ -30,6 +30,7 @@ train_indices, val_indices = sklearn.model_selection.train_test_split(
     test_size=0.25,
 )
 
+<<<<<<< HEAD:examples/example_tabular_classification.py
 output_type = type_of_target(y)
 print(f"X_train={X_train.shape} train_indices={train_indices} output_type={output_type}")
 
@@ -44,6 +45,16 @@ dataset_properties = {
     'categorical_columns': categorical_columns,
     'numerical_columns': numerical_columns,
     'output_type': output_type,
+=======
+numerical_columns = X.columns.to_list()
+categorical_columns = []
+# numerical.remove('att214')
+
+# Create a proof of concept pipeline!
+dataset_properties = {
+    'categorical_columns': categorical_columns,
+    'numerical_columns': numerical_columns
+>>>>>>> e110256241ff0dc6bcc0010fe728d9bde98ed5cb:examples/examples_tabular_classification.py
 }
 pipeline = TabularClassificationPipeline(dataset_properties=dataset_properties)
 
@@ -57,6 +68,11 @@ pipeline.set_hyperparameters(config)
 # Make sure the working directory exists. Something that backend will handle
 os.makedirs('/tmp/example_tabular_classification_1', exist_ok=True)
 
+# # Mock the categories
+# categorical_columns = ['A1', 'A4', 'A5', 'A6', 'A8', 'A9', 'A11', 'A12']
+# numerical_columns = ['A2', 'A3', 'A7', 'A10', 'A13', 'A14']
+# categories = [np.unique(X[a]).tolist() for a in categorical_columns]
+
 # Fit the pipeline
 print("Fitting the pipeline...")
 pipeline.fit(X={
@@ -65,7 +81,7 @@ pipeline.fit(X={
     'num_features': X.shape[1],
     'num_classes': len(np.unique(y)),
     'is_small_preprocess': True,
-    'categories': categories,
+    'categories': [],
     'X_train': X_train,
     'y_train': y_train,
     'train_indices': train_indices,
