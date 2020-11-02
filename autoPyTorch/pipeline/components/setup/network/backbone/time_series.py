@@ -1,14 +1,13 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, List
 
 import ConfigSpace as CS
+import torch
 from ConfigSpace.configuration_space import ConfigurationSpace
 from ConfigSpace.hyperparameters import (
     CategoricalHyperparameter,
     UniformFloatHyperparameter,
     UniformIntegerHyperparameter
 )
-
-import torch
 from torch import nn
 from torch.nn.utils import weight_norm
 
@@ -18,7 +17,11 @@ from autoPyTorch.pipeline.components.setup.network.backbone.base_backbone import
 # Code inspired by https://github.com/hfawaz/InceptionTime
 # Paper: https://arxiv.org/pdf/1909.04939.pdf
 class _InceptionBlock(nn.Module):
-    def __init__(self, n_inputs, n_filters, kernel_size, bottleneck=None):
+    def __init__(self,
+                 n_inputs: int,
+                 n_filters: int,
+                 kernel_size: int,
+                 bottleneck: int = None):
         super(_InceptionBlock, self).__init__()
         self.n_filters = n_filters
         self.bottleneck = None \
@@ -28,13 +31,13 @@ class _InceptionBlock(nn.Module):
         n_inputs = n_inputs if bottleneck is None else bottleneck
         # create 3 conv layers with different kernel sizes which are applied in parallel
         self.pad1 = nn.ConstantPad1d(
-            padding=self.padding(kernel_sizes[0]), value=0)
+            padding=self._padding(kernel_sizes[0]), value=0)
         self.conv1 = nn.Conv1d(n_inputs, n_filters, kernel_sizes[0])
         self.pad2 = nn.ConstantPad1d(
-            padding=self.padding(kernel_sizes[1]), value=0)
+            padding=self._padding(kernel_sizes[1]), value=0)
         self.conv2 = nn.Conv1d(n_inputs, n_filters, kernel_sizes[1])
         self.pad3 = nn.ConstantPad1d(
-            padding=self.padding(kernel_sizes[2]), value=0)
+            padding=self._padding(kernel_sizes[2]), value=0)
         self.conv3 = nn.Conv1d(n_inputs, n_filters, kernel_sizes[2])
         # create 1 maxpool and conv layer which are also applied in parallel
         self.maxpool = nn.MaxPool1d(kernel_size=3, stride=1, padding=1)
@@ -42,16 +45,16 @@ class _InceptionBlock(nn.Module):
 
         self.bn = nn.BatchNorm1d(4 * n_filters)
 
-    def padding(self, kernel_size):
+    def _padding(self, kernel_size: int) -> Tuple[int, int]:
         if kernel_size % 2 == 0:
             return kernel_size // 2, kernel_size // 2 - 1
         else:
             return kernel_size // 2, kernel_size // 2
 
-    def get_n_outputs(self):
+    def get_n_outputs(self) -> int:
         return 4 * self.n_filters
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.bottleneck is not None:
             x = self.bottleneck(x)
         x1 = self.conv1(self.pad1(x))
@@ -64,12 +67,12 @@ class _InceptionBlock(nn.Module):
 
 
 class _ResidualBlock(nn.Module):
-    def __init__(self, n_res_inputs, n_outputs):
+    def __init__(self, n_res_inputs: int, n_outputs: int):
         super(_ResidualBlock, self).__init__()
         self.shortcut = nn.Conv1d(n_res_inputs, n_outputs, 1, bias=False)
         self.bn = nn.BatchNorm1d(n_outputs)
 
-    def forward(self, x, res):
+    def forward(self, x: torch.Tensor, res: torch.Tensor) -> torch.Tensor:
         shortcut = self.shortcut(res)
         shortcut = self.bn(shortcut)
         x += shortcut
@@ -102,7 +105,7 @@ class _InceptionTime(nn.Module):
                 n_res_inputs = n_res_outputs
             n_inputs = block.get_n_outputs()
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         # swap sequence and feature dimensions for use with convolutional nets
         x = x.transpose(1, 2).contiguous()
         res = x
@@ -119,9 +122,9 @@ class InceptionTimeBackbone(BaseBackbone):
     supported_tasks = {"time_series_classification", "time_series_regression"}
 
     def build_backbone(self, input_shape: Tuple[int, ...]) -> nn.Module:
-        assert len(input_shape) == 2
         backbone = _InceptionTime(in_features=input_shape[-1],
                                   config=self.config)
+        self.backbone = backbone
         return backbone
 
     @staticmethod
@@ -170,16 +173,23 @@ class InceptionTimeBackbone(BaseBackbone):
 # https://github.com/locuslab/TCN/blob/master/TCN/tcn.py, Carnegie Mellon University Locus Labs
 # Paper: https://arxiv.org/pdf/1803.01271.pdf
 class _Chomp1d(nn.Module):
-    def __init__(self, chomp_size):
+    def __init__(self, chomp_size: int):
         super(_Chomp1d, self).__init__()
         self.chomp_size = chomp_size
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return x[:, :, :-self.chomp_size].contiguous()
 
 
 class _TemporalBlock(nn.Module):
-    def __init__(self, n_inputs, n_outputs, kernel_size, stride, dilation, padding, dropout=0.2):
+    def __init__(self,
+                 n_inputs: int,
+                 n_outputs: int,
+                 kernel_size: int,
+                 stride: int,
+                 dilation: int,
+                 padding: int,
+                 dropout: float = 0.2):
         super(_TemporalBlock, self).__init__()
         self.conv1 = weight_norm(nn.Conv1d(n_inputs, n_outputs, kernel_size,
                                            stride=stride, padding=padding, dilation=dilation))
@@ -200,20 +210,20 @@ class _TemporalBlock(nn.Module):
         self.relu = nn.ReLU()
         # self.init_weights()
 
-    def init_weights(self):
+    def init_weights(self) -> None:
         self.conv1.weight.data.normal_(0, 0.01)
         self.conv2.weight.data.normal_(0, 0.01)
         if self.downsample is not None:
             self.downsample.weight.data.normal_(0, 0.01)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         out = self.net(x)
         res = x if self.downsample is None else self.downsample(x)
         return self.relu(out + res)
 
 
 class _TemporalConvNet(nn.Module):
-    def __init__(self, num_inputs, num_channels, kernel_size=2, dropout=0.2):
+    def __init__(self, num_inputs: int, num_channels: List[int], kernel_size: int = 2, dropout: float = 0.2):
         super(_TemporalConvNet, self).__init__()
         layers = []
         num_levels = len(num_channels)
@@ -230,15 +240,18 @@ class _TemporalConvNet(nn.Module):
                                       dropout=dropout)]
         self.network = nn.Sequential(*layers)
 
-    def forward(self, x):
-        return self.network(x)
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # swap sequence and feature dimensions for use with convolutional nets
+        x = x.transpose(1, 2).contiguous()
+        x = self.network(x)
+        x = x.transpose(1, 2).contiguous()
+        return x
 
 
 class TCNBackbone(BaseBackbone):
     supported_tasks = {"time_series_classification", "time_series_regression"}
 
     def build_backbone(self, input_shape: Tuple[int, ...]) -> nn.Module:
-        assert len(input_shape) == 2
         num_channels = [self.config["num_filters_0"]]
         for i in range(1, self.config["num_blocks"]):
             num_channels.append(self.config[f"num_filters_{i}"])
@@ -247,6 +260,7 @@ class TCNBackbone(BaseBackbone):
                                     kernel_size=self.config["kernel_size"],
                                     dropout=self.config["dropout"] if self.config["use_dropout"] else 0.0
                                     )
+        self.backbone = backbone
         return backbone
 
     @staticmethod

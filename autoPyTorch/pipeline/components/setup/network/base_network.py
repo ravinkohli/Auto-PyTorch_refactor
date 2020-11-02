@@ -90,25 +90,14 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
         if 'input_shape' not in X.keys():
             raise ValueError("Could not find the input shape in the fit dictionary "
                              "To fit a network, the input shape is needed to define "
-                             "the hidden layers, yet the dict contains only: {}".format(
-                X.keys())
-            )
-
-        # assert isinstance(X['input_shape'], numbers.Integral), "num_features: {}".format(
-        #     type(X['num_features'])
-        # )
+                             "the hidden layers, yet the dict contains only: {}".format(X.keys()))
 
         # For the Network, we need the number of classes,
         # to build the last layer
         if 'output_shape' not in X:
             raise ValueError("Could not the output shape in the fit dictionary "
                              "To fit a network, the output shape is needed to define "
-                             "the hidden layers, yet the dict contains only: {}".format(
-                X.keys())
-            )
-        # assert isinstance(X['num_classes'], numbers.Integral), "num_classes: {}".format(
-        #     type(X['num_classes'])
-        # )
+                             "the hidden layers, yet the dict contains only: {}".format(X.keys()))
 
     def get_network_weights(self) -> torch.nn.parameter.Parameter:
         """Returns the weights of the network"""

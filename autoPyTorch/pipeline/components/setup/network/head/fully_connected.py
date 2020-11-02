@@ -11,7 +11,7 @@ class FullyConnectedHead(BaseHead):
                        "image_classification", "image_regression",
                        "time_series_classification", "time_series_regression"}
 
-    def build_head(self, input_shape: Tuple[int, ...], output_shape: Tuple[int]) -> nn.Module:
+    def build_head(self, input_shape: Tuple[int, ...], output_shape: Tuple[int, ...]) -> nn.Module:
         # TODO: improve this
         layers = []
         layers.append(nn.Flatten())
@@ -27,9 +27,6 @@ class FullyConnectedHead(BaseHead):
 
     @staticmethod
     def get_hyperparameter_search_space(dataset_properties: Optional[Dict[str, str]] = None) -> ConfigurationSpace:
-        if dataset_properties["task_type"] not in FullyConnectedHead.supported_tasks:
-            raise ValueError(f"Unsupported task type {dataset_properties['task_type']}")
-
         cs = ConfigurationSpace()
 
         return cs

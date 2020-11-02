@@ -1,6 +1,5 @@
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, Type
 
-import ConfigSpace as CS
 import numpy as np
 from ConfigSpace.configuration_space import ConfigurationSpace
 from ConfigSpace.hyperparameters import (
@@ -8,10 +7,9 @@ from ConfigSpace.hyperparameters import (
 )
 from torch import nn
 
-from autoPyTorch.pipeline.components.setup.network.backbone import get_available_backbones, BaseBackbone, MLPBackbone, \
-    ShapedMLPBackbone
+from autoPyTorch.pipeline.components.setup.network.backbone import get_available_backbones, BaseBackbone
 from autoPyTorch.pipeline.components.setup.network.base_network import BaseNetworkComponent
-from autoPyTorch.pipeline.components.setup.network.head import get_available_heads, BaseHead, FullyConnectedHead
+from autoPyTorch.pipeline.components.setup.network.head import get_available_heads, BaseHead
 
 
 class BackboneHeadNet(BaseNetworkComponent):
@@ -44,13 +42,14 @@ class BackboneHeadNet(BaseNetworkComponent):
     def get_hyperparameter_search_space(dataset_properties: Optional[Dict[str, str]] = None,
                                         **kwargs: Any) -> ConfigurationSpace:
         cs = ConfigurationSpace()
-        backbones = get_available_backbones()
-        heads = get_available_heads()
+        backbones: Dict[str, Type[BaseBackbone]] = get_available_backbones()
+        heads: Dict[str, Type[BaseHead]] = get_available_heads()
 
-        # filter backbones and heads for those who support the current task type
-        task = dataset_properties["task_type"]
-        backbones = {name: backbone for name, backbone in backbones.items() if task in backbone.supported_tasks}
-        heads = {name: head for name, head in heads.items() if task in head.supported_tasks}
+        if dataset_properties is not None and "task_type" in dataset_properties:
+            # filter backbones and heads for those who support the current task type
+            task = dataset_properties["task_type"]
+            backbones = {name: backbone for name, backbone in backbones.items() if task in backbone.supported_tasks}
+            heads = {name: head for name, head in heads.items() if task in head.supported_tasks}
 
         backbone_hp = CategoricalHyperparameter("backbone", choices=backbones.keys())
         head_hp = CategoricalHyperparameter("head", choices=heads.keys())
@@ -100,13 +99,4 @@ class BackboneHeadNet(BaseNetworkComponent):
         # Remove unwanted info
         info.pop('network', None)
         info.pop('random_state', None)
-        return f"{self.config['backbone']} -> {self.config['head']} ({str(info)})"
-
-
-if __name__ == "__main__":
-    cs = BackboneHeadNet.get_hyperparameter_search_space(dataset_properties={"task_type": "tabular_classification"})
-    print(cs)
-    sample = cs.sample_configuration()
-    bnet = BackboneHeadNet(**sample)
-    print(bnet)
-    net = BackboneHeadNet(**sample).build_network(**{"input_shape": (10,), "output_shape": (10,)})
+        return f"BackboneHeadNet: {self.config['backbone']} -> {self.config['head']} ({str(info)})"

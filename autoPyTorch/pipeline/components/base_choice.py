@@ -134,12 +134,12 @@ class autoPyTorchChoice(object):
         del params['__choice__']
 
         for param, value in params.items():
-            param = param.replace(choice, '').replace(':', '')
+            param = param.replace(choice + ':', '')
             new_params[param] = value
 
         if init_params is not None:
             for param, value in init_params.items():
-                param = param.replace(choice, '').replace(':', '')
+                param = param.replace(choice + ':', '')
                 new_params[param] = value
 
         new_params['random_state'] = self.random_state
