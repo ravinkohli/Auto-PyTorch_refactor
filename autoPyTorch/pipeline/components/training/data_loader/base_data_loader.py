@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from ConfigSpace.configuration_space import ConfigurationSpace
 from ConfigSpace.hyperparameters import (
@@ -13,6 +13,7 @@ import torch
 
 import torchvision
 
+from autoPyTorch.utils.common import FitRequirement
 from autoPyTorch.pipeline.components.training.base_training import autoPyTorchTrainingComponent
 from autoPyTorch.pipeline.components.training.data_loader.transformable_tensor_dataset import (
     CustomXYTensorDataset
@@ -29,6 +30,7 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
     """
 
     def __init__(self, batch_size: int = 64) -> None:
+        super().__init__()
         self.batch_size = batch_size
         self.train_dataset = None  # type: Optional[torch.utils.data.Dataset]
         self.val_dataset = None  # type: Optional[torch.utils.data.Dataset]
@@ -42,6 +44,9 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
         # Save the transformations for reuse
         self.train_transform = None  # type: Optional[torchvision.transforms.Compose]
         self.val_transform = None  # type: Optional[torchvision.transforms.Compose]
+        self._fit_requirements = [FitRequirement("dataset", str), FitRequirement("root", str),
+                                  FitRequirement("X_train", np.ndarray), FitRequirement("train_indices", List[int]),
+                                  FitRequirement("is_small_preprocess", bool)]
 
     def transform(self, X: np.ndarray) -> np.ndarray:
         """The transform function calls the transform function of the

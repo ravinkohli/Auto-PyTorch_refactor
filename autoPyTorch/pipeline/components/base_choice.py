@@ -48,6 +48,9 @@ class autoPyTorchChoice(object):
         # self.set_hyperparameters(self.configuration)
         self.choice = None
 
+    def get_fit_requirements(self):
+        return self.choice.get_fit_requirements()
+
     def get_components(cls: 'autoPyTorchChoice') -> Dict[str, autoPyTorchComponent]:
         """Returns and ordered dict with the components available
         for current step.

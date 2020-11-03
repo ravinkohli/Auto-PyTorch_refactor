@@ -1,5 +1,5 @@
 from abc import ABCMeta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
 
 from ConfigSpace import Configuration
 from ConfigSpace.configuration_space import ConfigurationSpace
@@ -333,6 +333,24 @@ class BasePipeline(Pipeline):
                 by the pipeline.
         """
         raise NotImplementedError()
+
+    def get_fit_requirements(self) -> List[NamedTuple]:
+        """
+        Utility function that goes through all the components in
+        the pipeline and gets the fit requirement of that components.
+        All the fit requirements are then aggregated into a list
+        Returns:
+            List[NamedTuple]: List of
+        """
+        fit_requirements = list()  # List[NamedTuple]
+        for name, step in self.steps:
+            step_requirements = step.get_fit_requirements()
+            if step_requirements:
+                fit_requirements.extend(step_requirements)
+
+        # remove duplicates in the list
+        fit_requirements = list(set(fit_requirements))
+        return fit_requirements
 
     def _get_estimator_hyperparameter_name(self) -> str:
         """The name of the current pipeline estimator, for representation purposes"""

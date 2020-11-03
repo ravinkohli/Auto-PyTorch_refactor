@@ -1,10 +1,11 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 
+from autoPyTorch.utils.common import FitRequirement
 from autoPyTorch.pipeline.components.setup.base_setup import autoPyTorchSetupComponent
 
 
@@ -13,7 +14,9 @@ class BaseLRComponent(autoPyTorchSetupComponent):
     in Auto-Pytorch"""
 
     def __init__(self) -> None:
+        super().__init__()
         self.scheduler = None  # type: Optional[_LRScheduler]
+        self._fit_requirements = [FitRequirement('optimizer', Optional)]
 
     def transform(self, X: np.ndarray) -> np.ndarray:
         """The transform function calls the transform function of the

@@ -6,6 +6,7 @@ import numpy as np
 
 import torch
 
+from autoPyTorch.utils.common import FitRequirement
 from autoPyTorch.pipeline.components.setup.base_setup import autoPyTorchSetupComponent
 
 
@@ -23,6 +24,8 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
         self.intermediate_activation = intermediate_activation
         self.random_state = random_state
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self._fit_requirements = [FitRequirement('num_features', numbers.Integral),
+                                  FitRequirement('num_classes', numbers.Integral)]
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> autoPyTorchSetupComponent:
         """

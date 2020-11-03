@@ -4,7 +4,7 @@ import pkgutil
 import sys
 import warnings
 from collections import OrderedDict
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, NamedTuple, Optional, Union
 
 from ConfigSpace.configuration_space import Configuration, ConfigurationSpace
 
@@ -85,6 +85,20 @@ class ThirdPartyComponents(object):
 
 
 class autoPyTorchComponent(BaseEstimator):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._fit_requirements: Optional[List[NamedTuple]] = None
+
+    def get_fit_requirements(self) -> List[NamedTuple]:
+        """
+        Function to get the required keys by the component
+        that need to be in the fit dictionary
+        Returns:
+            List[NamedTuple]: a list containing required keys
+                            in a named tuple (name: str, type: object)
+        """
+        return self._fit_requirements
 
     @staticmethod
     def get_properties(dataset_properties: Optional[Dict[str, str]] = None

@@ -3,6 +3,7 @@ import unittest.mock
 
 from sklearn.datasets import make_classification
 
+from autoPyTorch.utils.common import FitRequirement
 from autoPyTorch.pipeline.tabular_classification import TabularClassificationPipeline
 
 
@@ -135,6 +136,16 @@ class PipelineTest(unittest.TestCase):
         # No error when network is passed
         X = pipeline.named_steps['lr_scheduler'].fit(X, None).transform(X)
         self.assertIn('optimizer', X)
+
+    def test_get_fit_requirements(self):
+        dataset_properties = {'numerical_columns': [], 'categorical_columns': []}
+        pipeline = TabularClassificationPipeline(dataset_properties=dataset_properties)
+        fit_requirements = pipeline.get_fit_requirements()
+
+        # check if fit requirements is a list of FitRequirement named tuples
+        self.assertIsInstance(fit_requirements, list)
+        for requirement in fit_requirements:
+            self.assertIsInstance(requirement, FitRequirement)
 
 
 if __name__ == '__main__':

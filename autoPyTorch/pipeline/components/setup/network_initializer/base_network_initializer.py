@@ -10,6 +10,7 @@ import numpy as np
 
 import torch
 
+from autoPyTorch.utils.common import FitRequirement
 from autoPyTorch.pipeline.components.setup.base_setup import autoPyTorchSetupComponent
 
 
@@ -23,8 +24,10 @@ class BaseNetworkInitializerComponent(autoPyTorchSetupComponent):
         bias_strategy: str,
         random_state: Optional[np.random.RandomState] = None,
     ) -> None:
+        super().__init__()
         self.bias_strategy = bias_strategy
         self.random_state = random_state
+        self._fit_requirements = [FitRequirement('network', torch.nn.Module)]
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> autoPyTorchSetupComponent:
         """

@@ -21,6 +21,7 @@ class MixUpTrainer(BaseTrainerComponent):
             alpha (float): the mixup ratio
 
         """
+        super().__init__()
         self.alpha = alpha
 
     def data_preparation(self, X: np.ndarray, y: np.ndarray,

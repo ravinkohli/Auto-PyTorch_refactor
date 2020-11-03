@@ -1,5 +1,8 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
+import numpy as np
+
+from autoPyTorch.utils.common import FitRequirement
 from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.base_tabular_preprocessing import (
     autoPyTorchTabularPreprocessingComponent
 )
@@ -9,6 +12,10 @@ class BaseImputer(autoPyTorchTabularPreprocessingComponent):
     """
     Provides abstract class interface for Imputers in AutoPyTorch
     """
+    def __init__(self):
+        super().__init__()
+        self._fit_requirements = [FitRequirement('numerical_columns', List),
+                                  FitRequirement('categorical_columns', List)]
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
         """

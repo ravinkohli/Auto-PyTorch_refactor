@@ -13,6 +13,7 @@ from autoPyTorch.pipeline.components.preprocessing.image_preprocessing.normalise
 class NoNormalizer(BaseNormalizer):
     def __init__(self, random_state: Optional[Union[np.random.RandomState, int]] = None
                  ):
+        super().__init__()
         self.random_state = random_state
 
     def fit(self, X: Dict[str, Any], y: Optional[Any] = None) -> "NoNormalizer":

@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, NamedTuple, Optional, Tuple
 
 import numpy as np
 
@@ -160,6 +160,10 @@ class RunSummary(object):
 
 
 class BaseTrainerComponent(autoPyTorchTrainingComponent):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._fit_requirements: Optional[List[NamedTuple]] = None
 
     def prepare(
         self,

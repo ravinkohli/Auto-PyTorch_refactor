@@ -2,11 +2,18 @@ from typing import Any, Dict
 
 import numpy as np
 
+from autoPyTorch.utils.common import FitRequirement
 from autoPyTorch.pipeline.components.preprocessing.image_preprocessing.base_image_preprocessor import \
     autoPyTorchImagePreprocessingComponent
 
 
 class BaseNormalizer(autoPyTorchImagePreprocessingComponent):
+
+    def __init__(self):
+        super(BaseNormalizer, self).__init__()
+        self._fit_requirements = [FitRequirement('channelwise_mean', np.ndarray),
+                                  FitRequirement('channelwise_std', np.ndarray)]
+
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
 
         X.update({'normalise': self})

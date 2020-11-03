@@ -1,5 +1,6 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
+from autoPyTorch.utils.common import FitRequirement
 from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.base_tabular_preprocessing import (
     autoPyTorchTabularPreprocessingComponent
 )
@@ -9,6 +10,11 @@ class BaseEncoder(autoPyTorchTabularPreprocessingComponent):
     """
     Base class for encoder
     """
+
+    def __init__(self):
+        super().__init__()
+        self._fit_requirements = [FitRequirement('categorical_columns', List),
+                                  FitRequirement('categories', List)]
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
         """

@@ -11,6 +11,7 @@ class ImageNormalizer(BaseNormalizer):
 
     def __init__(self, random_state: Optional[Union[np.random.RandomState, int]] = None
                  ):
+        super().__init__()
         self.random_state = random_state
         self.mean = None  # type: Optional[np.ndarray]
         self.std = None  # type: Optional[np.ndarray]

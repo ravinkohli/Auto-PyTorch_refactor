@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 
@@ -7,6 +7,7 @@ from sklearn.pipeline import make_pipeline
 
 import torch
 
+from autoPyTorch.utils.common import FitRequirement
 from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.base_tabular_preprocessing import (
     autoPyTorchTabularPreprocessingComponent
 )
@@ -18,6 +19,8 @@ class TabularColumnTransformer(autoPyTorchTabularPreprocessingComponent):
         super().__init__()
         self.random_state = random_state
         self.column_transformer: Optional[ColumnTransformer] = None
+        self._fit_requirements = [FitRequirement('numerical_columns', List),
+                                  FitRequirement('categorical_columns', List)]
 
     def get_column_transformer(self) -> ColumnTransformer:
         """
