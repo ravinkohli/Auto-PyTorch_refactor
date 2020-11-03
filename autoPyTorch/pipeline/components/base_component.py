@@ -69,7 +69,7 @@ class ThirdPartyComponents(object):
 
         properties = set(classifier.get_properties())
         # TODO: Add desired properties when we define them
-        should_be_there = {'shortname', 'name'}
+        should_be_there = {'shortname', 'name', 'task_type', 'objective'}
         for property in properties:
             if property not in should_be_there:
                 raise ValueError('Property %s must not be specified for '

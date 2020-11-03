@@ -1,3 +1,4 @@
+import typing
 from typing import Optional
 
 import ConfigSpace as cs
@@ -12,6 +13,7 @@ class SearchSpace:
         'constant': cs.Constant,
     }
 
+    @typing.no_type_check
     def __init__(
             self,
             cs_name: str = 'Default Hyperparameter Config',
@@ -30,6 +32,7 @@ class SearchSpace:
             seed=seed,
         )
 
+    @typing.no_type_check
     def add_hyperparameter(
         self,
         name: str,
@@ -65,6 +68,7 @@ class SearchSpace:
         return hyperparameter
 
     @staticmethod
+    @typing.no_type_check
     def _assert_necessary_arguments_given(
         hyperparameter_type: str,
         **kwargs,
@@ -93,6 +97,7 @@ class SearchSpace:
 
         return None
 
+    @typing.no_type_check
     def set_parent_hyperperparameter(
             self,
             child_hp,
@@ -118,6 +123,7 @@ class SearchSpace:
             )
         )
 
+    @typing.no_type_check
     def add_configspace_condition(
         self,
         child_hp,

@@ -1,13 +1,9 @@
-import numbers
 from abc import abstractmethod
 from typing import Any, Callable, Dict, Optional
 
-import ConfigSpace as CS
 from ConfigSpace.configuration_space import ConfigurationSpace
 from ConfigSpace.hyperparameters import (
     CategoricalHyperparameter,
-    UniformFloatHyperparameter,
-    UniformIntegerHyperparameter
 )
 
 import numpy as np
@@ -50,7 +46,7 @@ class BaseNetworkInitializerComponent(autoPyTorchSetupComponent):
         return self
 
     @abstractmethod
-    def weights_init(self, m: torch.nn.Module) -> Callable:
+    def weights_init(self) -> Callable:
         """ A weight initialization strategy to be applied to the network. It can be a custom
         implementation, a method from torch.init or even pre-trained weights
 
