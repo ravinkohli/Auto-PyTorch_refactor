@@ -1,8 +1,16 @@
-import numpy as np
 from enum import IntEnum
-from typing import List, Tuple, Any, Dict, Callable, Union
-from sklearn.model_selection import train_test_split, KFold, StratifiedKFold, ShuffleSplit, StratifiedShuffleSplit, \
-    TimeSeriesSplit
+from typing import Any, Callable, Dict, List, Tuple, Union
+
+import numpy as np
+
+from sklearn.model_selection import (
+    KFold,
+    ShuffleSplit,
+    StratifiedKFold,
+    StratifiedShuffleSplit,
+    TimeSeriesSplit,
+    train_test_split
+)
 
 CROSS_VAL_FN = Callable[[int, np.ndarray, Any], List[Tuple[np.ndarray, np.ndarray]]]
 HOLDOUT_FN = Callable[[float, np.ndarray, Any], Tuple[np.ndarray, np.ndarray]]
@@ -37,46 +45,46 @@ def get_holdout_validators(*holdout_val_types: HoldoutValTypes) -> Dict[str, HOL
     return holdout_validators
 
 
-def is_stratified(val_type: Union[str, CrossValTypes, HoldoutValTypes]):
+def is_stratified(val_type: Union[str, CrossValTypes, HoldoutValTypes]) -> bool:
     if isinstance(val_type, str):
         return val_type.lower().startswith("stratified")
     else:
         return val_type.name.lower().startswith("stratified")
 
 
-def holdout_validation(val_share: float, indices: np.ndarray, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+def holdout_validation(val_share: float, indices: np.ndarray, **kwargs: Any) -> Tuple[np.ndarray, np.ndarray]:
     train, val = train_test_split(indices, test_size=val_share, shuffle=False)
     return train, val
 
 
-def stratified_holdout_validation(val_share: float, indices: np.ndarray, **kwargs) \
+def stratified_holdout_validation(val_share: float, indices: np.ndarray, **kwargs: Any) \
         -> Tuple[np.ndarray, np.ndarray]:
     train, val = train_test_split(indices, test_size=val_share, shuffle=False, stratify=kwargs["stratify"])
     return train, val
 
 
-def shuffle_split_cross_validation(num_splits: int, indices: np.ndarray, **kwargs) \
+def shuffle_split_cross_validation(num_splits: int, indices: np.ndarray, **kwargs: Any) \
         -> List[Tuple[np.ndarray, np.ndarray]]:
     cv = ShuffleSplit(n_splits=num_splits)
     splits = list(cv.split(indices))
     return splits
 
 
-def stratified_shuffle_split_cross_validation(num_splits: int, indices: np.ndarray, **kwargs) \
+def stratified_shuffle_split_cross_validation(num_splits: int, indices: np.ndarray, **kwargs: Any) \
         -> List[Tuple[np.ndarray, np.ndarray]]:
     cv = StratifiedShuffleSplit(n_splits=num_splits)
     splits = list(cv.split(indices, kwargs["stratify"]))
     return splits
 
 
-def stratified_k_fold_cross_validation(num_splits: int, indices: np.ndarray, **kwargs) \
+def stratified_k_fold_cross_validation(num_splits: int, indices: np.ndarray, **kwargs: Any) \
         -> List[Tuple[np.ndarray, np.ndarray]]:
     cv = StratifiedKFold(n_splits=num_splits)
     splits = list(cv.split(indices, kwargs["stratify"]))
     return splits
 
 
-def k_fold_cross_validation(num_splits: int, indices: np.ndarray, **kwargs) -> List[Tuple[np.ndarray, np.ndarray]]:
+def k_fold_cross_validation(num_splits: int, indices: np.ndarray, **kwargs: Any) -> List[Tuple[np.ndarray, np.ndarray]]:
     """
     Standard k fold cross validation.
 
@@ -89,7 +97,7 @@ def k_fold_cross_validation(num_splits: int, indices: np.ndarray, **kwargs) -> L
     return splits
 
 
-def time_series_cross_validation(num_splits: int, indices: np.ndarray, **kwargs) \
+def time_series_cross_validation(num_splits: int, indices: np.ndarray, **kwargs: Any) \
         -> List[Tuple[np.ndarray, np.ndarray]]:
     """
     Returns train and validation indices respecting the temporal ordering of the data.

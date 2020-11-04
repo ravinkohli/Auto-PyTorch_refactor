@@ -1,11 +1,17 @@
-from typing import Any, List, Optional
 from enum import Enum
+from typing import Any, List, Optional
 
 import numpy as np
+
 import pandas as pd
+
 from autoPyTorch.datasets.base_dataset import BaseDataset
-from autoPyTorch.datasets.cross_validation import get_holdout_validators, get_cross_validators, CrossValTypes, \
-    HoldoutValTypes
+from autoPyTorch.datasets.cross_validation import (
+    CrossValTypes,
+    HoldoutValTypes,
+    get_cross_validators,
+    get_holdout_validators
+)
 
 
 class DataTypes(Enum):

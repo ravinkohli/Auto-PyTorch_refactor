@@ -1,10 +1,16 @@
-import numpy as np
-from autoPyTorch.datasets.base_dataset import BaseDataset
-from typing import Tuple, Optional, Union
-from autoPyTorch.datasets.cross_validation import get_cross_validators, get_holdout_validators, CrossValTypes, \
-    HoldoutValTypes
+from typing import Optional, Tuple, Type, Union
 
-TIME_SERIES_FORECASTING_INPUT = np.ndarray  # currently only numpy arrays are supported
+import numpy as np
+
+from autoPyTorch.datasets.base_dataset import BaseDataset
+from autoPyTorch.datasets.cross_validation import (
+    CrossValTypes,
+    HoldoutValTypes,
+    get_cross_validators,
+    get_holdout_validators
+)
+
+TIME_SERIES_FORECASTING_INPUT = Tuple[np.ndarray, np.ndarray]  # currently only numpy arrays are supported
 TIME_SERIES_REGRESSION_INPUT = Tuple[np.ndarray, np.ndarray]
 TIME_SERIES_CLASSIFICATION_INPUT = Tuple[np.ndarray, np.ndarray]
 
@@ -49,15 +55,15 @@ def _check_time_series_forecasting_inputs(target_variables: Tuple[int],
                                           n_steps: int,
                                           train: TIME_SERIES_FORECASTING_INPUT,
                                           val: Optional[TIME_SERIES_FORECASTING_INPUT] = None):
-    if train.ndim != 3:
+    if train[0].ndim != 3:
         raise ValueError(
-            f"The training data for time series forecasting has to be a three-dimensional tensor of shape PxLxM.")
+            "The training data for time series forecasting has to be a three-dimensional tensor of shape PxLxM.")
     if val is not None:
-        if val.ndim != 3:
+        if val[0].ndim != 3:
             raise ValueError(
-                f"The validation data for time series forecasting "
-                f"has to be a three-dimensional tensor of shape PxLxM.")
-    _, time_series_length, num_features = train.shape
+                "The validation data for time series forecasting "
+                "has to be a three-dimensional tensor of shape PxLxM.")
+    _, time_series_length, num_features = train[0].shape
     if sequence_length + n_steps > time_series_length:
         raise ValueError(f"Invalid sequence length: Cannot create dataset "
                          f"using sequence_length={sequence_length} and n_steps={n_steps} "

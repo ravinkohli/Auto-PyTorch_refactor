@@ -30,7 +30,6 @@ train_indices, val_indices = sklearn.model_selection.train_test_split(
     test_size=0.25,
 )
 
-<<<<<<< HEAD:examples/example_tabular_classification.py
 output_type = type_of_target(y)
 print(f"X_train={X_train.shape} train_indices={train_indices} output_type={output_type}")
 
@@ -45,16 +44,6 @@ dataset_properties = {
     'categorical_columns': categorical_columns,
     'numerical_columns': numerical_columns,
     'output_type': output_type,
-=======
-numerical_columns = X.columns.to_list()
-categorical_columns = []
-# numerical.remove('att214')
-
-# Create a proof of concept pipeline!
-dataset_properties = {
-    'categorical_columns': categorical_columns,
-    'numerical_columns': numerical_columns
->>>>>>> e110256241ff0dc6bcc0010fe728d9bde98ed5cb:examples/examples_tabular_classification.py
 }
 pipeline = TabularClassificationPipeline(dataset_properties=dataset_properties)
 
