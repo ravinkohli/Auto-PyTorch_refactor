@@ -1,22 +1,23 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import numpy as np
 
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 
-from autoPyTorch.utils.common import FitRequirement
 from autoPyTorch.pipeline.components.setup.base_setup import autoPyTorchSetupComponent
+from autoPyTorch.utils.common import FitRequirement
 
 
 class BaseLRComponent(autoPyTorchSetupComponent):
     """Provide an abstract interface for schedulers
     in Auto-Pytorch"""
 
+    _fit_requirements = [FitRequirement('optimizer', Optimizer)]
+
     def __init__(self) -> None:
         super().__init__()
         self.scheduler = None  # type: Optional[_LRScheduler]
-        self._fit_requirements = [FitRequirement('optimizer', Optional)]
 
     def transform(self, X: np.ndarray) -> np.ndarray:
         """The transform function calls the transform function of the

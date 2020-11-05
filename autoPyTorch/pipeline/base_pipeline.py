@@ -1,5 +1,5 @@
 from abc import ABCMeta
-from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 from ConfigSpace import Configuration
 from ConfigSpace.configuration_space import ConfigurationSpace
@@ -18,6 +18,7 @@ from autoPyTorch.pipeline.create_searchspace_util import (
     find_active_choices,
     get_match_array
 )
+from autoPyTorch.utils.common import FitRequirement
 
 
 class BasePipeline(Pipeline):
@@ -334,7 +335,7 @@ class BasePipeline(Pipeline):
         """
         raise NotImplementedError()
 
-    def get_fit_requirements(self) -> List[NamedTuple]:
+    def get_fit_requirements(self) -> List[FitRequirement]:
         """
         Utility function that goes through all the components in
         the pipeline and gets the fit requirement of that components.
@@ -342,7 +343,7 @@ class BasePipeline(Pipeline):
         Returns:
             List[NamedTuple]: List of
         """
-        fit_requirements = list()  # List[NamedTuple]
+        fit_requirements = list()  # List[FitRequirement]
         for name, step in self.steps:
             step_requirements = step.get_fit_requirements()
             if step_requirements:

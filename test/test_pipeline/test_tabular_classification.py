@@ -3,8 +3,8 @@ import unittest.mock
 
 from sklearn.datasets import make_classification
 
-from autoPyTorch.utils.common import FitRequirement
 from autoPyTorch.pipeline.tabular_classification import TabularClassificationPipeline
+from autoPyTorch.utils.common import FitRequirement
 
 
 class PipelineTest(unittest.TestCase):

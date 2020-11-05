@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Any, Callable, Dict, List, NamedTuple, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -11,6 +11,7 @@ from torch.optim.lr_scheduler import _LRScheduler
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from autoPyTorch.pipeline.components.training.base_training import autoPyTorchTrainingComponent
+from autoPyTorch.utils.common import FitRequirement
 
 
 class BudgetTracker(object):
@@ -161,9 +162,10 @@ class RunSummary(object):
 
 class BaseTrainerComponent(autoPyTorchTrainingComponent):
 
-    def __init__(self) -> None:
+    _fit_requirements: Optional[List[FitRequirement]] = None
+
+    def __init__(self, random_state: Optional[Union[np.random.RandomState, int]] = None) -> None:
         super().__init__()
-        self._fit_requirements: Optional[List[NamedTuple]] = None
 
     def prepare(
         self,

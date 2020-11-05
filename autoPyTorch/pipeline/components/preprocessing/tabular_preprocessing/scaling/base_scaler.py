@@ -1,22 +1,23 @@
 from typing import Any, Dict, List
 
-from autoPyTorch.utils.common import FitRequirement
 from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.base_tabular_preprocessing import (
     autoPyTorchTabularPreprocessingComponent
 )
+from autoPyTorch.utils.common import FitRequirement
 
 
 class BaseScaler(autoPyTorchTabularPreprocessingComponent):
     """
     Provides abstract class interface for Scalers in AutoPytorch
     """
-    def __init__(self):
+    _fit_requirements = [FitRequirement('numerical_columns', List)]
+
+    def __init__(self) -> None:
         super().__init__()
-        self._fit_requirements = [FitRequirement('numerical_columns', List)]
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Adds the fitted early_preprocessor into the 'X' dictionary and returns it.
+        Adds the fitted scalar into the 'X' dictionary and returns it.
         Args:
             X (Dict[str, Any]): 'X' dictionary
 

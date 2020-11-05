@@ -137,7 +137,7 @@ class TrainerChoice(autoPyTorchChoice):
         self.dataset_properties_ = dataset_properties
         return cs
 
-    def transform(self, X: np.ndarray) -> np.ndarray:
+    def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
         """The transform function calls the transform function of the
         underlying model and returns the transformed array.
 
