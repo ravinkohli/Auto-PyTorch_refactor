@@ -28,8 +28,10 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
     https://pytorch.org/docs/stable/data.html
 
     """
-    _fit_requirements = [FitRequirement("dataset", str), FitRequirement("root", str),
-                         FitRequirement("X_train", np.ndarray), FitRequirement("train_indices", List[int]),
+    _fit_requirements = [FitRequirement("dataset", str),
+                         FitRequirement("root", str),
+                         FitRequirement("X_train", np.ndarray),
+                         FitRequirement("train_indices", List[int]),
                          FitRequirement("is_small_preprocess", bool)]
 
     def __init__(self, batch_size: int = 64) -> None:

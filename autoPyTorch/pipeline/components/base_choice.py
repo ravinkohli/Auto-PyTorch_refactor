@@ -188,8 +188,8 @@ class autoPyTorchChoice(object):
         """Handy method to check if a component is fitted
 
         Args:
-            X (np.ndarray): the fit
-            y (np.ndarray): the target features
+            X (X: Dict[str, Any]): Dependencies needed by current component to perform fit
+            y (Any): not used. To comply with sklearn API
         """
         # Allows to use check_is_fitted on the choice object
         self.fitted_ = True
