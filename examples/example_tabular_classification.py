@@ -16,7 +16,7 @@ from autoPyTorch.pipeline.tabular_classification import TabularClassificationPip
 
 # Get the training data for tabular classification
 # Move to Australian to showcase numerical vs categorical
-X, y = sklearn.datasets.fetch_openml('mnist_784', return_X_y=True, as_frame=True)
+X, y = sklearn.datasets.fetch_openml(data_id=40981, return_X_y=True, as_frame=True)
 X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(
     X,
     y,
@@ -36,7 +36,8 @@ print(f"X_train={X_train.shape} train_indices={train_indices} output_type={outpu
 # Mock the categories
 categorical_columns = ['A1', 'A4', 'A5', 'A6', 'A8', 'A9', 'A11', 'A12']
 numerical_columns = ['A2', 'A3', 'A7', 'A10', 'A13', 'A14']
-categories = [np.unique(X[a]).tolist() for a in categorical_columns]
+categories = [np.unique(X[a]) for a in categorical_columns]
+print(type(categories[0]))
 
 # Create a proof of concept pipeline!
 dataset_properties = {
