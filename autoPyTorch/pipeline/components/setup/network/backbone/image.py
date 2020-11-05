@@ -14,8 +14,14 @@ from torch.nn import functional as F
 
 from autoPyTorch.pipeline.components.setup.network.backbone.base_backbone import BaseBackbone
 
+_activations: Dict[str, nn.Module] = {
+    "relu": nn.ReLU,
+    "tanh": nn.Tanh,
+    "sigmoid": nn.Sigmoid
+}
 
-class ConvNetBackbone(BaseBackbone):
+
+class ConvNetImageBackbone(BaseBackbone):
     supported_tasks = {"image_classification", "image_regression"}
 
     def _get_layer_size(self, w: int, h: int) -> Tuple[int, int]:
@@ -32,7 +38,7 @@ class ConvNetBackbone(BaseBackbone):
                                 stride=self.config["conv_kernel_stride"],
                                 padding=self.config["conv_kernel_padding"]))
         layers.append(nn.BatchNorm2d(out_filters))
-        layers.append(nn.ReLU())
+        layers.append(_activations[self.config["activation"]]())
         layers.append(nn.MaxPool2d(kernel_size=self.config["pool_size"], stride=self.config["pool_size"]))
 
     def build_backbone(self, input_shape: Tuple[int, ...]) -> nn.Module:
@@ -56,8 +62,8 @@ class ConvNetBackbone(BaseBackbone):
     @staticmethod
     def get_properties(dataset_properties: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
         return {
-            'shortname': 'ConvNetBackbone',
-            'name': 'ConvNetBackbone',
+            'shortname': 'ConvNetImageBackbone',
+            'name': 'ConvNetImageBackbone',
         }
 
     @staticmethod
@@ -76,10 +82,11 @@ class ConvNetBackbone(BaseBackbone):
                                         max_pool_size: int = 3) -> ConfigurationSpace:
         cs = CS.ConfigurationSpace()
 
-        num_layers = UniformIntegerHyperparameter('num_layers',
-                                                  lower=min_num_layers,
-                                                  upper=max_num_layers)
-        cs.add_hyperparameter(num_layers)
+        cs.add_hyperparameter(UniformIntegerHyperparameter('num_layers',
+                                                           lower=min_num_layers,
+                                                           upper=max_num_layers))
+        cs.add_hyperparameter(CategoricalHyperparameter('activation',
+                                                        choices=list(_activations.keys())))
         cs.add_hyperparameter(UniformIntegerHyperparameter('conv_init_filters',
                                                            lower=min_init_filters,
                                                            upper=max_init_filters))
@@ -99,14 +106,19 @@ class ConvNetBackbone(BaseBackbone):
 
 
 class _DenseLayer(nn.Sequential):
-    def __init__(self, num_input_features: int, growth_rate: int, bn_size: int, drop_rate: float):
+    def __init__(self,
+                 num_input_features: int,
+                 activation: str,
+                 growth_rate: int,
+                 bn_size: int,
+                 drop_rate: float):
         super(_DenseLayer, self).__init__()
         self.add_module('norm1', nn.BatchNorm2d(num_input_features)),
-        self.add_module('relu1', nn.ReLU(inplace=True)),
+        self.add_module('relu1', _activations[activation]()),
         self.add_module('conv1', nn.Conv2d(num_input_features, bn_size * growth_rate,
                                            kernel_size=1, stride=1, bias=False)),
         self.add_module('norm2', nn.BatchNorm2d(bn_size * growth_rate)),
-        self.add_module('relu2', nn.ReLU(inplace=True)),
+        self.add_module('relu2', _activations[activation]()),
         self.add_module('conv2', nn.Conv2d(bn_size * growth_rate, growth_rate,
                                            kernel_size=3, stride=1, padding=1, bias=False)),
         self.drop_rate = drop_rate
@@ -119,18 +131,32 @@ class _DenseLayer(nn.Sequential):
 
 
 class _DenseBlock(nn.Sequential):
-    def __init__(self, num_layers: int, num_input_features: int, bn_size: int, growth_rate: int, drop_rate: float):
+    def __init__(self,
+                 num_layers: int,
+                 num_input_features: int,
+                 activation: str,
+                 bn_size: int,
+                 growth_rate: int,
+                 drop_rate: float):
         super(_DenseBlock, self).__init__()
         for i in range(num_layers):
-            layer = _DenseLayer(num_input_features + i * growth_rate, growth_rate, bn_size, drop_rate)
+            layer = _DenseLayer(num_input_features=num_input_features + i * growth_rate,
+                                activation=activation,
+                                growth_rate=growth_rate,
+                                bn_size=bn_size,
+                                drop_rate=drop_rate)
             self.add_module('denselayer%d' % (i + 1), layer)
 
 
 class _Transition(nn.Sequential):
-    def __init__(self, num_input_features: int, num_output_features: int, pool_size: int):
+    def __init__(self,
+                 num_input_features: int,
+                 activation: str,
+                 num_output_features: int,
+                 pool_size: int):
         super(_Transition, self).__init__()
         self.add_module('norm', nn.BatchNorm2d(num_input_features))
-        self.add_module('relu', nn.ReLU(inplace=True))
+        self.add_module('relu', _activations[activation]())
         self.add_module('conv', nn.Conv2d(num_input_features, num_output_features,
                                           kernel_size=1, stride=1, bias=False))
         self.add_module('pool', nn.AvgPool2d(kernel_size=pool_size, stride=pool_size))
@@ -170,12 +196,18 @@ class DenseNetBackbone(BaseBackbone):
         # Each denseblock
         num_features = num_init_features
         for i, num_layers in enumerate(block_config):
-            block = _DenseBlock(num_layers=num_layers, num_input_features=num_features,
-                                bn_size=bn_size, growth_rate=growth_rate, drop_rate=drop_rate)
+            block = _DenseBlock(num_layers=num_layers,
+                                activation=self.config["activation"],
+                                num_input_features=num_features,
+                                bn_size=bn_size,
+                                growth_rate=growth_rate,
+                                drop_rate=drop_rate)
             features.add_module('denseblock%d' % (i + 1), block)
             num_features = num_features + num_layers * growth_rate
             if i != len(block_config) - 1:
-                trans = _Transition(num_input_features=num_features, num_output_features=num_features // 2,
+                trans = _Transition(num_input_features=num_features,
+                                    activation=self.config["activation"],
+                                    num_output_features=num_features // 2,
                                     pool_size=2 if i > len(block_config) - division_steps else 1)
                 features.add_module('transition%d' % (i + 1), trans)
                 num_features = num_features // 2
@@ -210,6 +242,11 @@ class DenseNetBackbone(BaseBackbone):
                                                  lower=min_num_blocks,
                                                  upper=max_num_blocks)
         cs.add_hyperparameter(blocks_hp)
+
+        activation_hp = CategoricalHyperparameter('activation',
+                                                  choices=list(_activations.keys()))
+        cs.add_hyperparameter(activation_hp)
+
         use_dropout = CategoricalHyperparameter('use_dropout', choices=[True, False])
         dropout = UniformFloatHyperparameter('dropout',
                                              lower=0.0,
