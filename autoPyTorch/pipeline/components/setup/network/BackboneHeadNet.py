@@ -28,8 +28,6 @@ class BackboneHeadNet(BaseNetworkComponent):
         self.config = kwargs
         self._backbones = get_available_backbones()
         self._heads = get_available_heads()
-        self._backbones = get_available_backbones()
-        self._heads = get_available_heads()
 
     @staticmethod
     def get_properties(dataset_properties: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
@@ -45,8 +43,8 @@ class BackboneHeadNet(BaseNetworkComponent):
         backbones: Dict[str, Type[BaseBackbone]] = get_available_backbones()
         heads: Dict[str, Type[BaseHead]] = get_available_heads()
 
+        # filter backbones and heads for those who support the current task type
         if dataset_properties is not None and "task_type" in dataset_properties:
-            # filter backbones and heads for those who support the current task type
             task = dataset_properties["task_type"]
             backbones = {name: backbone for name, backbone in backbones.items() if task in backbone.supported_tasks}
             heads = {name: head for name, head in heads.items() if task in head.supported_tasks}
@@ -80,13 +78,13 @@ class BackboneHeadNet(BaseNetworkComponent):
         Backbone = self._backbones[backbone_name]
         Head = self._heads[head_name]
 
-        backbone = Backbone(**{k.replace(backbone_name, "").replace(":", ""): v
+        backbone = Backbone(**{k.replace(backbone_name + ":", ""): v
                                for k, v in self.config.items() if
                                k.startswith(backbone_name)})
         backbone_module = backbone.build_backbone(input_shape=input_shape)
         backbone_output_shape = backbone.get_output_shape(input_shape=input_shape)
 
-        head = Head(**{k.replace(head_name, "").replace(":", ""): v
+        head = Head(**{k.replace(head_name + ":", ""): v
                        for k, v in self.config.items() if
                        k.startswith(head_name)})
         head_module = head.build_head(input_shape=backbone_output_shape, output_shape=output_shape)
