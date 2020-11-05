@@ -47,8 +47,8 @@ class PipelineTest(unittest.TestCase):
              'categories': [],
              'X_train': self.X,
              'y_train': self.y,
-             'train_indices': range(self.X.shape[0] // 2),
-             'val_indices': range(self.X.shape[0] // 2, self.X.shape[0]),
+             'train_indices': list(range(self.X.shape[0] // 2)),
+             'val_indices': list(range(self.X.shape[0] // 2, self.X.shape[0])),
              'is_small_preprocess': False,
              # Training configuration
              'dataset_properties': self.dataset_properties,
@@ -82,8 +82,8 @@ class PipelineTest(unittest.TestCase):
              'categories': [],
              'X_train': self.X,
              'y_train': self.y,
-             'train_indices': range(self.X.shape[0] // 2),
-             'val_indices': range(self.X.shape[0] // 2, self.X.shape[0]),
+             'train_indices': list(range(self.X.shape[0] // 2)),
+             'val_indices': list(range(self.X.shape[0] // 2, self.X.shape[0])),
              'is_small_preprocess': False,
              # Training configuration
              'dataset_properties': self.dataset_properties,
@@ -127,12 +127,15 @@ class PipelineTest(unittest.TestCase):
              'metrics_during_training': True,
              }
         for key in X.keys():
+            # skip tests for data loader requirements as data loader has different check_requirements
+            if key == 'y_train' or 'val_indices':
+                continue
             X_copy = X.copy()
             X_copy.pop(key)
             try:
                 pipeline.fit(X_copy)
-            except:
-                self.assertRaises(ValueError)
+            except ValueError as msg:
+                self.assertRegex(str(msg), r"To fit .+?, expected fit dictionary to have .+? but got .*")
 
     def test_network_optimizer_lr_handshake(self):
         """Fitting a network should put the network in the X"""
@@ -154,7 +157,7 @@ class PipelineTest(unittest.TestCase):
 
         # Then fitting a optimizer should fail if no network:
         self.assertIn('optimizer', pipeline.named_steps.keys())
-        with self.assertRaisesRegex(ValueError, 'Could not parse the network'):
+        with self.assertRaisesRegex(ValueError, r"To fit .+?, expected fit dictionary to have 'network' but got .*"):
             pipeline.named_steps['optimizer'].fit({}, None)
 
         # No error when network is passed
@@ -164,7 +167,7 @@ class PipelineTest(unittest.TestCase):
         # Then fitting a optimizer should fail if no network:
         self.assertIn('lr_scheduler', pipeline.named_steps.keys())
         with self.assertRaisesRegex(ValueError,
-                                    'the fit dictionary Must contain a valid optimizer'):
+                                    r"To fit .+?, expected fit dictionary to have 'optimizer' but got .*"):
             pipeline.named_steps['lr_scheduler'].fit({}, None)
 
         # No error when network is passed

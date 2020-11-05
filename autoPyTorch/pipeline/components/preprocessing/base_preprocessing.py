@@ -7,12 +7,14 @@ import numpy as np
 import torch
 
 from autoPyTorch.pipeline.components.base_component import autoPyTorchComponent
+from autoPyTorch.utils.common import FitRequirement
 
 
 class autoPyTorchPreprocessingComponent(autoPyTorchComponent):
     """
      Provides abstract interface for preprocessing algorithms in AutoPyTorch.
     """
+    _fit_requirements = [FitRequirement('X_train', np.ndarray)]
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
         """

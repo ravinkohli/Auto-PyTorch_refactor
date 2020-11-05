@@ -10,11 +10,11 @@ class BaseEncoder(autoPyTorchTabularPreprocessingComponent):
     """
     Base class for encoder
     """
-    _fit_requirements = [FitRequirement('categorical_columns', List),
-                         FitRequirement('categories', List)]
-
     def __init__(self) -> None:
         super().__init__()
+        self._fit_requirements = [FitRequirement('categorical_columns', List),
+                                  FitRequirement('categories', List)]
+        self._fit_requirements.extend(super()._fit_requirements)
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
         """

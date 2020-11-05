@@ -15,13 +15,14 @@ from autoPyTorch.utils.common import FitRequirement
 
 
 class TabularColumnTransformer(autoPyTorchTabularPreprocessingComponent):
-    _fit_requirements = [FitRequirement('numerical_columns', List),
-                         FitRequirement('categorical_columns', List)]
 
     def __init__(self, random_state: Optional[Union[np.random.RandomState, int]] = None):
         super().__init__()
         self.random_state = random_state
         self.column_transformer: Optional[ColumnTransformer] = None
+        self._fit_requirements = [FitRequirement('numerical_columns', List),
+                                  FitRequirement('categorical_columns', List)]
+        self._fit_requirements.extend(super().get_fit_requirements())
 
     def get_column_transformer(self) -> ColumnTransformer:
         """

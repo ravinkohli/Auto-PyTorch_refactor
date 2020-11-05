@@ -1,7 +1,5 @@
 from typing import Any, Dict, Optional
 
-import numpy as np
-
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 
@@ -13,21 +11,19 @@ class BaseLRComponent(autoPyTorchSetupComponent):
     """Provide an abstract interface for schedulers
     in Auto-Pytorch"""
 
-    _fit_requirements = [FitRequirement('optimizer', Optimizer)]
-
     def __init__(self) -> None:
         super().__init__()
         self.scheduler = None  # type: Optional[_LRScheduler]
 
-    def transform(self, X: np.ndarray) -> np.ndarray:
-        """The transform function calls the transform function of the
-        underlying model and returns the transformed array.
+        self._fit_requirements = [FitRequirement('optimizer', Optimizer)]
 
+    def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Adds the scheduler into the fit dictionary 'X' and returns it.
         Args:
-            X (np.ndarray): input features
-
+            X (Dict[str, Any]): 'X' dictionary
         Returns:
-            np.ndarray: Transformed features
+            (Dict[str, Any]): the updated 'X' dictionary
         """
         X.update({'lr_scheduler': self.scheduler})
         return X

@@ -8,11 +8,12 @@ from autoPyTorch.utils.common import FitRequirement
 
 
 class BaseNormalizer(autoPyTorchImagePreprocessingComponent):
-    _fit_requirements = [FitRequirement('channelwise_mean', np.ndarray),
-                         FitRequirement('channelwise_std', np.ndarray)]
 
     def __init__(self) -> None:
         super(BaseNormalizer, self).__init__()
+        self._fit_requirements = [FitRequirement('channelwise_mean', np.ndarray),
+                                  FitRequirement('channelwise_std', np.ndarray)]
+        self._fit_requirements.extend(super()._fit_requirements)
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
 

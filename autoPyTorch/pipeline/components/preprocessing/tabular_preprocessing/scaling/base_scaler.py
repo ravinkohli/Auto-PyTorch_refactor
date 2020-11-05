@@ -10,10 +10,11 @@ class BaseScaler(autoPyTorchTabularPreprocessingComponent):
     """
     Provides abstract class interface for Scalers in AutoPytorch
     """
-    _fit_requirements = [FitRequirement('numerical_columns', List)]
 
     def __init__(self) -> None:
         super().__init__()
+        self._fit_requirements = [FitRequirement('numerical_columns', List)]
+        self._fit_requirements.extend(super()._fit_requirements)
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
         """

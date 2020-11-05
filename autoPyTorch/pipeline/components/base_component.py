@@ -88,10 +88,10 @@ class ThirdPartyComponents(object):
 
 
 class autoPyTorchComponent(BaseEstimator):
-    _fit_requirements: Optional[List[FitRequirement]] = None
 
     def __init__(self) -> None:
         super().__init__()
+        self._fit_requirements: Optional[List[FitRequirement]] = None
 
     def get_fit_requirements(self) -> Optional[List[FitRequirement]]:
         """
@@ -207,7 +207,7 @@ class autoPyTorchComponent(BaseEstimator):
             if requirement.name not in X.keys():
                 raise ValueError("To fit {}, expected fit dictionary to have '{}'"
                                  " but got \n {}".format(self.__class__.__name__, requirement.name, list(X.keys())))
-            elif not isinstance(X[requirement.name],  requirement.type):
+            elif not isinstance(X[requirement.name], requirement.type):
                 raise TypeError("Expected {} to be instance of {} got {}".format(requirement.name,
                                                                                  requirement.type,
                                                                                  type(X[requirement.name])))

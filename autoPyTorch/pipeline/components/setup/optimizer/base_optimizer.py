@@ -11,11 +11,10 @@ class BaseOptimizerComponent(autoPyTorchSetupComponent):
     """Provide an abstract interface for Pytorch Optimizers
     in Auto-Pytorch"""
 
-    _fit_requirements = [FitRequirement('network', torch.nn.Module)]
-
     def __init__(self) -> None:
         super().__init__()
         self.optimizer = None  # type: Optional[Optimizer]
+        self._fit_requirements = [FitRequirement('network', torch.nn.Module)]
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
         """The transform function calls the transform function of the
