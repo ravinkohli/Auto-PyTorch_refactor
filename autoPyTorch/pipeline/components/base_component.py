@@ -14,9 +14,9 @@ from autoPyTorch.utils.common import FitRequirement
 
 
 def find_components(
-    package: str,
-    directory: str,
-    base_class: BaseEstimator
+        package: str,
+        directory: str,
+        base_class: BaseEstimator
 ) -> Dict[str, BaseEstimator]:
     """Utility to find component on a given directory,
     that inherit from base_class
@@ -57,6 +57,7 @@ class ThirdPartyComponents(object):
     Args:
         base_class (BaseEstimator) component type desired to be created
     """
+
     def __init__(self, base_class: BaseEstimator) -> None:
         self.base_class = base_class
         self.components = OrderedDict()  # type: Dict[str, BaseEstimator]
@@ -87,7 +88,6 @@ class ThirdPartyComponents(object):
 
 
 class autoPyTorchComponent(BaseEstimator):
-
     _fit_requirements: Optional[List[FitRequirement]] = None
 
     def __init__(self) -> None:
@@ -118,7 +118,7 @@ class autoPyTorchComponent(BaseEstimator):
 
     @staticmethod
     def get_hyperparameter_search_space(
-        dataset_properties: Optional[Dict[str, str]] = None
+            dataset_properties: Optional[Dict[str, str]] = None
     ) -> ConfigurationSpace:
         """Return the configuration space of this classification algorithm.
 
@@ -202,6 +202,15 @@ class autoPyTorchComponent(BaseEstimator):
 
         if y is not None:
             warnings.warn("Provided y argument, yet only X is required")
+
+        for requirement in self._fit_requirements:
+            if requirement.name not in X.keys():
+                raise ValueError("To fit {}, expected fit dictionary to have '{}'"
+                                 " but got \n {}".format(self.__class__.__name__, requirement.name, list(X.keys())))
+            elif not isinstance(X[requirement.name],  requirement.type):
+                raise TypeError("Expected {} to be instance of {} got {}".format(requirement.name,
+                                                                                 requirement.type,
+                                                                                 type(X[requirement.name])))
 
     def __str__(self) -> str:
         """Representation of the current Component"""

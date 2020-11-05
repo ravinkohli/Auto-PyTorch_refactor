@@ -40,30 +40,6 @@ class BaseLRComponent(autoPyTorchSetupComponent):
         assert self.scheduler is not None, "No scheduler was fit"
         return self.scheduler
 
-    def check_requirements(self, X: Dict[str, Any], y: Any = None) -> None:
-        """
-        A mechanism in code to ensure the correctness of the fit dictionary
-        It recursively makes sure that the children and parent level requirements
-        are honored before fit.
-
-        Args:
-            X (Dict[str, Any]): Dictionary with fitted parameters. It is a message passing
-                mechanism, in which during a transform, a components adds relevant information
-                so that further stages can be properly fitted
-        """
-
-        # make sure the parent requirements are honored
-        super().check_requirements(X, y)
-
-        # The fit dictionary must have an optimizer, that the LR will wrap
-        if 'optimizer' not in X or not isinstance(X['optimizer'], Optimizer):
-            raise ValueError("To fit a learning rate scheduler, the fit dictionary "
-                             "Must contain a valid optimizer that inherits from "
-                             "torch.optim.Optimizer, yet X only contains {}.".format(
-                                 X
-                             )
-                             )
-
     def __str__(self) -> str:
         """ Allow a nice understanding of what components where used """
         string = self.scheduler.__class__.__name__

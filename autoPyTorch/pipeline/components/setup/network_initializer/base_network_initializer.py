@@ -71,24 +71,6 @@ class BaseNetworkInitializerComponent(autoPyTorchSetupComponent):
         """
         return X
 
-    def check_requirements(self, X: Dict[str, Any], y: Any = None) -> None:
-        """ This common utility makes sure that the input dictionary X,
-        used to fit a given component class, contains the minimum information
-        to fit the given component, and it's parents
-        """
-
-        # Honor the parent requirements
-        super().check_requirements(X, y)
-
-        # To initialize weights, we need the network
-        if 'network' not in X or not isinstance(X['network'], torch.nn.Module):
-            raise ValueError("Could not parse the network in the fit dictionary "
-                             "To initialize the weights of the network, we need the same "
-                             "in the fit dictionary, yet the dict contains only: {}".format(
-                                 X
-                             )
-                             )
-
     @staticmethod
     def get_hyperparameter_search_space(dataset_properties: Optional[Dict] = None,
                                         min_mlp_layers: int = 1,

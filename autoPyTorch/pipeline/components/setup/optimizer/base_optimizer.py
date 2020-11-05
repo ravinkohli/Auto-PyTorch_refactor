@@ -38,24 +38,6 @@ class BaseOptimizerComponent(autoPyTorchSetupComponent):
         assert self.optimizer is not None, "No optimizer was fitted"
         return self.optimizer
 
-    def check_requirements(self, X: Dict[str, Any], y: Any = None) -> None:
-        """ This common utility makes sure that the input dictionary X,
-        used to fit a given component class, contains the minimum information
-        to fit the given component, and it's parents
-        """
-
-        # Honor the parent requirements
-        super().check_requirements(X, y)
-
-        # For the optimizer, we need the network to wrap
-        if 'network' not in X or not isinstance(X['network'], torch.nn.Module):
-            raise ValueError("Could not parse the network in the fit dictionary "
-                             "To fit a optimizer, the network is needed to define "
-                             "which parameters to wrap, yet the dict contains only: {}".format(
-                                 X
-                             )
-                             )
-
     def __str__(self) -> str:
         """ Allow a nice understanding of what components where used """
         string = self.optimizer.__class__.__name__

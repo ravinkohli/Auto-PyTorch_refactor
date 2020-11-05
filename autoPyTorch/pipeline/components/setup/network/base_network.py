@@ -88,42 +88,6 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
         assert self.network is not None, "No network was initialized"
         return self.network
 
-    def check_requirements(self, X: Dict[str, Any], y: Any = None) -> None:
-        """ This common utility makes sure that the input dictionary X,
-        used to fit a given component class, contains the minimum information
-        to fit the given component, and it's parents
-        """
-
-        # Honor the parent requirements
-        super().check_requirements(X, y)
-
-        # For the Network, we need the number of input features,
-        # to build the first network layer
-        if 'num_features' not in X.keys():
-            raise ValueError("Could not parse the number of input features in the fit dictionary "
-                             "To fit a network, the number of features is needed to define "
-                             "the hidden layers, yet the dict contains only: {}".format(
-                                 X.keys()
-                             )
-                             )
-
-        assert isinstance(X['num_features'], numbers.Integral), "num_features: {}".format(
-            type(X['num_features'])
-        )
-
-        # For the Network, we need the number of classes,
-        # to build the last layer
-        if 'num_classes' not in X:
-            raise ValueError("Could not parse the number of classes in the fit dictionary "
-                             "To fit a network, the number of classes is needed to define "
-                             "the hidden layers, yet the dict contains only: {}".format(
-                                 X.keys()
-                             )
-                             )
-        assert isinstance(X['num_classes'], numbers.Integral), "num_classes: {}".format(
-            type(X['num_classes'])
-        )
-
     @classmethod
     def get_activations_dict(cls) -> Dict[str, torch.nn.Module]:
         """

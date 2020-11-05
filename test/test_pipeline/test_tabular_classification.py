@@ -100,6 +100,40 @@ class PipelineTest(unittest.TestCase):
              }
         )
 
+    def test_remove_key_check_requirements(self):
+        """Makes sure that when a key is removed from X, correct error is outputted"""
+        pipeline = TabularClassificationPipeline(dataset_properties=self.dataset_properties)
+        X = {'num_features': self.num_features,
+             'num_classes': self.num_classes,
+             'numerical_columns': list(range(self.num_features)),
+             'categorical_columns': [],
+             'categories': [],
+             'X_train': self.X,
+             'y_train': self.y,
+             'train_indices': list(range(self.X.shape[0] // 2)),
+             'val_indices': list(range(self.X.shape[0] // 2, self.X.shape[0])),
+             'is_small_preprocess': False,
+             # Training configuration
+             'dataset_properties': self.dataset_properties,
+             'job_id': 'example_tabular_classification_1',
+             'device': 'cpu',
+             'budget_type': 'epochs',
+             'epochs': 5,
+             'torch_num_threads': 1,
+             'early_stopping': 20,
+             'working_dir': '/tmp',
+             'use_tensorboard_logger': True,
+             'use_pynisher': False,
+             'metrics_during_training': True,
+             }
+        for key in X.keys():
+            X_copy = X.copy()
+            X_copy.pop(key)
+            try:
+                pipeline.fit(X_copy)
+            except:
+                self.assertRaises(ValueError)
+
     def test_network_optimizer_lr_handshake(self):
         """Fitting a network should put the network in the X"""
 

@@ -86,12 +86,3 @@ class TabularColumnTransformer(autoPyTorchTabularPreprocessingComponent):
         except ValueError as msg:
             raise ValueError('{} in {}'.format(msg, self.__class__))
         return X
-
-    def check_requirements(self, X: Dict[str, Any], y: Any = None) -> None:
-        super().check_requirements(X, y)
-        if 'numerical_columns' not in X or 'categorical_columns' not in X:
-            raise ValueError("To fit a column transformer on tabular data"
-                             ", the fit dictionary must contain a list of "
-                             "the numerical and categorical columns of the "
-                             "data but only contains {}".format(X.keys())
-                             )
