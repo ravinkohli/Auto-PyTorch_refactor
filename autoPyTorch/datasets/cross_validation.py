@@ -3,8 +3,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
-from typing_extensions import Protocol
-
 from sklearn.model_selection import (
     KFold,
     ShuffleSplit,
@@ -14,10 +12,12 @@ from sklearn.model_selection import (
     train_test_split
 )
 
+from typing_extensions import Protocol
+
 
 # Use callback protocol as workaround, since callable with function fields count 'self' as argument
 class CROSS_VAL_FN(Protocol):
-    
+
     def __call__(self, num_splits: int, indices: np.ndarray, stratify: Optional[Any]
                  ) -> List[Tuple[np.ndarray, np.ndarray]]: ...
 

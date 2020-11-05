@@ -133,7 +133,8 @@ class TimeSeriesRegressionDataset(BaseDataset):
 def _check_time_series_inputs(task_type: str,
                               train: Union[TIME_SERIES_CLASSIFICATION_INPUT, TIME_SERIES_REGRESSION_INPUT],
                               val: Optional[
-                                  Union[TIME_SERIES_CLASSIFICATION_INPUT, TIME_SERIES_REGRESSION_INPUT]] = None) -> None:
+                                  Union[TIME_SERIES_CLASSIFICATION_INPUT, TIME_SERIES_REGRESSION_INPUT]] = None
+                              ) -> None:
     if len(train) != 2:
         raise ValueError(f"There must be exactly two training tensors for {task_type}. "
                          f"The first one containing the data and the second one containing the targets.")
