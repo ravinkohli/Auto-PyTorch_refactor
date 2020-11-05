@@ -9,6 +9,7 @@ import numpy as np
 from sklearn.utils import check_random_state
 
 from autoPyTorch.pipeline.components.base_component import autoPyTorchComponent
+from autoPyTorch.utils.common import FitRequirement
 
 
 class autoPyTorchChoice(object):
@@ -46,10 +47,15 @@ class autoPyTorchChoice(object):
         # Since the pipeline will initialize the hyperparameters, it is not
         # necessary to do this upon the construction of this object
         # self.set_hyperparameters(self.configuration)
-        self.choice = None
+        self.choice: Optional[autoPyTorchComponent] = None
 
-    def get_fit_requirements(self):
-        return self.choice.get_fit_requirements()
+    def get_fit_requirements(self) -> Optional[List[FitRequirement]]:
+        if self.choice is not None:
+            return self.choice.get_fit_requirements()
+        else:
+            raise AttributeError("Expected choice attribute to be autoPyTorchComponent"
+                                 " but got None, to get fit requirements for {}, "
+                                 "call get_fit_requirements of the component".format(self.__class__.__name__))
 
     def get_components(cls: 'autoPyTorchChoice') -> Dict[str, autoPyTorchComponent]:
         """Returns and ordered dict with the components available
@@ -178,19 +184,17 @@ class autoPyTorchChoice(object):
         """
         raise NotImplementedError()
 
-    def fit(self, X: np.ndarray, y: np.ndarray, **kwargs: Any) -> autoPyTorchComponent:
+    def fit(self, X: Dict[str, Any], y: Any) -> autoPyTorchComponent:
         """Handy method to check if a component is fitted
 
         Args:
-            X (np.ndarray): the input features
+            X (np.ndarray): the fit
             y (np.ndarray): the target features
         """
         # Allows to use check_is_fitted on the choice object
         self.fitted_ = True
-        if kwargs is None:
-            kwargs = {}
         assert self.choice is not None, "Cannot call fit without initializing the component"
-        return self.choice.fit(X, y, **kwargs)
+        return self.choice.fit(X, y)
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         """Predicts the target given an input, by using the chosen component
