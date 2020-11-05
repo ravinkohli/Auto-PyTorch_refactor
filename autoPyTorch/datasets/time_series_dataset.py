@@ -54,7 +54,7 @@ def _check_time_series_forecasting_inputs(target_variables: Tuple[int],
                                           sequence_length: int,
                                           n_steps: int,
                                           train: TIME_SERIES_FORECASTING_INPUT,
-                                          val: Optional[TIME_SERIES_FORECASTING_INPUT] = None):
+                                          val: Optional[TIME_SERIES_FORECASTING_INPUT] = None) -> None:
     if train[0].ndim != 3:
         raise ValueError(
             "The training data for time series forecasting has to be a three-dimensional tensor of shape PxLxM.")
@@ -78,7 +78,7 @@ def _prepare_time_series_forecasting_tensor(tensor: TIME_SERIES_FORECASTING_INPU
                                             target_variables: Tuple[int],
                                             sequence_length: int,
                                             n_steps: int) -> Tuple[np.ndarray, np.ndarray]:
-    population_size, time_series_length, num_features = tensor.shape
+    population_size, time_series_length, num_features = tensor[0].shape
     num_targets = len(target_variables)
     num_datapoints = time_series_length - sequence_length - n_steps + 1
     x_tensor = np.zeros((num_datapoints, population_size, sequence_length, num_features), dtype=np.float)
@@ -86,8 +86,8 @@ def _prepare_time_series_forecasting_tensor(tensor: TIME_SERIES_FORECASTING_INPU
 
     for p in range(population_size):
         for i in range(num_datapoints):
-            x_tensor[i, p, :, :] = tensor[p, i:i + sequence_length, :]
-            y_tensor[i, p, :] = tensor[p, i + sequence_length + n_steps - 1, target_variables]
+            x_tensor[i, p, :, :] = tensor[0][p, i:i + sequence_length, :]
+            y_tensor[i, p, :] = tensor[0][p, i + sequence_length + n_steps - 1, target_variables]
 
     # get rid of population dimension by reshaping
     x_tensor = x_tensor.reshape((-1, sequence_length, num_features))
@@ -133,7 +133,7 @@ class TimeSeriesRegressionDataset(BaseDataset):
 def _check_time_series_inputs(task_type: str,
                               train: Union[TIME_SERIES_CLASSIFICATION_INPUT, TIME_SERIES_REGRESSION_INPUT],
                               val: Optional[
-                                  Union[TIME_SERIES_CLASSIFICATION_INPUT, TIME_SERIES_REGRESSION_INPUT]] = None):
+                                  Union[TIME_SERIES_CLASSIFICATION_INPUT, TIME_SERIES_REGRESSION_INPUT]] = None) -> None:
     if len(train) != 2:
         raise ValueError(f"There must be exactly two training tensors for {task_type}. "
                          f"The first one containing the data and the second one containing the targets.")

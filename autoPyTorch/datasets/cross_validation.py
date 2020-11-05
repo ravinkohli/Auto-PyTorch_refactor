@@ -1,5 +1,6 @@
 from enum import IntEnum
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing_extensions import Protocol
 
 import numpy as np
 
@@ -12,9 +13,15 @@ from sklearn.model_selection import (
     train_test_split
 )
 
-CROSS_VAL_FN = Callable[[int, np.ndarray, Any], List[Tuple[np.ndarray, np.ndarray]]]
-HOLDOUT_FN = Callable[[float, np.ndarray, Any], Tuple[np.ndarray, np.ndarray]]
+#CROSS_VAL_FN = Callable[[int, np.ndarray, Any], List[Tuple[np.ndarray, np.ndarray]]]
+#HOLDOUT_FN = Callable[[float, np.ndarray, Any], Tuple[np.ndarray, np.ndarray]]
 
+# Use callback protocol as workaround, since callable with function fields count 'self' as argument
+class CROSS_VAL_FN(Protocol):
+    def __call__(self, num_splits: int, indices: np.ndarray, stratify: Optional[Any]) -> List[Tuple[np.ndarray, np.ndarray]]: ...
+
+class HOLDOUT_FN(Protocol):
+    def __call__(self, val_share: float, indices: np.ndarray, stratify: Optional[Any]) -> Tuple[np.ndarray, np.ndarray]: ...
 
 class CrossValTypes(IntEnum):
     stratified_k_fold_cross_validation = 1
