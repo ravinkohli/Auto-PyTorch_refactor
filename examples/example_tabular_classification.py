@@ -18,16 +18,16 @@ from autoPyTorch.pipeline.tabular_classification import TabularClassificationPip
 # Move to Australian to showcase numerical vs categorical
 X, y = sklearn.datasets.fetch_openml(data_id=40981, return_X_y=True, as_frame=True)
 X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(
-X,
-y,
-random_state=1,
-test_size=0.2,
+    X,
+    y,
+    random_state=1,
+    test_size=0.2,
 )
 
 train_indices, val_indices = sklearn.model_selection.train_test_split(
-list(range(X_train.shape[0])),
-random_state=1,
-test_size=0.25,
+    list(range(X_train.shape[0])),
+    random_state=1,
+    test_size=0.25,
 )
 
 output_type = type_of_target(y)
@@ -37,7 +37,6 @@ print(f"X_train={X_train.shape} train_indices={train_indices} output_type={outpu
 categorical_columns = ['A1', 'A4', 'A5', 'A6', 'A8', 'A9', 'A11', 'A12']
 numerical_columns = ['A2', 'A3', 'A7', 'A10', 'A13', 'A14']
 categories = [np.unique(X[a]) for a in categorical_columns]
-print(type(categories[0]))
 
 # Create a proof of concept pipeline!
 dataset_properties = {
