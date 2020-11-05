@@ -23,7 +23,7 @@ class CROSS_VAL_FN(Protocol):
 
 
 class HOLDOUT_FN(Protocol):
-    
+
     def __call__(self, val_share: float, indices: np.ndarray, stratify: Optional[Any]
                  ) -> Tuple[np.ndarray, np.ndarray]: ...
 
