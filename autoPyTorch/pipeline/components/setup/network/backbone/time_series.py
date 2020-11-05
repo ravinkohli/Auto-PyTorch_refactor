@@ -27,18 +27,23 @@ class _InceptionBlock(nn.Module):
         self.bottleneck = None \
             if bottleneck is None \
             else nn.Conv1d(n_inputs, bottleneck, kernel_size=1)
+
         kernel_sizes = [kernel_size // (2 ** i) for i in range(3)]
         n_inputs = n_inputs if bottleneck is None else bottleneck
+
         # create 3 conv layers with different kernel sizes which are applied in parallel
         self.pad1 = nn.ConstantPad1d(
             padding=self._padding(kernel_sizes[0]), value=0)
         self.conv1 = nn.Conv1d(n_inputs, n_filters, kernel_sizes[0])
+
         self.pad2 = nn.ConstantPad1d(
             padding=self._padding(kernel_sizes[1]), value=0)
         self.conv2 = nn.Conv1d(n_inputs, n_filters, kernel_sizes[1])
+
         self.pad3 = nn.ConstantPad1d(
             padding=self._padding(kernel_sizes[2]), value=0)
         self.conv3 = nn.Conv1d(n_inputs, n_filters, kernel_sizes[2])
+
         # create 1 maxpool and conv layer which are also applied in parallel
         self.maxpool = nn.MaxPool1d(kernel_size=3, stride=1, padding=1)
         self.convpool = nn.Conv1d(n_inputs, n_filters, 1)
