@@ -135,10 +135,10 @@ class BasePipeline(Pipeline):
         configuration: Configuration,
         init_params: Optional[Dict] = None
     ) -> 'Pipeline':
-        """Method to set the hyperparamter configuration of the pipeline.
+        """Method to set the hyperparameter configuration of the pipeline.
 
         It iterates over the components of the pipeline and applies a given
-        configuration accordingly
+        configuration accordingly.
 
         Args:
             configuration (Configuration): configuration object to search and overwrite in
