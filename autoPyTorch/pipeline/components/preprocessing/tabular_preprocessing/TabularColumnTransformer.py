@@ -20,9 +20,11 @@ class TabularColumnTransformer(autoPyTorchTabularPreprocessingComponent):
         super().__init__()
         self.random_state = random_state
         self.column_transformer: Optional[ColumnTransformer] = None
-        self._fit_requirements = [FitRequirement('numerical_columns', List),
-                                  FitRequirement('categorical_columns', List)]
-        self._fit_requirements.extend(super().get_fit_requirements())
+        self._fit_requirements = [FitRequirement('numerical_columns', (List,)),
+                                  FitRequirement('categorical_columns', (List,))]
+        super_requirements: Optional[List[FitRequirement]] = super().get_fit_requirements()
+        if super_requirements:
+            self._fit_requirements.extend(super_requirements)
 
     def get_column_transformer(self) -> ColumnTransformer:
         """

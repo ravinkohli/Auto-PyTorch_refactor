@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -11,9 +11,11 @@ class BaseNormalizer(autoPyTorchImagePreprocessingComponent):
 
     def __init__(self) -> None:
         super(BaseNormalizer, self).__init__()
-        self._fit_requirements = [FitRequirement('channelwise_mean', np.ndarray),
-                                  FitRequirement('channelwise_std', np.ndarray)]
-        self._fit_requirements.extend(super()._fit_requirements)
+        self._fit_requirements = [FitRequirement('channelwise_mean', (np.ndarray,)),
+                                  FitRequirement('channelwise_std', (np.ndarray,))]
+        super_requirements: Optional[List[FitRequirement]] = super().get_fit_requirements()
+        if super_requirements:
+            self._fit_requirements.extend(super_requirements)
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
 

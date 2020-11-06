@@ -4,6 +4,10 @@ from ConfigSpace.configuration_space import ConfigurationSpace
 
 import numpy as np
 
+import pandas as pd
+
+from scipy.sparse import csr_matrix
+
 import torch
 
 from autoPyTorch.pipeline.components.base_component import autoPyTorchComponent
@@ -14,7 +18,7 @@ class autoPyTorchPreprocessingComponent(autoPyTorchComponent):
     """
      Provides abstract interface for preprocessing algorithms in AutoPyTorch.
     """
-    _fit_requirements = [FitRequirement('X_train', np.ndarray)]
+    _fit_requirements = [FitRequirement('X_train', (np.ndarray, pd.DataFrame, csr_matrix))]
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
         """

@@ -203,14 +203,22 @@ class autoPyTorchComponent(BaseEstimator):
         if y is not None:
             warnings.warn("Provided y argument, yet only X is required")
 
-        for requirement in self._fit_requirements:
-            if requirement.name not in X.keys():
-                raise ValueError("To fit {}, expected fit dictionary to have '{}'"
-                                 " but got \n {}".format(self.__class__.__name__, requirement.name, list(X.keys())))
-            elif not isinstance(X[requirement.name], requirement.type):
-                raise TypeError("Expected {} to be instance of {} got {}".format(requirement.name,
-                                                                                 requirement.type,
-                                                                                 type(X[requirement.name])))
+        if self._fit_requirements:
+            for requirement in self._fit_requirements:
+                if requirement.name not in X.keys():
+                    raise ValueError("To fit {}, expected fit dictionary to have '{}'"
+                                     " but got \n {}".format(self.__class__.__name__, requirement.name, list(X.keys())))
+                else:
+                    UNSUPPORTED_TYPE = True
+                    for supported_type in requirement.supported_types:
+                        if isinstance(X[requirement.name], supported_type):
+                            UNSUPPORTED_TYPE = False
+                            break
+                    if UNSUPPORTED_TYPE:
+                        raise TypeError("Expected {} to be instance of {} got {}"
+                                        .format(requirement.name,
+                                                requirement.supported_types,
+                                                type(X[requirement.name])))
 
     def __str__(self) -> str:
         """Representation of the current Component"""

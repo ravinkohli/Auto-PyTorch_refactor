@@ -58,8 +58,8 @@ class TrainerChoice(autoPyTorchChoice):
 
         super().__init__(dataset_properties=dataset_properties,
                          random_state=random_state)
-        self.run_summary = None  # Optional[RunSummary]
-        self.writer = None  # Optional[SummaryWriter]
+        self.run_summary = None  # type: Optional[RunSummary]
+        self.writer = None  # type: Optional[SummaryWriter]
 
     def get_components(self) -> Dict[str, autoPyTorchComponent]:
         """Returns the available trainer components
@@ -315,6 +315,9 @@ class TrainerChoice(autoPyTorchChoice):
                 train_loss=train_loss,
                 val_loss=val_loss,
                 test_loss=test_loss,
+                train_metrics=train_metrics,
+                val_metrics=val_metrics,
+                test_metrics=test_metrics,
             )
             self.logger.debug(self.run_summary.repr_last_epoch())
             self.save_model_for_ensemble()

@@ -1,6 +1,6 @@
 import os
 from collections import OrderedDict
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Type
 
 from autoPyTorch.constants import CLASSIFICATION_TASKS, REGRESSION_TASKS, STRING_TO_TASK_TYPES
 from autoPyTorch.pipeline.components.base_component import (
@@ -17,11 +17,11 @@ _metrics = find_components(__package__,
 _addons = ThirdPartyComponents(autoPyTorchMetric)
 
 
-def add_metric(metric: autoPyTorchMetric) -> None:
+def add_metric(metric: Type[autoPyTorchMetric]) -> None:
     _addons.add_component(metric)
 
 
-def get_components() -> Dict[str, autoPyTorchMetric]:
+def get_components() -> Dict[str, Type[autoPyTorchMetric]]:
     """Returns the available metric components
 
     Args:
@@ -37,7 +37,7 @@ def get_components() -> Dict[str, autoPyTorchMetric]:
     return components
 
 
-def get_supported_metrics(dataset_properties: Dict[str, Any]) -> Dict[str, autoPyTorchMetric]:
+def get_supported_metrics(dataset_properties: Dict[str, Any]) -> Dict[str, Type[autoPyTorchMetric]]:
     supported_metrics = dict()
 
     task_type = dataset_properties['task_type']
@@ -52,7 +52,7 @@ def get_supported_metrics(dataset_properties: Dict[str, Any]) -> Dict[str, autoP
 
 def get_metrics(dataset_properties: Dict[str, Any],
                 names: Optional[Iterable[str]] = None
-                ) -> List[autoPyTorchMetric]:
+                ) -> List[Type[autoPyTorchMetric]]:
 
     assert 'task_type' in dataset_properties, \
         "Expected dataset_properties to have task_type got {}".format(dataset_properties.keys())
@@ -61,7 +61,7 @@ def get_metrics(dataset_properties: Dict[str, Any],
                            regression='RMSE')
 
     supported_metrics = get_supported_metrics(dataset_properties)
-    metrics = list()  # type: List[autoPyTorchMetric]
+    metrics = list()  # type: List[Type[autoPyTorchMetric]]
     if names is not None:
         for name in names:
             if name not in supported_metrics.keys():
