@@ -1,7 +1,5 @@
 from typing import Any, Dict
 
-import numpy as np
-
 from autoPyTorch.pipeline.components.base_component import autoPyTorchComponent
 
 
@@ -10,29 +8,14 @@ class autoPyTorchSetupComponent(autoPyTorchComponent):
     in Auto-Pytorch"""
 
     def __init__(self) -> None:
-        pass
+        super(autoPyTorchSetupComponent, self).__init__()
 
-    def transform(self, X: np.ndarray) -> np.ndarray:
-        """The transform function calls the transform function of the
-        underlying model and returns the transformed array.
-
+    def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Adds the fitted component into the fit dictionary 'X' and returns it.
         Args:
-            X (np.ndarray): input features
-
+            X (Dict[str, Any]): 'X' dictionary
         Returns:
-            np.ndarray: Transformed features
+            (Dict[str, Any]): the updated 'X' dictionary
         """
         raise NotImplementedError()
-
-    def check_requirements(self, X: Dict[str, Any], y: Any = None) -> None:
-        """
-        A mechanism in code to ensure the correctness of the fit dictionary
-        It recursively makes sure that the children and parent level requirements
-        are honored before fit.
-
-        Args:
-            X (Dict[str, Any]): Dictionary with fitted parameters. It is a message passing
-                mechanism, in which during a transform, a components adds relevant information
-                so that further stages can be properly fitted
-        """
-        pass

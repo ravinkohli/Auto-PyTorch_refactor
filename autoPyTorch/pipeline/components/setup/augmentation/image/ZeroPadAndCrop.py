@@ -11,9 +11,11 @@ from imgaug.augmenters.meta import Augmenter
 import numpy as np
 
 from autoPyTorch.pipeline.components.setup.augmentation.image.base_image_augmenter import BaseImageAugmenter
+from autoPyTorch.utils.common import FitRequirement
 
 
 class ZeroPadAndCrop(BaseImageAugmenter):
+
     def __init__(self, percent: float = 0.1,
                  random_state: Optional[Union[int, np.random.RandomState]] = None):
         super().__init__()
@@ -21,6 +23,8 @@ class ZeroPadAndCrop(BaseImageAugmenter):
         self.percent = percent
         self.pad_augmenter: Optional[Augmenter] = None
         self.crop_augmenter: Optional[Augmenter] = None
+        self._fit_requirements = [FitRequirement('image_height', int),
+                                  FitRequirement('image_width', int)]
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> BaseImageAugmenter:
         self.check_requirements(X, y)

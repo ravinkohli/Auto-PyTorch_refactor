@@ -9,8 +9,10 @@ class autoPyTorchTabularPreprocessingComponent(autoPyTorchPreprocessingComponent
     """
      Provides abstract interface for preprocessing algorithms in AutoPyTorch.
     """
+
     def __init__(self) -> None:
         self.preprocessor: Dict[str, Optional[BaseEstimator]] = dict(numerical=None, categorical=None)
+        self._fit_requirements = super()._fit_requirements
 
     def get_preprocessor_dict(self) -> Dict[str, BaseEstimator]:
         """

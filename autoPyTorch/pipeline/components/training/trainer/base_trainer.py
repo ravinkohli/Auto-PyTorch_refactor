@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -160,6 +160,9 @@ class RunSummary(object):
 
 
 class BaseTrainerComponent(autoPyTorchTrainingComponent):
+
+    def __init__(self, random_state: Optional[Union[np.random.RandomState, int]] = None) -> None:
+        super().__init__()
 
     def prepare(
         self,

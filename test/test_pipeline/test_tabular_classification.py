@@ -4,6 +4,7 @@ import unittest.mock
 from sklearn.datasets import make_classification
 
 from autoPyTorch.pipeline.tabular_classification import TabularClassificationPipeline
+from autoPyTorch.utils.common import FitRequirement
 
 
 class PipelineTest(unittest.TestCase):
@@ -46,8 +47,8 @@ class PipelineTest(unittest.TestCase):
              'categories': [],
              'X_train': self.X,
              'y_train': self.y,
-             'train_indices': range(self.X.shape[0] // 2),
-             'val_indices': range(self.X.shape[0] // 2, self.X.shape[0]),
+             'train_indices': list(range(self.X.shape[0] // 2)),
+             'val_indices': list(range(self.X.shape[0] // 2, self.X.shape[0])),
              'is_small_preprocess': False,
              # Training configuration
              'dataset_properties': self.dataset_properties,
@@ -81,8 +82,8 @@ class PipelineTest(unittest.TestCase):
              'categories': [],
              'X_train': self.X,
              'y_train': self.y,
-             'train_indices': range(self.X.shape[0] // 2),
-             'val_indices': range(self.X.shape[0] // 2, self.X.shape[0]),
+             'train_indices': list(range(self.X.shape[0] // 2)),
+             'val_indices': list(range(self.X.shape[0] // 2, self.X.shape[0])),
              'is_small_preprocess': False,
              # Training configuration
              'dataset_properties': self.dataset_properties,
@@ -98,6 +99,43 @@ class PipelineTest(unittest.TestCase):
              'metrics_during_training': True,
              }
         )
+
+    def test_remove_key_check_requirements(self):
+        """Makes sure that when a key is removed from X, correct error is outputted"""
+        pipeline = TabularClassificationPipeline(dataset_properties=self.dataset_properties)
+        X = {'num_features': self.num_features,
+             'num_classes': self.num_classes,
+             'numerical_columns': list(range(self.num_features)),
+             'categorical_columns': [],
+             'categories': [],
+             'X_train': self.X,
+             'y_train': self.y,
+             'train_indices': list(range(self.X.shape[0] // 2)),
+             'val_indices': list(range(self.X.shape[0] // 2, self.X.shape[0])),
+             'is_small_preprocess': False,
+             # Training configuration
+             'dataset_properties': self.dataset_properties,
+             'job_id': 'example_tabular_classification_1',
+             'device': 'cpu',
+             'budget_type': 'epochs',
+             'epochs': 5,
+             'torch_num_threads': 1,
+             'early_stopping': 20,
+             'working_dir': '/tmp',
+             'use_tensorboard_logger': True,
+             'use_pynisher': False,
+             'metrics_during_training': True,
+             }
+        for key in X.keys():
+            # skip tests for data loader requirements as data loader has different check_requirements
+            if key == 'y_train' or 'val_indices':
+                continue
+            X_copy = X.copy()
+            X_copy.pop(key)
+            try:
+                pipeline.fit(X_copy)
+            except ValueError as msg:
+                self.assertRegex(str(msg), r"To fit .+?, expected fit dictionary to have .+? but got .*")
 
     def test_network_optimizer_lr_handshake(self):
         """Fitting a network should put the network in the X"""
@@ -119,7 +157,7 @@ class PipelineTest(unittest.TestCase):
 
         # Then fitting a optimizer should fail if no network:
         self.assertIn('optimizer', pipeline.named_steps.keys())
-        with self.assertRaisesRegex(ValueError, 'Could not parse the network'):
+        with self.assertRaisesRegex(ValueError, r"To fit .+?, expected fit dictionary to have 'network' but got .*"):
             pipeline.named_steps['optimizer'].fit({}, None)
 
         # No error when network is passed
@@ -129,12 +167,22 @@ class PipelineTest(unittest.TestCase):
         # Then fitting a optimizer should fail if no network:
         self.assertIn('lr_scheduler', pipeline.named_steps.keys())
         with self.assertRaisesRegex(ValueError,
-                                    'the fit dictionary Must contain a valid optimizer'):
+                                    r"To fit .+?, expected fit dictionary to have 'optimizer' but got .*"):
             pipeline.named_steps['lr_scheduler'].fit({}, None)
 
         # No error when network is passed
         X = pipeline.named_steps['lr_scheduler'].fit(X, None).transform(X)
         self.assertIn('optimizer', X)
+
+    def test_get_fit_requirements(self):
+        dataset_properties = {'numerical_columns': [], 'categorical_columns': []}
+        pipeline = TabularClassificationPipeline(dataset_properties=dataset_properties)
+        fit_requirements = pipeline.get_fit_requirements()
+
+        # check if fit requirements is a list of FitRequirement named tuples
+        self.assertIsInstance(fit_requirements, list)
+        for requirement in fit_requirements:
+            self.assertIsInstance(requirement, FitRequirement)
 
 
 if __name__ == '__main__':

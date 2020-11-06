@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 
@@ -11,13 +11,18 @@ from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.base_ta
     autoPyTorchTabularPreprocessingComponent
 )
 from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.utils import get_tabular_preprocessers
+from autoPyTorch.utils.common import FitRequirement
 
 
 class TabularColumnTransformer(autoPyTorchTabularPreprocessingComponent):
+
     def __init__(self, random_state: Optional[Union[np.random.RandomState, int]] = None):
         super().__init__()
         self.random_state = random_state
         self.column_transformer: Optional[ColumnTransformer] = None
+        self._fit_requirements = [FitRequirement('numerical_columns', List),
+                                  FitRequirement('categorical_columns', List)]
+        self._fit_requirements.extend(super().get_fit_requirements())
 
     def get_column_transformer(self) -> ColumnTransformer:
         """
@@ -82,12 +87,3 @@ class TabularColumnTransformer(autoPyTorchTabularPreprocessingComponent):
         except ValueError as msg:
             raise ValueError('{} in {}'.format(msg, self.__class__))
         return X
-
-    def check_requirements(self, X: Dict[str, Any], y: Any = None) -> None:
-        super().check_requirements(X, y)
-        if 'numerical_columns' not in X or 'categorical_columns' not in X:
-            raise ValueError("To fit a column transformer on tabular data"
-                             ", the fit dictionary must contain a list of "
-                             "the numerical and categorical columns of the "
-                             "data but only contains {}".format(X.keys())
-                             )

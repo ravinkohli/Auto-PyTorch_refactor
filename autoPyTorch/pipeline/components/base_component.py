@@ -4,17 +4,19 @@ import pkgutil
 import sys
 import warnings
 from collections import OrderedDict
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from ConfigSpace.configuration_space import Configuration, ConfigurationSpace
 
 from sklearn.base import BaseEstimator
 
+from autoPyTorch.utils.common import FitRequirement
+
 
 def find_components(
-    package: str,
-    directory: str,
-    base_class: BaseEstimator
+        package: str,
+        directory: str,
+        base_class: BaseEstimator
 ) -> Dict[str, BaseEstimator]:
     """Utility to find component on a given directory,
     that inherit from base_class
@@ -55,6 +57,7 @@ class ThirdPartyComponents(object):
     Args:
         base_class (BaseEstimator) component type desired to be created
     """
+
     def __init__(self, base_class: BaseEstimator) -> None:
         self.base_class = base_class
         self.components = OrderedDict()  # type: Dict[str, BaseEstimator]
@@ -86,6 +89,20 @@ class ThirdPartyComponents(object):
 
 class autoPyTorchComponent(BaseEstimator):
 
+    def __init__(self) -> None:
+        super().__init__()
+        self._fit_requirements: Optional[List[FitRequirement]] = None
+
+    def get_fit_requirements(self) -> Optional[List[FitRequirement]]:
+        """
+        Function to get the required keys by the component
+        that need to be in the fit dictionary
+        Returns:
+            List[FitRequirement]: a list containing required keys
+                            in a named tuple (name: str, type: object)
+        """
+        return self._fit_requirements
+
     @staticmethod
     def get_properties(dataset_properties: Optional[Dict[str, str]] = None
                        ) -> Dict[str, Any]:
@@ -101,7 +118,7 @@ class autoPyTorchComponent(BaseEstimator):
 
     @staticmethod
     def get_hyperparameter_search_space(
-        dataset_properties: Optional[Dict[str, str]] = None
+            dataset_properties: Optional[Dict[str, str]] = None
     ) -> ConfigurationSpace:
         """Return the configuration space of this classification algorithm.
 
@@ -185,6 +202,15 @@ class autoPyTorchComponent(BaseEstimator):
 
         if y is not None:
             warnings.warn("Provided y argument, yet only X is required")
+
+        for requirement in self._fit_requirements:
+            if requirement.name not in X.keys():
+                raise ValueError("To fit {}, expected fit dictionary to have '{}'"
+                                 " but got \n {}".format(self.__class__.__name__, requirement.name, list(X.keys())))
+            elif not isinstance(X[requirement.name], requirement.type):
+                raise TypeError("Expected {} to be instance of {} got {}".format(requirement.name,
+                                                                                 requirement.type,
+                                                                                 type(X[requirement.name])))
 
     def __str__(self) -> str:
         """Representation of the current Component"""

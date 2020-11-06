@@ -11,13 +11,18 @@ from imgaug.augmenters.meta import Augmenter
 import numpy as np
 
 from autoPyTorch.pipeline.components.setup.augmentation.image.base_image_augmenter import BaseImageAugmenter
+from autoPyTorch.utils.common import FitRequirement
 
 
 class Resize(BaseImageAugmenter):
+
     def __init__(self, use_augmenter: bool = True,
                  random_state: Optional[Union[int, np.random.RandomState]] = None):
+
         super().__init__(use_augmenter=use_augmenter)
         self.random_state = random_state
+        self._fit_requirements = [FitRequirement('image_height', int),
+                                  FitRequirement('image_width', int)]
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> BaseImageAugmenter:
         self.check_requirements(X, y)
