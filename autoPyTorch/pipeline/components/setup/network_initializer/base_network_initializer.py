@@ -11,6 +11,7 @@ import numpy as np
 import torch
 
 from autoPyTorch.pipeline.components.setup.base_setup import autoPyTorchSetupComponent
+from autoPyTorch.utils.common import FitRequirement
 
 
 class BaseNetworkInitializerComponent(autoPyTorchSetupComponent):
@@ -23,8 +24,10 @@ class BaseNetworkInitializerComponent(autoPyTorchSetupComponent):
         bias_strategy: str,
         random_state: Optional[np.random.RandomState] = None,
     ) -> None:
+        super().__init__()
         self.bias_strategy = bias_strategy
         self.random_state = random_state
+        self._fit_requirements = [FitRequirement('network', torch.nn.Module)]
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> autoPyTorchSetupComponent:
         """
@@ -66,24 +69,6 @@ class BaseNetworkInitializerComponent(autoPyTorchSetupComponent):
             np.ndarray: Transformed features
         """
         return X
-
-    def check_requirements(self, X: Dict[str, Any], y: Any = None) -> None:
-        """ This common utility makes sure that the input dictionary X,
-        used to fit a given component class, contains the minimum information
-        to fit the given component, and it's parents
-        """
-
-        # Honor the parent requirements
-        super().check_requirements(X, y)
-
-        # To initialize weights, we need the network
-        if 'network' not in X or not isinstance(X['network'], torch.nn.Module):
-            raise ValueError("Could not parse the network in the fit dictionary "
-                             "To initialize the weights of the network, we need the same "
-                             "in the fit dictionary, yet the dict contains only: {}".format(
-                                 X
-                             )
-                             )
 
     @staticmethod
     def get_hyperparameter_search_space(dataset_properties: Optional[Dict] = None,

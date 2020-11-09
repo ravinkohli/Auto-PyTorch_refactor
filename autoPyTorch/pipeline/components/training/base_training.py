@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import numpy as np
 
@@ -9,8 +9,8 @@ class autoPyTorchTrainingComponent(autoPyTorchComponent):
     """Provide an abstract interface for training nodes
     in Auto-Pytorch"""
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, random_state: Optional[np.random.RandomState] = None) -> None:
+        super(autoPyTorchTrainingComponent, self).__init__()
 
     def transform(self, X: np.ndarray) -> np.ndarray:
         """The transform function calls the transform function of the

@@ -8,6 +8,9 @@ So far, Auto-PyTorch supports featurized data (classification, regression) and i
 Master status:
 
 [![Build Status](https://travis-ci.com/LMZimmer/Auto-PyTorch_refactor.svg?token=q6bcv5nKDU4n8GyGfeDy&branch=master)](https://travis-ci.com/LMZimmer/Auto-PyTorch_refactor)
+
+Development status:
+
 [![Build Status](https://travis-ci.com/LMZimmer/Auto-PyTorch_refactor.svg?token=q6bcv5nKDU4n8GyGfeDy&branch=development)](https://travis-ci.com/LMZimmer/Auto-PyTorch_refactor)
 
 ## Installation

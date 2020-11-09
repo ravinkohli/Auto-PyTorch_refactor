@@ -1,11 +1,10 @@
 from typing import Any, Dict, Optional
 
-import numpy as np
-
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 
 from autoPyTorch.pipeline.components.setup.base_setup import autoPyTorchSetupComponent
+from autoPyTorch.utils.common import FitRequirement
 
 
 class BaseLRComponent(autoPyTorchSetupComponent):
@@ -13,17 +12,18 @@ class BaseLRComponent(autoPyTorchSetupComponent):
     in Auto-Pytorch"""
 
     def __init__(self) -> None:
+        super().__init__()
         self.scheduler = None  # type: Optional[_LRScheduler]
 
-    def transform(self, X: np.ndarray) -> np.ndarray:
-        """The transform function calls the transform function of the
-        underlying model and returns the transformed array.
+        self._fit_requirements = [FitRequirement('optimizer', Optimizer)]
 
+    def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Adds the scheduler into the fit dictionary 'X' and returns it.
         Args:
-            X (np.ndarray): input features
-
+            X (Dict[str, Any]): 'X' dictionary
         Returns:
-            np.ndarray: Transformed features
+            (Dict[str, Any]): the updated 'X' dictionary
         """
         X.update({'lr_scheduler': self.scheduler})
         return X
@@ -35,30 +35,6 @@ class BaseLRComponent(autoPyTorchSetupComponent):
         """
         assert self.scheduler is not None, "No scheduler was fit"
         return self.scheduler
-
-    def check_requirements(self, X: Dict[str, Any], y: Any = None) -> None:
-        """
-        A mechanism in code to ensure the correctness of the fit dictionary
-        It recursively makes sure that the children and parent level requirements
-        are honored before fit.
-
-        Args:
-            X (Dict[str, Any]): Dictionary with fitted parameters. It is a message passing
-                mechanism, in which during a transform, a components adds relevant information
-                so that further stages can be properly fitted
-        """
-
-        # make sure the parent requirements are honored
-        super().check_requirements(X, y)
-
-        # The fit dictionary must have an optimizer, that the LR will wrap
-        if 'optimizer' not in X or not isinstance(X['optimizer'], Optimizer):
-            raise ValueError("To fit a learning rate scheduler, the fit dictionary "
-                             "Must contain a valid optimizer that inherits from "
-                             "torch.optim.Optimizer, yet X only contains {}.".format(
-                                 X
-                             )
-                             )
 
     def __str__(self) -> str:
         """ Allow a nice understanding of what components where used """

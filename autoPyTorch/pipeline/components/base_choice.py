@@ -1,3 +1,4 @@
+import warnings
 from collections import OrderedDict
 from typing import Any, Dict, List, Optional
 
@@ -8,6 +9,7 @@ import numpy as np
 from sklearn.utils import check_random_state
 
 from autoPyTorch.pipeline.components.base_component import autoPyTorchComponent
+from autoPyTorch.utils.common import FitRequirement
 
 
 class autoPyTorchChoice(object):
@@ -45,7 +47,15 @@ class autoPyTorchChoice(object):
         # Since the pipeline will initialize the hyperparameters, it is not
         # necessary to do this upon the construction of this object
         # self.set_hyperparameters(self.configuration)
-        self.choice = None
+        self.choice: Optional[autoPyTorchComponent] = None
+
+    def get_fit_requirements(self) -> Optional[List[FitRequirement]]:
+        if self.choice is not None:
+            return self.choice.get_fit_requirements()
+        else:
+            raise AttributeError("Expected choice attribute to be autoPyTorchComponent"
+                                 " but got None, to get fit requirements for {}, "
+                                 "call get_fit_requirements of the component".format(self.__class__.__name__))
 
     def get_components(cls: 'autoPyTorchChoice') -> Dict[str, autoPyTorchComponent]:
         """Returns and ordered dict with the components available
@@ -104,7 +114,10 @@ class autoPyTorchChoice(object):
                 continue
             elif exclude is not None and name in exclude:
                 continue
-
+            if 'issparse' in dataset_properties:
+                if dataset_properties['issparse'] and \
+                        not available_comp[name].get_properties(dataset_properties)['handles_sparse']:
+                    continue
             components_dict[name] = available_comp[name]
 
         return components_dict
@@ -171,19 +184,17 @@ class autoPyTorchChoice(object):
         """
         raise NotImplementedError()
 
-    def fit(self, X: np.ndarray, y: np.ndarray, **kwargs: Any) -> autoPyTorchComponent:
+    def fit(self, X: Dict[str, Any], y: Any) -> autoPyTorchComponent:
         """Handy method to check if a component is fitted
 
         Args:
-            X (np.ndarray): the input features
-            y (np.ndarray): the target features
+            X (X: Dict[str, Any]): Dependencies needed by current component to perform fit
+            y (Any): not used. To comply with sklearn API
         """
         # Allows to use check_is_fitted on the choice object
         self.fitted_ = True
-        if kwargs is None:
-            kwargs = {}
         assert self.choice is not None, "Cannot call fit without initializing the component"
-        return self.choice.fit(X, y, **kwargs)
+        return self.choice.fit(X, y)
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         """Predicts the target given an input, by using the chosen component
@@ -208,6 +219,22 @@ class autoPyTorchChoice(object):
         """
         assert self.choice is not None, "Can not call transform without initialising the component"
         return self.choice.transform(X)
+
+    def check_requirements(self, X: Dict[str, Any], y: Any = None) -> None:
+        """
+        A mechanism in code to ensure the correctness of the fit dictionary
+        It recursively makes sure that the children and parent level requirements
+        are honored before fit.
+
+        Args:
+            X (Dict[str, Any]): Dictionary with fitted parameters. It is a message passing
+                mechanism, in which during a transform, a components adds relevant information
+                so that further stages can be properly fitted
+        """
+        assert isinstance(X, dict), "The input X to the pipeline must be a dictionary"
+
+        if y is not None:
+            warnings.warn("Provided y argument, yet only X is required")
 
     def _check_dataset_properties(self, dataset_properties: Dict[str, Any]) -> None:
         """

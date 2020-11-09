@@ -27,7 +27,12 @@ class CustomXYTensorDataset(torch.utils.data.Dataset):
         if self.transform:
             X = self.transform(X)
 
-        return X, self.y[index]
+        if self.y is not None:
+            y = self.y[index]
+        else:
+            y = None
+
+        return X, y
 
     def __len__(self) -> int:
         return self.X.shape[0]

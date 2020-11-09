@@ -24,6 +24,9 @@ from autoPyTorch.pipeline.components.setup.network_initializer.base_network_init
 )
 from autoPyTorch.pipeline.components.setup.optimizer.base_optimizer_choice import OptimizerChoice
 from autoPyTorch.pipeline.components.training.data_loader.feature_data_loader import FeatureDataLoader
+from autoPyTorch.pipeline.components.training.trainer.base_trainer_choice import (
+    TrainerChoice
+)
 
 
 class TabularClassificationPipeline(ClassifierMixin, BasePipeline):
@@ -129,11 +132,12 @@ class TabularClassificationPipeline(ClassifierMixin, BasePipeline):
 
                 return y
 
-    def _get_hyperparameter_search_space(self,
-                                         dataset_properties: Dict[str, Any],
-                                         include: Optional[Dict[str, Any]] = None,
-                                         exclude: Optional[Dict[str, Any]] = None,
-                                         ) -> ConfigurationSpace:
+    def _get_hyperparameter_search_space(
+            self,
+            dataset_properties: Dict[str, Any],
+            include: Optional[Dict[str, Any]] = None,
+            exclude: Optional[Dict[str, Any]] = None,
+    ) -> ConfigurationSpace:
         """Create the hyperparameter configuration space.
 
         For the given steps, and the Choices within that steps,
@@ -145,7 +149,7 @@ class TabularClassificationPipeline(ClassifierMixin, BasePipeline):
                 to honor when creating the configuration space
             exclude (Optional[Dict[str, Any]]): what hyper-parameter configurations
                 to remove from the configuration space
-            dataset_properties (Optional[Dict[str, Union[str, int]]]): Caracteristics
+            dataset_properties (Optional[Dict[str, Union[str, int]]]): Characteristics
                 of the dataset to guide the pipeline choices of components
 
         Returns:
@@ -155,10 +159,16 @@ class TabularClassificationPipeline(ClassifierMixin, BasePipeline):
         cs = ConfigurationSpace()
 
         if dataset_properties is None or not isinstance(dataset_properties, dict):
+            if not isinstance(dataset_properties, dict):
+                print('The given dataset_properties argument contains an illegal value.'
+                      'Proceeding with the default value')
             dataset_properties = dict()
+
         if 'target_type' not in dataset_properties:
             dataset_properties['target_type'] = 'tabular_classification'
         if dataset_properties['target_type'] != 'tabular_classification':
+            print('Tabular classification is being used, however the target_type'
+                  'is not given as "tabular_classification". Overriding it.')
             dataset_properties['target_type'] = 'tabular_classification'
         # get the base search space given this
         # dataset properties. Then overwrite with custom
@@ -201,6 +211,7 @@ class TabularClassificationPipeline(ClassifierMixin, BasePipeline):
             ("optimizer", OptimizerChoice(default_dataset_properties)),
             ("lr_scheduler", SchedulerChoice(default_dataset_properties)),
             ("data_loader", FeatureDataLoader()),
+            ("trainer", TrainerChoice(default_dataset_properties)),
         ])
         return steps
 

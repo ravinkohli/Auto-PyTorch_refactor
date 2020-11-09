@@ -5,6 +5,8 @@ Image Classification
 """
 import numpy as np
 
+import sklearn.model_selection
+
 import torchvision.datasets
 
 from autoPyTorch.pipeline.image_classification import ImageClassificationPipeline
@@ -17,6 +19,13 @@ data = np.expand_dims(data, axis=3)
 # Create a proof of concept pipeline!
 dataset_properties = dict()
 pipeline = ImageClassificationPipeline(dataset_properties=dataset_properties)
+
+# Train and test split
+train_indices, val_indices = sklearn.model_selection.train_test_split(
+    list(range(data.shape[0])),
+    random_state=1,
+    test_size=0.25,
+)
 
 # Configuration space
 pipeline_cs = pipeline.get_hyperparameter_search_space()
@@ -33,7 +42,11 @@ pipeline.fit(X=dict(X_train=data,
                     channelwise_mean=np.array([np.mean(data[:, :, :, i]) for i in range(1)]),
                     channelwise_std=np.array([np.std(data[:, :, :, i]) for i in range(1)]),
                     num_classes=10,
-                    num_features=data.shape[1] * data.shape[2]
+                    num_features=data.shape[1] * data.shape[2],
+                    train_indices=train_indices,
+                    val_indices=val_indices,
+                    image_height=data.shape[1],
+                    image_width=data.shape[2]
                     )
              )
 

@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from ConfigSpace.configuration_space import ConfigurationSpace
 from ConfigSpace.hyperparameters import (
@@ -6,6 +6,8 @@ from ConfigSpace.hyperparameters import (
 )
 
 import numpy as np
+
+from sklearn.utils import check_array
 
 import torch
 
@@ -15,6 +17,7 @@ from autoPyTorch.pipeline.components.training.base_training import autoPyTorchTr
 from autoPyTorch.pipeline.components.training.data_loader.transformable_tensor_dataset import (
     CustomXYTensorDataset
 )
+from autoPyTorch.utils.common import FitRequirement
 
 
 class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
@@ -27,6 +30,7 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
     """
 
     def __init__(self, batch_size: int = 64) -> None:
+        super().__init__()
         self.batch_size = batch_size
         self.train_dataset = None  # type: Optional[torch.utils.data.Dataset]
         self.val_dataset = None  # type: Optional[torch.utils.data.Dataset]
@@ -36,6 +40,17 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
         # We also support existing datasets!
         self.dataset = None
         self.vision_datasets = self.get_torchvision_datasets()
+
+        # Save the transformations for reuse
+        self.train_transform = None  # type: Optional[torchvision.transforms.Compose]
+        self.val_transform = None  # type: Optional[torchvision.transforms.Compose]
+
+        # Define fit requirements
+        self._fit_requirements = [FitRequirement("dataset", str),
+                                  FitRequirement("root", str),
+                                  FitRequirement("X_train", np.ndarray),
+                                  FitRequirement("train_indices", List[int]),
+                                  FitRequirement("is_small_preprocess", bool)]
 
     def transform(self, X: np.ndarray) -> np.ndarray:
         """The transform function calls the transform function of the
@@ -66,35 +81,38 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
         # Make sure there is an optimizer
         self.check_requirements(X, y)
 
-        train_transform = self.build_transform(X, train=True)
-        val_transform = self.build_transform(X, train=False)
+        self.train_transform = self.build_transform(X, train=True)
+        self.val_transform = self.build_transform(X, train=False)
 
         if 'dataset' in X:
             self.train_dataset = self.get_torchvision_datasets()[X['dataset']](
                 root=X['root'],
-                transformation=train_transform,
+                transformation=self.train_transform,
                 train=True,
             )
             self.val_dataset = self.get_torchvision_datasets()[X['dataset']](
                 root=X['root'],
-                transformation=val_transform,
+                transformation=self.val_transform,
                 train=False,
             )
         else:
+            # Make sure that the train data is numpy-compatible
+            X_train = check_array(X['X_train'])
+            y_train = check_array(X['y_train'], ensure_2d=False)
             self.train_dataset = CustomXYTensorDataset(
-                X=np.take(X['X_train'], X['train_indices'], axis=0),
-                y=np.take(X['y_train'], X['train_indices'], axis=0),
-                transform=train_transform
+                X=np.take(X_train, X['train_indices'], axis=0),
+                y=np.take(y_train, X['train_indices'], axis=0),
+                transform=self.train_transform
             )
             self.val_dataset = CustomXYTensorDataset(
-                X=np.take(X['X_train'], X['val_indices'], axis=0),
-                y=np.take(X['y_train'], X['val_indices'], axis=0),
-                transform=val_transform
+                X=np.take(X_train, X['val_indices'], axis=0),
+                y=np.take(y_train, X['val_indices'], axis=0),
+                transform=self.val_transform
             )
 
         self.train_data_loader = torch.utils.data.DataLoader(
             self.train_dataset,
-            batch_size=self.batch_size,
+            batch_size=min(self.batch_size, len(self.train_dataset)),
             shuffle=True,
             num_workers=X.get('num_workers', 0),
             pin_memory=X.get('pin_memory', True),
@@ -103,14 +121,34 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
 
         self.val_data_loader = torch.utils.data.DataLoader(
             self.val_dataset,
-            batch_size=self.batch_size,
+            batch_size=min(self.batch_size, len(self.val_dataset)),
             shuffle=False,
             num_workers=X.get('num_workers', 0),
             pin_memory=X.get('pin_memory', True),
-            drop_last=X.get('drop_last', True),
+            drop_last=X.get('drop_last', False),
         )
 
         return self
+
+    def get_loader(self, X: np.ndarray, y: np.ndarray, batch_size: int
+                   ) -> torch.utils.data.DataLoader:
+        """
+        Creates a data loader object from the provided data,
+        applying the transformations meant to validation objects
+        """
+        X = check_array(X)
+        if y:
+            y = check_array(y, ensure_2d=False)
+        dataset = CustomXYTensorDataset(
+            X=X,
+            y=y,
+            transform=self.val_transform
+        )
+        return torch.utils.data.DataLoader(
+            dataset,
+            batch_size=min(batch_size, len(dataset)),
+            shuffle=False,
+        )
 
     def build_transform(self, X: Dict[str, Any], train: bool = True) -> torchvision.transforms.Compose:
         """

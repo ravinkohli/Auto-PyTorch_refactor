@@ -43,8 +43,9 @@ class NoEncoder(BaseEncoder):
         return X
 
     @staticmethod
-    def get_properties(dataset_properties: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
+    def get_properties(dataset_properties: Optional[Dict[str, Any]] = None) -> Dict[str, Union[str, bool]]:
         return {
             'shortname': 'NoEncoder',
             'name': 'No Encoder',
+            'handles_sparse': True
         }

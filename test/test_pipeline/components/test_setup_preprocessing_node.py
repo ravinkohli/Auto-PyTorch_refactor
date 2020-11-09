@@ -10,6 +10,7 @@ from autoPyTorch.pipeline.tabular_classification import TabularClassificationPip
 
 class TabularPreprocessingTest(unittest.TestCase):
     def test_tabular_preprocess(self):
+        dataset_properties = dict(numerical_columns=list(range(15)), categorical_columns=[],)
         X = dict(X_train=np.random.random((10, 15)),
                  y_train=np.random.random(10),
                  train_indices=[0, 1, 2, 3, 4, 5],
@@ -19,15 +20,26 @@ class TabularPreprocessingTest(unittest.TestCase):
                  categorical_columns=[],
                  num_features=15,
                  num_classes=2,
-                 categories=[]
+                 categories=[],
+                 # Training configuration
+                 job_id='test',
+                 device='cpu',
+                 budget_type='epochs',
+                 epochs=10,
+                 torch_num_threads=1,
+                 early_stopping=20,
+                 dataset_properties=dataset_properties,
                  )
-        dataset_properties = dict(numerical_columns=list(range(15)), categorical_columns=[],)
         pipeline = TabularClassificationPipeline(dataset_properties=dataset_properties)
+        # Remove the trainer
+        pipeline.steps.pop()
         pipeline = pipeline.fit(X)
         X = pipeline.transform(X)
         self.assertNotIn('preprocess_transforms', X.keys())
 
     def test_tabular_no_preprocess(self):
+        dataset_properties = dict(numerical_columns=list(range(15)), categorical_columns=[],
+                                  task_type='tabular_classification', output_type='binary')
         X = dict(X_train=np.random.random((10, 15)),
                  y_train=np.random.random(10),
                  train_indices=[0, 1, 2, 3, 4, 5],
@@ -37,11 +49,20 @@ class TabularPreprocessingTest(unittest.TestCase):
                  categorical_columns=[],
                  num_features=15,
                  num_classes=2,
-                 categories=[]
+                 categories=[],
+                 # Training configuration
+                 job_id='test',
+                 device='cpu',
+                 budget_type='epochs',
+                 epochs=10,
+                 torch_num_threads=1,
+                 early_stopping=20,
+                 dataset_properties=dataset_properties,
                  )
-        dataset_properties = dict(numerical_columns=list(range(15)), categorical_columns=[],)
 
         pipeline = TabularClassificationPipeline(dataset_properties=dataset_properties)
+        # Remove the trainer
+        pipeline.steps.pop()
         pipeline = pipeline.fit(X)
         X = pipeline.transform(X)
         self.assertIn('preprocess_transforms', X.keys())
