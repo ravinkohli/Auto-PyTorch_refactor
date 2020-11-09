@@ -3,14 +3,17 @@ from typing import Any, Dict, Tuple, Optional
 
 import numpy as np
 import torch
+from torch import nn
 
 from autoPyTorch.pipeline.components.setup.base_setup import autoPyTorchSetupComponent
 from autoPyTorch.utils.common import FitRequirement
 
 
 class BaseNetworkComponent(autoPyTorchSetupComponent):
-    """Provide an abstract interface for networks
-    in Auto-Pytorch"""
+    """
+    Provide an abstract interface for networks
+    in Auto-Pytorch
+    """
 
     def __init__(
             self,
@@ -53,27 +56,23 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
 
     @abstractmethod
     def build_network(self, input_shape: Tuple[int, ...], output_shape: Tuple[int, ...]) -> torch.nn.Module:
-        """This method returns a pytorch network, that is dynamically built using
-            a self.config that is network specific, and contains the additional
-            configuration hyperparameters to build a domain specific network
+        """
+        This method returns a pytorch network, that is dynamically built using
+        a self.config that is network specific, and contains the additional
+        configuration hyperparameters to build a domain specific network
         """
         raise NotImplementedError()
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
-        """The transform function calls the transform function of the
-        underlying model and returns the transformed array.
-
-        Args:
-            X (np.ndarray): input features
-
-        Returns:
-            np.ndarray: Transformed features
+        """
+        The transform function updates the network in the X dictionary.
         """
         X.update({'network': self.network})
         return X
 
-    def get_network(self) -> torch.nn.Module:
-        """Return the underlying network object.
+    def get_network(self) -> nn.Module:
+        """
+        Return the underlying network object.
         Returns:
             model : the underlying network object
         """
@@ -81,7 +80,8 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
         return self.network
 
     def check_requirements(self, X: Dict[str, Any], y: Any = None) -> None:
-        """ This common utility makes sure that the input dictionary X,
+        """
+        This common utility makes sure that the input dictionary X,
         used to fit a given component class, contains the minimum information
         to fit the given component, and it's parents
         """
@@ -92,14 +92,14 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
         # For the Network, we need the number of input features,
         # to build the first network layer
         if 'input_shape' not in X.keys():
-            raise ValueError("Could not find the input shape in the fit dictionary "
+            raise ValueError("Could not find the input shape in the fit dictionary. "
                              "To fit a network, the input shape is needed to define "
                              "the hidden layers, yet the dict contains only: {}".format(X.keys()))
 
         # For the Network, we need the number of classes,
         # to build the last layer
         if 'output_shape' not in X:
-            raise ValueError("Could not the output shape in the fit dictionary "
+            raise ValueError("Could not find the output shape in the fit dictionary. "
                              "To fit a network, the output shape is needed to define "
                              "the hidden layers, yet the dict contains only: {}".format(X.keys()))
 

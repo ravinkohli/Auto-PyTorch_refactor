@@ -11,6 +11,8 @@ from autoPyTorch.pipeline.components.setup.network.backbone import get_available
 from autoPyTorch.pipeline.components.setup.network.base_network import BaseNetworkComponent
 from autoPyTorch.pipeline.components.setup.network.head import get_available_heads, BaseHead
 
+from autoPyTorch.utils import common
+
 
 class BackboneHeadNet(BaseNetworkComponent):
     """
@@ -68,25 +70,21 @@ class BackboneHeadNet(BaseNetworkComponent):
         return cs
 
     def build_network(self, input_shape: Tuple[int, ...], output_shape: Tuple[int, ...]) -> nn.Module:
-        """This method returns a pytorch network, that is dynamically built
-
-            a self.config that is network specific, and contains the additional
-            configuration hyperparameters to build a domain specific network
+        """
+        This method returns a pytorch network, that is dynamically built using
+        a self.config that is network specific, and contains the additional
+        configuration hyperparameters to build a domain specific network
         """
         backbone_name = self.config["backbone"]
         head_name = self.config["head"]
         Backbone = self._backbones[backbone_name]
         Head = self._heads[head_name]
 
-        backbone = Backbone(**{k.replace(backbone_name + ":", ""): v
-                               for k, v in self.config.items() if
-                               k.startswith(backbone_name)})
+        backbone = Backbone(**common.replace_prefix_in_config_dict(self.config, backbone_name))
         backbone_module = backbone.build_backbone(input_shape=input_shape)
         backbone_output_shape = backbone.get_output_shape(input_shape=input_shape)
 
-        head = Head(**{k.replace(head_name + ":", ""): v
-                       for k, v in self.config.items() if
-                       k.startswith(head_name)})
+        head = Head(**common.replace_prefix_in_config_dict(self.config, head_name))
         head_module = head.build_head(input_shape=backbone_output_shape, output_shape=output_shape)
 
         return nn.Sequential(backbone_module, head_module)
