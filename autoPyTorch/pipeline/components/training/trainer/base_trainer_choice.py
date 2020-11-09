@@ -13,6 +13,8 @@ import numpy as np
 import pynisher
 
 import torch
+from torch.optim import Optimizer
+from torch.optim.lr_scheduler import _LRScheduler
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from autoPyTorch.pipeline.components.base_choice import autoPyTorchChoice
@@ -29,7 +31,7 @@ from autoPyTorch.pipeline.components.training.trainer.base_trainer import (
     RunSummary,
 )
 from autoPyTorch.utils import logging_ as logging
-
+from autoPyTorch.utils.common import FitRequirement
 
 trainer_directory = os.path.split(__file__)[0]
 _trainers = find_components(__package__,
@@ -60,6 +62,17 @@ class TrainerChoice(autoPyTorchChoice):
                          random_state=random_state)
         self.run_summary = None  # type: Optional[RunSummary]
         self.writer = None  # type: Optional[SummaryWriter]
+        self._fit_requirements: Optional[List[FitRequirement]] = [FitRequirement("lr_scheduler", (_LRScheduler,)),
+                                                                  FitRequirement("network", (torch.nn.Sequential,)),
+                                                                  FitRequirement("optimizer", (Optimizer,)),
+                                                                  FitRequirement("train_data_loader",
+                                                                                 (torch.utils.data.DataLoader,)),
+                                                                  FitRequirement("val_data_loader",
+                                                                                 (torch.utils.data.DataLoader,))
+                                                                  ]
+
+    def get_fit_requirements(self) -> Optional[List[FitRequirement]]:
+        return self._fit_requirements
 
     def get_components(self) -> Dict[str, autoPyTorchComponent]:
         """Returns the available trainer components

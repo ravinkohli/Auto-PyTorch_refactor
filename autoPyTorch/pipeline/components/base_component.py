@@ -71,8 +71,11 @@ class ThirdPartyComponents(object):
                             str(self.base_class))
 
         properties = set(classifier.get_properties())
+        class_specific_properties = classifier.get_required_properties()
         # TODO: Add desired properties when we define them
-        should_be_there = {'shortname', 'name', 'task_type', 'objective'}
+        should_be_there = {'shortname', 'name'}
+        if class_specific_properties is not None:
+            should_be_there = should_be_there.union(class_specific_properties)
         for property in properties:
             if property not in should_be_there:
                 raise ValueError('Property %s must not be specified for '
@@ -89,9 +92,22 @@ class ThirdPartyComponents(object):
 
 class autoPyTorchComponent(BaseEstimator):
 
+    _required_properties: Optional[List[str]] = None
+
     def __init__(self) -> None:
         super().__init__()
         self._fit_requirements: Optional[List[FitRequirement]] = None
+
+    @classmethod
+    def get_required_properties(cls) -> Optional[List[str]]:
+        """
+        Function to get the properties in the component
+        that are required for the properly fitting the pipeline.
+        Usually defined in the base class of the component
+        Returns:
+            List[str]: list of properties autopytorch component must have for proper functioning of the pipeline
+        """
+        return cls._required_properties
 
     def get_fit_requirements(self) -> Optional[List[FitRequirement]]:
         """
