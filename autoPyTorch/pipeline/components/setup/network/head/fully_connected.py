@@ -4,9 +4,15 @@ import numpy as np
 
 import ConfigSpace as CS
 from ConfigSpace.configuration_space import ConfigurationSpace
-from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
+from ConfigSpace.hyperparameters import UniformIntegerHyperparameter, CategoricalHyperparameter
 
 from autoPyTorch.pipeline.components.setup.network.head.base_head import BaseHead
+
+_activations: Dict[str, nn.Module] = {
+    "relu": nn.ReLU,
+    "tanh": nn.Tanh,
+    "sigmoid": nn.Sigmoid
+}
 
 
 class FullyConnectedHead(BaseHead):
@@ -24,6 +30,7 @@ class FullyConnectedHead(BaseHead):
         for i in range(1, self.config["num_layers"]):
             layers.append(nn.Linear(in_features=in_features,
                                     out_features=self.config[f"layer_{i}_units"]))
+            layers.append(_activations[self.config["activation"]]())
             in_features = self.config[f"layer_{i}_units"]
         out_features = np.prod(output_shape).item()
         layers.append(nn.Linear(in_features=in_features,
@@ -48,7 +55,12 @@ class FullyConnectedHead(BaseHead):
         num_layers_hp = UniformIntegerHyperparameter("num_layers",
                                                      lower=min_num_layers,
                                                      upper=max_num_layers)
-        cs.add_hyperparameter(num_layers_hp)
+
+        activation_hp = CategoricalHyperparameter("activation",
+                                                  choices=list(_activations.keys()))
+
+        cs.add_hyperparameters([num_layers_hp, activation_hp])
+        cs.add_condition(CS.GreaterThanCondition(activation_hp, num_layers_hp, 1))
 
         for i in range(1, max_num_layers):
 
@@ -60,3 +72,4 @@ class FullyConnectedHead(BaseHead):
                 cs.add_condition(CS.GreaterThanCondition(num_units_hp, num_layers_hp, i))
 
         return cs
+

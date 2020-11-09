@@ -6,11 +6,11 @@ from autoPyTorch.pipeline.components.base_component import (
 )
 from autoPyTorch.pipeline.components.setup.network.head.base_head import BaseHead
 from autoPyTorch.pipeline.components.setup.network.head.fully_connected import FullyConnectedHead
-from autoPyTorch.pipeline.components.setup.network.head.fully_convolutional import FullyConvolutionalHead
+from autoPyTorch.pipeline.components.setup.network.head.fully_convolutional import FullyConvolutional2DHead
 
 _heads = {
     FullyConnectedHead.get_name(): FullyConnectedHead,
-    FullyConvolutionalHead.get_name(): FullyConvolutionalHead
+    FullyConvolutional2DHead.get_name(): FullyConvolutional2DHead
 }
 _addons = ThirdPartyComponents(BaseHead)
 

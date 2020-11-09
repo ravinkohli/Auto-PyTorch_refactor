@@ -142,7 +142,8 @@ class _DenseBlock(nn.Sequential):
                  activation: str,
                  bn_size: int,
                  growth_rate: int,
-                 drop_rate: float):
+                 drop_rate: float,
+                 bn_args: Dict[str, Any]):
         super(_DenseBlock, self).__init__()
         for i in range(num_layers):
             layer = _DenseLayer(num_input_features=num_input_features + i * growth_rate,
@@ -150,7 +151,7 @@ class _DenseBlock(nn.Sequential):
                                 growth_rate=growth_rate,
                                 bn_size=bn_size,
                                 drop_rate=drop_rate,
-                                bn_args=self.bn_args)
+                                bn_args=bn_args)
             self.add_module('denselayer%d' % (i + 1), layer)
 
 
@@ -212,7 +213,8 @@ class DenseNetBackbone(BaseBackbone):
                                 num_input_features=num_features,
                                 bn_size=bn_size,
                                 growth_rate=growth_rate,
-                                drop_rate=drop_rate)
+                                drop_rate=drop_rate,
+                                bn_args=self.bn_args)
             features.add_module('denseblock%d' % (i + 1), block)
             num_features = num_features + num_layers * growth_rate
             if i != len(block_config) - 1:
