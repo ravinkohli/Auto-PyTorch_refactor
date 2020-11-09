@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import Type
+from typing import Type, Dict
 
 from autoPyTorch.pipeline.components.base_component import (
     ThirdPartyComponents,
@@ -26,7 +26,7 @@ def add_backbone(backbone: BaseBackbone) -> None:
     _addons.add_component(backbone)
 
 
-def get_available_backbones() -> OrderedDict[str, Type[BaseBackbone]]:
+def get_available_backbones() -> Dict[str, Type[BaseBackbone]]:
     backbones = OrderedDict()
     backbones.update(_backbones)
     backbones.update(_addons.components)

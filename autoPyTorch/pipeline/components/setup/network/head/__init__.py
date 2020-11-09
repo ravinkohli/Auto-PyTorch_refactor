@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import Type
+from typing import Type, Dict
 
 from autoPyTorch.pipeline.components.base_component import (
     ThirdPartyComponents
@@ -19,7 +19,7 @@ def add_head(head: BaseHead) -> None:
     _addons.add_component(head)
 
 
-def get_available_heads() -> OrderedDict[str, Type[BaseHead]]:
+def get_available_heads() -> Dict[str, Type[BaseHead]]:
     heads = OrderedDict()
     heads.update(_heads)
     heads.update(_addons.components)

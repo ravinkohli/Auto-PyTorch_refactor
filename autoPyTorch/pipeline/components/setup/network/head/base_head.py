@@ -7,6 +7,9 @@ from autoPyTorch.pipeline.components.base_component import autoPyTorchComponent,
 
 
 class BaseHead(autoPyTorchComponent):
+    """
+    Head base class
+    """
     supported_tasks: Set = set()
 
     def __init__(self,
@@ -25,14 +28,18 @@ class BaseHead(autoPyTorchComponent):
     def build_head(self, input_shape: Tuple[int, ...], output_shape: Tuple[int, ...]) -> nn.Module:
         """
 
-        Builds the head module
+        Builds the head module and assigns it to self.head
 
-        :param input_shape: shape of the input
+        :param input_shape: shape of the input (usually the shape of the backbone output)
         :param output_shape: shape of the output
-        :return:
+        :return: the head module
         """
         raise NotImplementedError()
 
     @classmethod
     def get_name(cls) -> str:
+        """
+        Get the name of the head
+        :return: name of the head
+        """
         return cls.get_properties()["shortname"]

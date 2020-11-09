@@ -11,6 +11,9 @@ from autoPyTorch.pipeline.components.base_component import (
 
 
 class BaseBackbone(autoPyTorchComponent):
+    """
+    Backbone base class
+    """
     supported_tasks: Set = set()
 
     def __init__(self,
@@ -32,7 +35,7 @@ class BaseBackbone(autoPyTorchComponent):
         Builds the backbone module and assigns it to self.backbone
 
         :param input_shape: shape of the input
-        :return:
+        :return: the backbone module
         """
         raise NotImplementedError()
 
@@ -52,4 +55,8 @@ class BaseBackbone(autoPyTorchComponent):
 
     @classmethod
     def get_name(cls) -> str:
+        """
+        Get the name of the backbone
+        :return: name of the backbone
+        """
         return cls.get_properties()["shortname"]
