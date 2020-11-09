@@ -72,4 +72,3 @@ class FullyConnectedHead(BaseHead):
                 cs.add_condition(CS.GreaterThanCondition(num_units_hp, num_layers_hp, i))
 
         return cs
-
