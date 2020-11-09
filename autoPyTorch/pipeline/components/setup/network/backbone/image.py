@@ -24,6 +24,10 @@ _activations: Dict[str, nn.Module] = {
 class ConvNetImageBackbone(BaseBackbone):
     supported_tasks = {"image_classification", "image_regression"}
 
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
+        self.bn_args = {"eps": 1e-5, "momentum": 0.1}
+
     def _get_layer_size(self, w: int, h: int) -> Tuple[int, int]:
         cw = ((w - self.config["conv_kernel_size"] + 2 * self.config["conv_kernel_padding"])
               // self.config["conv_kernel_stride"]) + 1
@@ -37,7 +41,7 @@ class ConvNetImageBackbone(BaseBackbone):
                                 kernel_size=self.config["conv_kernel_size"],
                                 stride=self.config["conv_kernel_stride"],
                                 padding=self.config["conv_kernel_padding"]))
-        layers.append(nn.BatchNorm2d(out_filters))
+        layers.append(nn.BatchNorm2d(out_filters, **self.bn_args))
         layers.append(_activations[self.config["activation"]]())
         layers.append(nn.MaxPool2d(kernel_size=self.config["pool_size"], stride=self.config["pool_size"]))
 
@@ -111,13 +115,14 @@ class _DenseLayer(nn.Sequential):
                  activation: str,
                  growth_rate: int,
                  bn_size: int,
-                 drop_rate: float):
+                 drop_rate: float,
+                 bn_args: Dict[str, Any]):
         super(_DenseLayer, self).__init__()
-        self.add_module('norm1', nn.BatchNorm2d(num_input_features)),
+        self.add_module('norm1', nn.BatchNorm2d(num_input_features, **bn_args)),
         self.add_module('relu1', _activations[activation]()),
         self.add_module('conv1', nn.Conv2d(num_input_features, bn_size * growth_rate,
                                            kernel_size=1, stride=1, bias=False)),
-        self.add_module('norm2', nn.BatchNorm2d(bn_size * growth_rate)),
+        self.add_module('norm2', nn.BatchNorm2d(bn_size * growth_rate, **bn_args)),
         self.add_module('relu2', _activations[activation]()),
         self.add_module('conv2', nn.Conv2d(bn_size * growth_rate, growth_rate,
                                            kernel_size=3, stride=1, padding=1, bias=False)),
@@ -144,7 +149,8 @@ class _DenseBlock(nn.Sequential):
                                 activation=activation,
                                 growth_rate=growth_rate,
                                 bn_size=bn_size,
-                                drop_rate=drop_rate)
+                                drop_rate=drop_rate,
+                                bn_args=self.bn_args)
             self.add_module('denselayer%d' % (i + 1), layer)
 
 
@@ -153,9 +159,10 @@ class _Transition(nn.Sequential):
                  num_input_features: int,
                  activation: str,
                  num_output_features: int,
-                 pool_size: int):
+                 pool_size: int,
+                 bn_args: Dict[str, Any]):
         super(_Transition, self).__init__()
-        self.add_module('norm', nn.BatchNorm2d(num_input_features))
+        self.add_module('norm', nn.BatchNorm2d(num_input_features, **bn_args))
         self.add_module('relu', _activations[activation]())
         self.add_module('conv', nn.Conv2d(num_input_features, num_output_features,
                                           kernel_size=1, stride=1, bias=False))
@@ -164,6 +171,10 @@ class _Transition(nn.Sequential):
 
 class DenseNetBackbone(BaseBackbone):
     supported_tasks = {"image_classification", "image_regression"}
+
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
+        self.bn_args = {"eps": 1e-5, "momentum": 0.1}
 
     def build_backbone(self, input_shape: Tuple[int, ...]) -> nn.Module:
         channels, iw, ih = input_shape
@@ -183,7 +194,7 @@ class DenseNetBackbone(BaseBackbone):
             # First convolution
             features = nn.Sequential(OrderedDict([
                 ('conv0', nn.Conv2d(channels, num_init_features, kernel_size=7, stride=2, padding=3, bias=False)),
-                ('norm0', nn.BatchNorm2d(num_init_features)),
+                ('norm0', nn.BatchNorm2d(num_init_features, **self.bn_args)),
                 ('relu0', nn.ReLU(inplace=True)),
                 ('pool0', nn.MaxPool2d(kernel_size=3, stride=2, padding=1)),
             ]))
@@ -208,12 +219,13 @@ class DenseNetBackbone(BaseBackbone):
                 trans = _Transition(num_input_features=num_features,
                                     activation=self.config["activation"],
                                     num_output_features=num_features // 2,
-                                    pool_size=2 if i > len(block_config) - division_steps else 1)
+                                    pool_size=2 if i > len(block_config) - division_steps else 1,
+                                    bn_args=self.bn_args)
                 features.add_module('transition%d' % (i + 1), trans)
                 num_features = num_features // 2
 
         # Final batch norm
-        features.add_module('last_norm', nn.BatchNorm2d(num_features))
+        features.add_module('last_norm', nn.BatchNorm2d(num_features, **self.bn_args))
         self.backbone = features
         return features
 
