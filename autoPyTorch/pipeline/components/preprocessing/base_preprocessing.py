@@ -18,7 +18,7 @@ class autoPyTorchPreprocessingComponent(autoPyTorchComponent):
     """
      Provides abstract interface for preprocessing algorithms in AutoPyTorch.
     """
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.add_fit_requirements([FitRequirement('X_train', (np.ndarray, pd.DataFrame, csr_matrix))])
 
