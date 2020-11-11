@@ -18,9 +18,9 @@ class EarlyPreprocessing(autoPyTorchSetupComponent):
     def __init__(self, random_state: Optional[np.random.RandomState] = None) -> None:
         super().__init__()
         self.random_state = random_state
-        self._fit_requirements = [FitRequirement('is_small_preprocess', (bool,)),
+        self.add_fit_requirements([FitRequirement('is_small_preprocess', (bool,)),
                                   FitRequirement('X_train', (np.ndarray, pd.DataFrame, csr_matrix)),
-                                  FitRequirement('train_indices', (List,))]
+                                  FitRequirement('train_indices', (List,))])
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> "EarlyPreprocessing":
         self.check_requirements(X, y)

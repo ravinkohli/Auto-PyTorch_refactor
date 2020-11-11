@@ -13,11 +13,7 @@ class BaseScaler(autoPyTorchTabularPreprocessingComponent):
 
     def __init__(self) -> None:
         super().__init__()
-        self._fit_requirements = [FitRequirement('numerical_columns', (List,))]
-        self._fit_requirements.extend(super()._fit_requirements)
-        super_requirements: Optional[List[FitRequirement]] = super().get_fit_requirements()
-        if super_requirements:
-            self._fit_requirements.extend(super_requirements)
+        self.add_fit_requirements([FitRequirement('numerical_columns', (List,))])
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
         """

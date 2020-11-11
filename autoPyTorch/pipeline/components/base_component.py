@@ -119,6 +119,12 @@ class autoPyTorchComponent(BaseEstimator):
         """
         return self._fit_requirements
 
+    def add_fit_requirements(self, requirements: List[FitRequirement]) -> None:
+        if self._fit_requirements is not None:
+            self._fit_requirements.extend(requirements)
+        else:
+            self._fit_requirements = requirements
+
     @staticmethod
     def get_properties(dataset_properties: Optional[Dict[str, str]] = None
                        ) -> Dict[str, Any]:
