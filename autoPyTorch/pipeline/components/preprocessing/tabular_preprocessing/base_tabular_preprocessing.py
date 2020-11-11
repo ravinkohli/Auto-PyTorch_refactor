@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from sklearn.base import BaseEstimator
 
@@ -9,10 +9,11 @@ class autoPyTorchTabularPreprocessingComponent(autoPyTorchPreprocessingComponent
     """
      Provides abstract interface for preprocessing algorithms in AutoPyTorch.
     """
+    _required_properties: List[str] = ['handles_sparse']
 
     def __init__(self) -> None:
+        super().__init__()
         self.preprocessor: Dict[str, Optional[BaseEstimator]] = dict(numerical=None, categorical=None)
-        self._fit_requirements = super()._fit_requirements
 
     def get_preprocessor_dict(self) -> Dict[str, BaseEstimator]:
         """

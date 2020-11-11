@@ -366,3 +366,19 @@ class BasePipeline(Pipeline):
             Dict: Additional information about the pipeline
         """
         return self._additional_run_info
+
+    @staticmethod
+    def get_default_pipeline_options() -> Dict[str, Any]:
+        return {
+            'job_id': '1',
+            'working_dir': '/tmp/experiment_1',
+            'device': 'cpu',
+            'budget_type': 'epochs',
+            'epochs': 20,
+            'runtime': 3600,
+            'torch_num_threads': 1,
+            'early_stopping': 10,
+            'use_tensorboard_logger': True,
+            'use_pynisher': False,
+            'metrics_during_training': True
+        }

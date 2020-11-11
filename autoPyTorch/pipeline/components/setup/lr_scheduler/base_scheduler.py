@@ -15,7 +15,7 @@ class BaseLRComponent(autoPyTorchSetupComponent):
         super().__init__()
         self.scheduler = None  # type: Optional[_LRScheduler]
 
-        self._fit_requirements = [FitRequirement('optimizer', Optimizer)]
+        self.add_fit_requirements([FitRequirement('optimizer', (Optimizer,))])
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
         """

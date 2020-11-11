@@ -27,7 +27,7 @@ class BaseNetworkInitializerComponent(autoPyTorchSetupComponent):
         super().__init__()
         self.bias_strategy = bias_strategy
         self.random_state = random_state
-        self._fit_requirements = [FitRequirement('network', torch.nn.Module)]
+        self.add_fit_requirements([FitRequirement('network', (torch.nn.Module,))])
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> autoPyTorchSetupComponent:
         """

@@ -71,8 +71,11 @@ class ThirdPartyComponents(object):
                             str(self.base_class))
 
         properties = set(classifier.get_properties())
+        class_specific_properties = classifier.get_required_properties()
         # TODO: Add desired properties when we define them
-        should_be_there = {'shortname', 'name', 'task_type', 'objective'}
+        should_be_there = {'shortname', 'name'}
+        if class_specific_properties is not None:
+            should_be_there = should_be_there.union(class_specific_properties)
         for property in properties:
             if property not in should_be_there:
                 raise ValueError('Property %s must not be specified for '
@@ -89,9 +92,22 @@ class ThirdPartyComponents(object):
 
 class autoPyTorchComponent(BaseEstimator):
 
+    _required_properties: Optional[List[str]] = None
+
     def __init__(self) -> None:
         super().__init__()
-        self._fit_requirements: Optional[List[FitRequirement]] = None
+        self._fit_requirements: List[FitRequirement] = list()
+
+    @classmethod
+    def get_required_properties(cls) -> Optional[List[str]]:
+        """
+        Function to get the properties in the component
+        that are required for the properly fitting the pipeline.
+        Usually defined in the base class of the component
+        Returns:
+            List[str]: list of properties autopytorch component must have for proper functioning of the pipeline
+        """
+        return cls._required_properties
 
     def get_fit_requirements(self) -> Optional[List[FitRequirement]]:
         """
@@ -102,6 +118,12 @@ class autoPyTorchComponent(BaseEstimator):
                             in a named tuple (name: str, type: object)
         """
         return self._fit_requirements
+
+    def add_fit_requirements(self, requirements: List[FitRequirement]) -> None:
+        if self._fit_requirements is not None:
+            self._fit_requirements.extend(requirements)
+        else:
+            self._fit_requirements = requirements
 
     @staticmethod
     def get_properties(dataset_properties: Optional[Dict[str, str]] = None
@@ -207,10 +229,13 @@ class autoPyTorchComponent(BaseEstimator):
             if requirement.name not in X.keys():
                 raise ValueError("To fit {}, expected fit dictionary to have '{}'"
                                  " but got \n {}".format(self.__class__.__name__, requirement.name, list(X.keys())))
-            elif not isinstance(X[requirement.name], requirement.type):
-                raise TypeError("Expected {} to be instance of {} got {}".format(requirement.name,
-                                                                                 requirement.type,
-                                                                                 type(X[requirement.name])))
+            else:
+                TYPE_SUPPORTED = isinstance(X[requirement.name], tuple(requirement.supported_types))
+                if not TYPE_SUPPORTED:
+                    raise TypeError("Expected {} to be instance of {} got {}"
+                                    .format(requirement.name,
+                                            requirement.supported_types,
+                                            type(X[requirement.name])))
 
     def __str__(self) -> str:
         """Representation of the current Component"""

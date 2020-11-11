@@ -4,6 +4,10 @@ from ConfigSpace.configuration_space import ConfigurationSpace
 
 import numpy as np
 
+import pandas as pd
+
+from scipy.sparse import csr_matrix
+
 from autoPyTorch.pipeline.components.setup.base_setup import autoPyTorchSetupComponent
 from autoPyTorch.pipeline.components.setup.early_preprocessor.utils import get_preprocess_transforms, preprocess
 from autoPyTorch.utils.common import FitRequirement
@@ -14,9 +18,9 @@ class EarlyPreprocessing(autoPyTorchSetupComponent):
     def __init__(self, random_state: Optional[np.random.RandomState] = None) -> None:
         super().__init__()
         self.random_state = random_state
-        self._fit_requirements = [FitRequirement('is_small_preprocess', bool),
-                                  FitRequirement('X_train', np.ndarray),
-                                  FitRequirement('train_indices', List)]
+        self.add_fit_requirements([FitRequirement('is_small_preprocess', (bool,)),
+                                  FitRequirement('X_train', (np.ndarray, pd.DataFrame, csr_matrix)),
+                                  FitRequirement('train_indices', (List,))])
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> "EarlyPreprocessing":
         self.check_requirements(X, y)
@@ -35,33 +39,6 @@ class EarlyPreprocessing(autoPyTorchSetupComponent):
         else:
             X.update({'preprocess_transforms': transforms})
         return X
-
-    def check_requirements(self, X: Dict[str, Any], y: Any = None) -> None:
-        """
-        A mechanism in code to ensure the correctness of the fit dictionary
-        It recursively makes sure that the children and parent level requirements
-        are honored before fit.
-
-        Args:
-            X (Dict[str, Any]): Dictionary with fitted parameters. It is a message passing
-                mechanism, in which during a transform, a components adds relevant information
-                so that further stages can be properly fitted
-        """
-        super().check_requirements(X, y)
-        if 'is_small_preprocess' not in X:
-            raise ValueError("To preprocess data, the fit dictionary "
-                             "must contain whether the data is small "
-                             "enough to preprocess as is_small_preprocess "
-                             "but only contains {}".format(X.keys())
-                             )
-
-        if 'X_train' not in X:
-            raise ValueError("We require the train data to be available for fit,  "
-                             "nevertheless X_train was not found in the fit dictionary")
-
-        if 'train_indices' not in X:
-            raise ValueError("We split the data in training and validation, yet  "
-                             "train_indices was not available")
 
     @staticmethod
     def get_hyperparameter_search_space(

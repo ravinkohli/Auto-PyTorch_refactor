@@ -45,8 +45,8 @@ class MetricsTest(unittest.TestCase):
     @pytest.mark.skip(reason="AUCROC not working -- request fix")
     def test_metrics(self):
         dataset_properties = {'task_type': 'tabular_classification'}
-        y_target = torch.tensor([0, 1, 3, 2])
-        y_pred = torch.empty(4, dtype=torch.int).random_(4)
+        y_target = torch.tensor([0, 1, 3, 2]).unsqueeze(0)
+        y_pred = torch.empty(1, 4, dtype=torch.int).random_(4)
         supported_metrics = metric_components.get_supported_metrics(dataset_properties=dataset_properties)
         for key, value in supported_metrics.items():
             metric = value()

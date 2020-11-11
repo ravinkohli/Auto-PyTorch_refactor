@@ -20,13 +20,14 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
         final_activation: Optional[str],
         random_state: Optional[np.random.RandomState] = None,
     ) -> None:
+        super(BaseNetworkComponent, self).__init__()
         self.network = None
         self.intermediate_activation = intermediate_activation
         self.random_state = random_state
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        self._fit_requirements = [FitRequirement('num_features', numbers.Integral),
-                                  FitRequirement('num_classes', numbers.Integral)]
+        self.add_fit_requirements([FitRequirement('num_features', (numbers.Integral,)),
+                                  FitRequirement('num_classes', (numbers.Integral,))])
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> autoPyTorchSetupComponent:
         """

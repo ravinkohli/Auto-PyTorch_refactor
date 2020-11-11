@@ -1,6 +1,6 @@
-from typing import NamedTuple
+from typing import Iterable, NamedTuple, Type
 
 
 class FitRequirement(NamedTuple):
     name: str
-    type: object
+    supported_types: Iterable[Type]
