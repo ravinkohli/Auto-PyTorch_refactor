@@ -38,7 +38,6 @@ class PipelineTest(unittest.TestCase):
         cs = pipeline.get_hyperparameter_search_space()
         config = cs.sample_configuration()
         pipeline.set_hyperparameters(config)
-        print(config)
         pipeline.fit(
             {'num_features': self.num_features,
              'num_classes': self.num_classes,

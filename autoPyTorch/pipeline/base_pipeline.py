@@ -1,3 +1,4 @@
+import warnings
 from abc import ABCMeta
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -79,8 +80,8 @@ class BasePipeline(Pipeline):
             if isinstance(config, dict):
                 config = Configuration(self.config_space, config)
             if self.config_space != config.configuration_space:
-                print(self.config_space._children)
-                print(config.configuration_space._children)
+                warnings.warn(self.config_space._children)
+                warnings.warn(config.configuration_space._children)
                 import difflib
                 diff = difflib.unified_diff(
                     str(self.config_space).splitlines(),

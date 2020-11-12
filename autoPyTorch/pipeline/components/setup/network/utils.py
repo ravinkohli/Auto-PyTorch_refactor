@@ -1,5 +1,6 @@
 import random
 import typing
+import warnings
 
 import torch
 from torch.autograd import Function
@@ -194,8 +195,8 @@ def get_shaped_neuron_counts(
                       'funnel', in_feat, out_feat, max_neurons, funnel_layer))
 
         if (len(counts) != layer_count):
-            print("\nWarning: long funnel layer count does not match "
-                  "" + str(layer_count) + " != " + str(len(counts)) + "\n")
+            warnings.warn("\nWarning: long funnel layer count does not match "
+                          "" + str(layer_count) + " != " + str(len(counts)) + "\n")
 
     if shape == 'diamond':
         #
@@ -223,8 +224,8 @@ def get_shaped_neuron_counts(
                       funnel_layer + (2 if remove_triangle_layer else 0)))
 
         if (len(counts) != layer_count):
-            print("\nWarning: diamond layer count does not match "
-                  "" + str(layer_count) + " != " + str(len(counts)) + "\n")
+            warnings.warn("\nWarning: diamond layer count does not match "
+                          "" + str(layer_count) + " != " + str(len(counts)) + "\n")
 
     if shape == 'hexagon':
         #
@@ -246,8 +247,8 @@ def get_shaped_neuron_counts(
                       'funnel', max_neurons, out_feat, max_neurons, funnel_layer))
 
         if (len(counts) != layer_count):
-            print("\nWarning: hexagon layer count does not match "
-                  "" + str(layer_count) + " != " + str(len(counts)) + "\n")
+            warnings.warn("\nWarning: hexagon layer count does not match "
+                          "" + str(layer_count) + " != " + str(len(counts)) + "\n")
 
     if shape == 'stairs':
         #
@@ -274,7 +275,7 @@ def get_shaped_neuron_counts(
         counts.append(out_feat)
 
         if (len(counts) != layer_count):
-            print("\nWarning: stairs layer count does not match "
-                  "" + str(layer_count) + " != " + str(len(counts)) + "\n")
+            warnings.warn("\nWarning: stairs layer count does not match "
+                          "" + str(layer_count) + " != " + str(len(counts)) + "\n")
 
     return counts

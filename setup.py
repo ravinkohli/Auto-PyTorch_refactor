@@ -4,7 +4,7 @@ with open("README.md", "r") as f:
     long_description = f.read()
 
 requirements = []
-with open('requirements.txt', 'r') as f:
+with open("requirements.txt", "r") as f:
     for line in f:
         requirements.append(line.strip())
 
@@ -34,4 +34,27 @@ setuptools.setup(
     platforms=['Linux'],
     install_requires=requirements,
     include_package_data=True,
+    extras_require={
+        "test": [
+            "matplotlib",
+            "pytest",
+            "pytest-xdist",
+            "pytest-timeout",
+            "flaky",
+            "pyarrow",
+            "pre-commit",
+            "pytest-cov",
+            "codecov",
+            "pep8",
+            "mypy",
+        ],
+        "examples": [
+            "matplotlib",
+            "jupyter",
+            "notebook",
+            "seaborn",
+        ],
+        "docs": ["sphinx", "sphinx-gallery", "sphinx_bootstrap_theme", "numpydoc"],
+    },
+    test_suite="pytest",
 )

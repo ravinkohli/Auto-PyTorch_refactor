@@ -339,7 +339,6 @@ class NetworkTest(unittest.TestCase):
                 # so we can query in the object for it
                 key = key.replace(selected_choice + ':', '')
                 # In the case of MLP, parameters are dynamic, so they exist in config
-                print(f"vars={vars(network_choice.choice)}")
                 parameters = vars(network_choice.choice)
                 parameters.update(vars(network_choice.choice)['config'])
                 self.assertIn(key, parameters)
