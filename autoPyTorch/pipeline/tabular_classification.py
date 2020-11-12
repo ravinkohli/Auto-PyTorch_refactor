@@ -1,3 +1,4 @@
+import warnings
 from typing import Any, Dict, List, Optional, Tuple
 
 from ConfigSpace.configuration_space import Configuration, ConfigurationSpace
@@ -160,15 +161,15 @@ class TabularClassificationPipeline(ClassifierMixin, BasePipeline):
 
         if dataset_properties is None or not isinstance(dataset_properties, dict):
             if not isinstance(dataset_properties, dict):
-                print('The given dataset_properties argument contains an illegal value.'
-                      'Proceeding with the default value')
+                warnings.warn('The given dataset_properties argument contains an illegal value.'
+                              'Proceeding with the default value')
             dataset_properties = dict()
 
         if 'target_type' not in dataset_properties:
             dataset_properties['target_type'] = 'tabular_classification'
         if dataset_properties['target_type'] != 'tabular_classification':
-            print('Tabular classification is being used, however the target_type'
-                  'is not given as "tabular_classification". Overriding it.')
+            warnings.warn('Tabular classification is being used, however the target_type'
+                          'is not given as "tabular_classification". Overriding it.')
             dataset_properties['target_type'] = 'tabular_classification'
         # get the base search space given this
         # dataset properties. Then overwrite with custom
