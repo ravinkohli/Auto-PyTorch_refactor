@@ -1,67 +1,73 @@
-import os
-from collections import OrderedDict
-from typing import Any, Dict, Iterable, List, Optional, Type
+from typing import Any, Dict, Iterable, List, Optional
 
-from autoPyTorch.constants import CLASSIFICATION_TASKS, REGRESSION_TASKS, STRING_TO_TASK_TYPES
-from autoPyTorch.pipeline.components.base_component import (
-    ThirdPartyComponents,
-    find_components,
-)
-from autoPyTorch.pipeline.components.training.metrics.base_metric import autoPyTorchMetric
+import numpy as np
+
+from autoPyTorch.constants import CLASSIFICATION_TASKS, REGRESSION_TASKS, STRING_TO_TASK_TYPES, TASK_TYPES
+from autoPyTorch.pipeline.components.training.metrics.base import autoPyTorchMetric
+from autoPyTorch.pipeline.components.training.metrics.metrics import CLASSIFICATION_METRICS, REGRESSION_METRICS
 
 
-metrics_directory = os.path.split(__file__)[0]
-_metrics = find_components(__package__,
-                           metrics_directory,
-                           autoPyTorchMetric)
-_addons = ThirdPartyComponents(autoPyTorchMetric)
-
-
-def add_metric(metric: Type[autoPyTorchMetric]) -> None:
-    _addons.add_component(metric)
-
-
-def get_components() -> Dict[str, Type[autoPyTorchMetric]]:
-    """Returns the available metric components
-
-    Args:
-        None
-
-    Returns:
-        Dict[str, autoPyTorchMetric]: all autoPyTorchMetric components available
-            as choices
+def sanitize_array(array: np.ndarray) -> np.ndarray:
     """
-    components = OrderedDict()
-    components.update(_metrics)
-    components.update(_addons.components)
-    return components
+    Replace NaN and Inf (there should not be any!)
+    :param array:
+    :return:
+    """
+    a = np.ravel(array)
+    maxi = np.nanmax(a[np.isfinite(a)])
+    mini = np.nanmin(a[np.isfinite(a)])
+    array[array == float('inf')] = maxi
+    array[array == float('-inf')] = mini
+    mid = (maxi + mini) / 2
+    array[np.isnan(array)] = mid
+    return array
 
 
-def get_supported_metrics(dataset_properties: Dict[str, Any]) -> Dict[str, Type[autoPyTorchMetric]]:
-    supported_metrics = dict()
+def get_supported_metrics(dataset_properties: Dict[str, Any]) -> Dict[str, autoPyTorchMetric]:
 
     task_type = dataset_properties['task_type']
-    components = get_components()
 
-    for name, component in components.items():
-        if component.get_properties(dataset_properties)['task_type'] in task_type:
-            supported_metrics.update({name: component})
-
-    return supported_metrics
+    if STRING_TO_TASK_TYPES[task_type] in REGRESSION_TASKS:
+        return REGRESSION_METRICS
+    elif STRING_TO_TASK_TYPES[task_type] in CLASSIFICATION_TASKS:
+        return CLASSIFICATION_METRICS
+    else:
+        raise NotImplementedError(task_type)
 
 
 def get_metrics(dataset_properties: Dict[str, Any],
-                names: Optional[Iterable[str]] = None
-                ) -> List[Type[autoPyTorchMetric]]:
+                names: Optional[Iterable[str]] = None,
+                all_supported_metrics: bool = False,
+                ) -> List[autoPyTorchMetric]:
+    """
+    Returns metrics for current task_type, if names is None and
+    all_supported_metrics is False, returns preset default for
+    given task
 
+    Args:
+        dataset_properties: Dict[str, Any]
+        contains information about the dataset and task type
+        names: Optional[Iterable[str]]
+        names of metrics to return
+        all_supported_metrics: bool
+        if true, returns all metrics that are relevant to task_type
+
+    Returns:
+
+    """
     assert 'task_type' in dataset_properties, \
         "Expected dataset_properties to have task_type got {}".format(dataset_properties.keys())
+    if all_supported_metrics:
+        assert names is None, "Can't pass names when all_supported_metrics are true"
 
-    default_metrics = dict(classification='Accuracy',
-                           regression='RMSE')
+    if STRING_TO_TASK_TYPES[dataset_properties['task_type']] not in TASK_TYPES:
+        raise NotImplementedError(dataset_properties['task_type'])
+
+    default_metrics = dict(classification='accuracy',
+                           regression='root_mean_squared_error')
 
     supported_metrics = get_supported_metrics(dataset_properties)
-    metrics = list()  # type: List[Type[autoPyTorchMetric]]
+    metrics = list()  # type: List[autoPyTorchMetric]
     if names is not None:
         for name in names:
             if name not in supported_metrics.keys():
@@ -72,9 +78,55 @@ def get_metrics(dataset_properties: Dict[str, Any],
                 metric = supported_metrics[name]
                 metrics.append(metric)
     else:
-        if STRING_TO_TASK_TYPES[dataset_properties['task_type']] in CLASSIFICATION_TASKS:
-            metrics.append(supported_metrics[default_metrics['classification']])
-        if STRING_TO_TASK_TYPES[dataset_properties['task_type']] in REGRESSION_TASKS:
-            metrics.append(supported_metrics[default_metrics['regression']])
+        if all_supported_metrics:
+            metrics.extend(list(supported_metrics.values()))
+        else:
+            if STRING_TO_TASK_TYPES[dataset_properties['task_type']] in CLASSIFICATION_TASKS:
+                metrics.append(supported_metrics[default_metrics['classification']])
+            if STRING_TO_TASK_TYPES[dataset_properties['task_type']] in REGRESSION_TASKS:
+                metrics.append(supported_metrics[default_metrics['regression']])
 
     return metrics
+
+
+def calculate_score(
+    solution: np.ndarray,
+    prediction: np.ndarray,
+    task_type: int,
+    metrics: Iterable[autoPyTorchMetric],
+) -> Dict[str, float]:
+
+    score_dict = dict()
+    if task_type in REGRESSION_TASKS:
+        cprediction = sanitize_array(prediction)
+        for metric_ in metrics:
+            try:
+                score_dict[metric_.name] = metric_(solution, cprediction)
+            except ValueError as e:
+                print(e, e.args[0])
+                if e.args[0] == "Mean Squared Logarithmic Error cannot be used when " \
+                                "targets contain negative values.":
+                    continue
+                else:
+                    raise e
+
+    else:
+        for metric_ in metrics:
+            try:
+                score_dict[metric_.name] = metric_(solution, prediction)
+            except ValueError as e:
+                if e.args[0] == 'multiclass format is not supported':
+                    continue
+                elif e.args[0] == "Samplewise metrics are not available "\
+                        "outside of multilabel classification.":
+                    continue
+                elif e.args[0] == "Target is multiclass but "\
+                        "average='binary'. Please choose another average "\
+                        "setting, one of [None, 'micro', 'macro', 'weighted'].":
+                    continue
+                elif e.args[0] == "The labels array needs to contain at " \
+                                  "least two labels for log_loss, got [0].":
+                    continue
+                else:
+                    raise e
+    return score_dict
