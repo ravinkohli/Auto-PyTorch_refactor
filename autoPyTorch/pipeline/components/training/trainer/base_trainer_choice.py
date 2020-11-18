@@ -17,6 +17,7 @@ from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 from torch.utils.tensorboard.writer import SummaryWriter
 
+from autoPyTorch.constants import STRING_TO_TASK_TYPES
 from autoPyTorch.pipeline.components.base_choice import autoPyTorchChoice
 from autoPyTorch.pipeline.components.base_component import (
     ThirdPartyComponents,
@@ -246,8 +247,8 @@ class TrainerChoice(autoPyTorchChoice):
         additional_losses = X['additional_losses'] if 'additional_losses' in X else None
         self.choice.prepare(
             model=X['network'],
-            metrics=[m() for m in get_metrics(dataset_properties=X['dataset_properties'],
-                                              names=additional_metrics)],
+            metrics=get_metrics(dataset_properties=X['dataset_properties'],
+                                names=additional_metrics),
             criterion=get_loss_instance(X['dataset_properties'],
                                         name=additional_losses),
             budget_tracker=budget_tracker,
@@ -257,6 +258,7 @@ class TrainerChoice(autoPyTorchChoice):
             writer=self.writer,
             metrics_during_training=X['metrics_during_training'],
             scheduler=X['lr_scheduler'],
+            task_type=STRING_TO_TASK_TYPES[X['dataset_properties']['task_type']]
         )
         total_parameter_count, trainable_parameter_count = self.count_parameters(X['network'])
         self.run_summary = RunSummary(

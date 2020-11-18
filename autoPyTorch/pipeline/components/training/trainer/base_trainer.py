@@ -11,6 +11,7 @@ from torch.optim.lr_scheduler import _LRScheduler
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from autoPyTorch.pipeline.components.training.base_training import autoPyTorchTrainingComponent
+from autoPyTorch.pipeline.components.training.metrics.utils import calculate_score
 
 
 class BudgetTracker(object):
@@ -176,6 +177,7 @@ class BaseTrainerComponent(autoPyTorchTrainingComponent):
         writer: Optional[SummaryWriter],
         metrics_during_training: bool,
         scheduler: _LRScheduler,
+        task_type: int
     ) -> None:
 
         self.logger = logger
@@ -206,6 +208,9 @@ class BaseTrainerComponent(autoPyTorchTrainingComponent):
 
         # Scheduler
         self.scheduler = scheduler
+
+        # task type (used for calculating metrics)
+        self.task_type = task_type
 
     def on_epoch_start(self, X: Dict[str, Any], epoch: int) -> None:
         """
@@ -355,10 +360,7 @@ class BaseTrainerComponent(autoPyTorchTrainingComponent):
         # TODO: change once Ravin Provides the PR
         outputs_data = torch.cat(outputs_data, dim=0)
         targets_data = torch.cat(targets_data, dim=0)
-        return {
-            metric.get_properties()['name']: metric(
-                outputs_data, targets_data) for metric in self.metrics
-        }
+        return calculate_score(targets_data, outputs_data, self.task_type, self.metrics)
 
     def data_preparation(self, X: np.ndarray, y: np.ndarray,
                          ) -> Tuple[np.ndarray, Dict[str, np.ndarray]]:
