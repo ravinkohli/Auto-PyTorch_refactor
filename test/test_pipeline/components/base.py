@@ -5,6 +5,7 @@ from sklearn.datasets import make_classification
 
 import torch
 
+from autoPyTorch.constants import STRING_TO_TASK_TYPES
 from autoPyTorch.pipeline.components.training.metrics.utils import get_metrics
 from autoPyTorch.pipeline.components.training.trainer.base_trainer import BudgetTracker
 
@@ -43,12 +44,13 @@ class BaseTraining(unittest.TestCase):
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=0.01)
         self.device = torch.device('cpu')
         self.logger = logging.getLogger('test')
-        self.metrics = [m() for m in get_metrics(self.dataset_properties)]
+        self.metrics = get_metrics(self.dataset_properties)
         self.epochs = 20
         self.budget_tracker = BudgetTracker(
             budget_type='epochs',
             max_epochs=self.epochs,
         )
+        self.task_type = STRING_TO_TASK_TYPES[self.dataset_properties['task_type']]
 
     def _overfit_model(self):
         self.model.train()
