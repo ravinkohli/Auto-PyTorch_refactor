@@ -134,12 +134,12 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
 
         for i, (X_batch, Y_batch) in enumerate(loader):
             # Predict on batch
-            X_batch = torch.autograd.Variable(X_batch).to(self.device)
+            X_batch = torch.autograd.Variable(X_batch).float().to(self.device)
 
             Y_batch_pred = self.network(X_batch).detach().cpu()
             Y_batch_preds.append(Y_batch_pred)
 
-        return torch.cat(Y_batch_preds, 0)
+        return torch.cat(Y_batch_preds, 0).cpu().numpy()
 
     def __str__(self) -> str:
         """ Allow a nice understanding of what components where used """

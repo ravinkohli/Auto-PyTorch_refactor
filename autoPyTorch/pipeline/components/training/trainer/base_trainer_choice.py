@@ -83,7 +83,7 @@ class TrainerChoice(autoPyTorchChoice):
             Dict[str, autoPyTorchComponent]: all components available
                 as choices for learning rate scheduling
         """
-        components = collections.OrderedDict()
+        components = collections.OrderedDict()  # type: Dict[str, autoPyTorchComponent]
         components.update(_trainers)
         components.update(_addons.components)
         return components
@@ -177,7 +177,7 @@ class TrainerChoice(autoPyTorchChoice):
         self.check_requirements(X, y)
 
         # Setup the logger
-        self.logger = logging.get_logger(X['job_id'])
+        logger = logging.get_logger(X['job_id'])
 
         fit_function = self._fit
         if X['use_pynisher']:
@@ -186,7 +186,7 @@ class TrainerChoice(autoPyTorchChoice):
             fit_function = pynisher.enforce_limits(
                 wall_time_in_s=wall_time_in_s,
                 mem_in_mb=memory_limit,
-                logger=self.logger
+                logger=logger
             )(self._fit)
 
         # Call the actual fit function.
@@ -221,6 +221,10 @@ class TrainerChoice(autoPyTorchChoice):
             A instance of self
         """
 
+        # Create a logger as a work around, while the logging server is available
+        # in autosklearn
+        logger = logging.get_logger(X['job_id'])
+
         # Comply with mypy
         # Notice that choice here stands for the component choice framework,
         # where we dynamically build the configuration space by selecting the available
@@ -228,8 +232,10 @@ class TrainerChoice(autoPyTorchChoice):
         assert self.choice is not None
 
         # Setup a Logger and other logging support
+        # Writer is not pickable -- make sure it is not saved in self
+        writer = None
         if 'use_tensorboard_logger' in X and X['use_tensorboard_logger']:
-            self.writer = SummaryWriter(log_dir=X['working_dir'])
+            writer = SummaryWriter(log_dir=X['working_dir'])
 
         if X["torch_num_threads"] > 0:
             torch.set_num_threads(X["torch_num_threads"])
@@ -252,8 +258,6 @@ class TrainerChoice(autoPyTorchChoice):
             budget_tracker=budget_tracker,
             optimizer=X['optimizer'],
             device=self.get_device(X),
-            logger=self.logger,
-            writer=self.writer,
             metrics_during_training=X['metrics_during_training'],
             scheduler=X['lr_scheduler'],
             task_type=STRING_TO_TASK_TYPES[X['dataset_properties']['task_type']]
@@ -277,13 +281,15 @@ class TrainerChoice(autoPyTorchChoice):
             train_loss, train_metrics = self.choice.train_epoch(
                 train_loader=X['train_data_loader'],
                 epoch=epoch,
+                logger=logger,
+                writer=writer,
             )
 
             val_loss, val_metrics, test_loss, test_metrics = None, {}, None, {}
             if self.eval_valid_each_epoch(X):
-                val_loss, val_metrics = self.choice.evaluate(X['val_data_loader'], epoch)
+                val_loss, val_metrics = self.choice.evaluate(X['val_data_loader'], epoch, writer)
                 if 'test_data_loader' in X and X['test_data_loader']:
-                    test_loss, test_metrics = self.choice.evaluate(X['test_data_loader'], epoch)
+                    test_loss, test_metrics = self.choice.evaluate(X['test_data_loader'], epoch, writer)
 
             # Save training information
             self.run_summary.add_performance(
@@ -306,7 +312,7 @@ class TrainerChoice(autoPyTorchChoice):
             if self.choice.on_epoch_end(X=X, epoch=epoch):
                 break
 
-            self.logger.debug(self.run_summary.repr_last_epoch())
+            logger.debug(self.run_summary.repr_last_epoch())
 
             # Reached max epoch on next iter, don't even go there
             if budget_tracker.is_max_epoch_reached(epoch + 1):
@@ -332,10 +338,10 @@ class TrainerChoice(autoPyTorchChoice):
                 val_metrics=val_metrics,
                 test_metrics=test_metrics,
             )
-            self.logger.debug(self.run_summary.repr_last_epoch())
+            logger.debug(self.run_summary.repr_last_epoch())
             self.save_model_for_ensemble()
 
-        self.logger.info(f"Finished training with {self.run_summary.repr_last_epoch()}")
+        logger.info(f"Finished training with {self.run_summary.repr_last_epoch()}")
 
         # Tag as fitted
         self.fitted_ = True

@@ -1107,7 +1107,7 @@ class EnsembleBuilder(object):
 
         return success_keys_test
 
-    def fit_ensemble(self, selected_keys: List[str]) -> EnsembleSelection:
+    def fit_ensemble(self, selected_keys: List[str]) -> Optional[EnsembleSelection]:
         """
             fit ensemble
             Parameters
@@ -1163,7 +1163,7 @@ class EnsembleBuilder(object):
                 "Fitting the ensemble took %.2f seconds.",
                 end_time - start_time,
             )
-            self.logger.info(ensemble)
+            self.logger.info(str(ensemble))
             self.validation_performance_ = min(
                 self.validation_performance_,
                 ensemble.get_validation_performance(),

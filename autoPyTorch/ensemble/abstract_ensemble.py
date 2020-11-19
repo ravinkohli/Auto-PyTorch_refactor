@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import Dict, List, Tuple, Union
+from typing import List, Tuple, Union
 
 import numpy as np
 
@@ -49,7 +49,7 @@ class AbstractEnsemble(object):
         self
 
     @abstractmethod
-    def get_models_with_weights(self, models: Dict) -> List[Tuple[float, BasePipeline]]:
+    def get_models_with_weights(self, models: BasePipeline) -> List[Tuple[float, BasePipeline]]:
         """Return a list of (weight, model) pairs
 
         Args:

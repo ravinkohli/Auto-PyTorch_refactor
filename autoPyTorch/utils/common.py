@@ -1,4 +1,7 @@
-from typing import Iterable, NamedTuple, Type
+from typing import Iterable, List, NamedTuple, Optional, Type
+
+import torch
+from torch.utils.data.dataloader import default_collate
 
 
 class FitRequirement(NamedTuple):
@@ -10,12 +13,11 @@ class FitRequirement(NamedTuple):
     name: The name of the variable expected in the input dictionary
     supported_types: An iterable of all types that are supported
     user_defined: If false, this requirement does not have to be given to the pipeline
-    """
-
     name: str
     supported_types: Iterable[Type]
     user_defined: bool
     dataset_property: bool
+    """
 
     def __str__(self) -> str:
         """
@@ -23,3 +25,30 @@ class FitRequirement(NamedTuple):
         """
         return "Name: %s | Supported types: %s | User defined: %s | Dataset property: %s" % (
             self.name, self.supported_types, self.user_defined, self.dataset_property)
+
+
+def custom_collate_fn(batch: List) -> List[Optional[torch.tensor]]:
+    """
+    In the case of not providing a y tensor, in a
+    dataset of form {X, y}, y would be None.
+
+    This custom collate function allows to yield
+    None data for functions that require only features,
+    like predict.
+
+    Args:
+        batch (List): a batch from a dataset
+
+    Returns:
+        List[Optional[torch.Tensor]]
+    """
+
+    items = list(zip(*batch))
+
+    # The feature will always be available
+    items[0] = default_collate(items[0])
+    if None in items[1]:
+        items[1] = list(items[1])
+    else:
+        items[1] = default_collate(items[1])
+    return items

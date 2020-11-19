@@ -20,7 +20,6 @@ class NoScheduler(BaseLRComponent):
     ):
 
         super().__init__()
-        self.lr_lambda = lambda epoch: 1
         self.random_state = random_state
         self.scheduler = None  # type: Optional[_LRScheduler]
 

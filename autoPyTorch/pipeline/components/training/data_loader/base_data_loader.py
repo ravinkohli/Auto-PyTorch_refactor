@@ -17,7 +17,7 @@ from autoPyTorch.pipeline.components.training.base_training import autoPyTorchTr
 from autoPyTorch.pipeline.components.training.data_loader.transformable_tensor_dataset import (
     CustomXYTensorDataset
 )
-from autoPyTorch.utils.common import FitRequirement
+from autoPyTorch.utils.common import FitRequirement, custom_collate_fn
 
 
 class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
@@ -118,6 +118,7 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
             num_workers=X.get('num_workers', 0),
             pin_memory=X.get('pin_memory', True),
             drop_last=X.get('drop_last', True),
+            collate_fn=custom_collate_fn,
         )
 
         self.val_data_loader = torch.utils.data.DataLoader(
@@ -127,11 +128,12 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
             num_workers=X.get('num_workers', 0),
             pin_memory=X.get('pin_memory', True),
             drop_last=X.get('drop_last', False),
+            collate_fn=custom_collate_fn,
         )
 
         return self
 
-    def get_loader(self, X: np.ndarray, y: np.ndarray, batch_size: int
+    def get_loader(self, X: np.ndarray, y: Optional[np.ndarray] = None, batch_size: int = np.inf,
                    ) -> torch.utils.data.DataLoader:
         """
         Creates a data loader object from the provided data,
@@ -149,6 +151,7 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
             dataset,
             batch_size=min(batch_size, len(dataset)),
             shuffle=False,
+            collate_fn=custom_collate_fn,
         )
 
     def build_transform(self, X: Dict[str, Any], train: bool = True) -> torchvision.transforms.Compose:
