@@ -136,14 +136,12 @@ class BaseTrainerComponentTest(BaseTraining, unittest.TestCase):
             budget_tracker=self.budget_tracker,
             optimizer=self.optimizer,
             device=self.device,
-            logger=self.logger,
-            writer=None,
             metrics_during_training=True,
             scheduler=None,
             task_type=self.task_type
         )
 
-        prev_loss, prev_metrics = trainer.evaluate(self.loader, epoch=1)
+        prev_loss, prev_metrics = trainer.evaluate(self.loader, epoch=1, writer=None)
         self.assertIn('accuracy', prev_metrics)
 
         # Fit the model
@@ -151,7 +149,7 @@ class BaseTrainerComponentTest(BaseTraining, unittest.TestCase):
 
         # Loss and metrics should have improved after fit
         # And the prediction should be better than random
-        loss, metrics = trainer.evaluate(self.loader, epoch=1)
+        loss, metrics = trainer.evaluate(self.loader, epoch=1, writer=None)
         self.assertGreater(prev_loss, loss)
         self.assertGreater(metrics['accuracy'], prev_metrics['accuracy'])
         self.assertGreater(metrics['accuracy'], 0.5)
@@ -173,8 +171,6 @@ class StandartTrainerTest(BaseTraining, unittest.TestCase):
             budget_tracker=self.budget_tracker,
             optimizer=self.optimizer,
             device=self.device,
-            logger=self.logger,
-            writer=None,
             metrics_during_training=True,
             task_type=self.task_type
         )
@@ -183,7 +179,7 @@ class StandartTrainerTest(BaseTraining, unittest.TestCase):
         counter = 0
         accuracy = 0
         while accuracy < 0.7:
-            loss, metrics = trainer.train_epoch(self.loader, epoch=1)
+            loss, metrics = trainer.train_epoch(self.loader, epoch=1, logger=self.logger, writer=None)
             counter += 1
             accuracy = metrics['accuracy']
 
@@ -207,8 +203,6 @@ class MixUpTrainerTest(BaseTraining, unittest.TestCase):
             budget_tracker=self.budget_tracker,
             optimizer=self.optimizer,
             device=self.device,
-            logger=self.logger,
-            writer=None,
             metrics_during_training=True,
             task_type=self.task_type
         )
@@ -217,7 +211,7 @@ class MixUpTrainerTest(BaseTraining, unittest.TestCase):
         counter = 0
         accuracy = 0
         while accuracy < 0.7:
-            loss, metrics = trainer.train_epoch(self.loader, epoch=1)
+            loss, metrics = trainer.train_epoch(self.loader, epoch=1, logger=self.logger, writer=None)
             counter += 1
             accuracy = metrics['accuracy']
 

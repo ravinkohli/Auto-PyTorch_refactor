@@ -5,7 +5,8 @@ import numpy as np
 
 from autoPyTorch.ensemble.abstract_ensemble import AbstractEnsemble
 from autoPyTorch.pipeline.base_pipeline import BasePipeline
-from autoPyTorch.pipeline.components.training.metrics.base_metric import autoPyTorchMetric
+from autoPyTorch.pipeline.components.training.metrics.base import autoPyTorchMetric
+from autoPyTorch.pipeline.components.training.metrics.utils import calculate_score
 
 
 class EnsembleSelection(AbstractEnsemble):
@@ -13,11 +14,13 @@ class EnsembleSelection(AbstractEnsemble):
         self,
         ensemble_size: int,
         metric: autoPyTorchMetric,
+        task_type: int,
         random_state: np.random.RandomState,
     ) -> None:
         self.ensemble_size = ensemble_size
         self.metric = metric
         self.random_state = random_state
+        self.task_type = task_type
 
     def __getstate__(self) -> Dict[str, Any]:
         # Cannot serialize a metric if
@@ -39,12 +42,6 @@ class EnsembleSelection(AbstractEnsemble):
         self.ensemble_size = int(self.ensemble_size)
         if self.ensemble_size < 1:
             raise ValueError('Ensemble size cannot be less than one!')
-        if not isinstance(self.metric, autoPyTorchMetric):
-            raise ValueError("The provided metric must be an instance of autoPyTorchMetric, "
-                             "nevertheless it is {}({})".format(
-                                 self.metric,
-                                 type(self.metric),
-                             ))
 
         self._fit(predictions, labels)
         self._calculate_weights()
@@ -116,11 +113,13 @@ class EnsembleSelection(AbstractEnsemble):
 
                 # Calculate score is versatile and can return a dict of score
                 # when all_scoring_functions=False, we know it will be a float
-                calculated_score = self.metric(
-                    targets=labels,
-                    predictions=fant_ensemble_prediction,
+                score = calculate_score(
+                    metrics=[self.metric],
+                    solution=labels,
+                    prediction=fant_ensemble_prediction,
+                    task_type=self.task_type,
                 )
-                scores[j] = self.metric._optimum - calculated_score
+                scores[j] = self.metric._optimum - score[self.metric.name]
 
             all_best = np.argwhere(scores == np.nanmin(scores)).flatten()
             best = self.random_state.choice(all_best)

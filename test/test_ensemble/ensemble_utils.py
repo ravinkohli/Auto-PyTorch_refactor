@@ -4,21 +4,21 @@ import unittest
 
 import numpy as np
 
-import torch
-
 from autoPyTorch.ensemble.ensemble_builder import (
     AbstractEnsemble,
     EnsembleBuilder,
 )
-from autoPyTorch.pipeline.components.training.metrics.Accuracy import Accuracy
+from autoPyTorch.pipeline.components.training.metrics.base import make_metric
 
 
-class MockMetric(Accuracy):
-    def __call__(self,
-                 predictions: torch.tensor,
-                 targets: torch.tensor
-                 ) -> torch.tensor:
-        return 0.9
+def score_func(prediction: np.ndarray,
+               solution: np.ndarray,
+               sample_weight=None,
+               ) -> float:
+    return 0.9
+
+
+mockmetric = make_metric(name='mockmetric', score_func=score_func)
 
 
 class BackendMock(object):

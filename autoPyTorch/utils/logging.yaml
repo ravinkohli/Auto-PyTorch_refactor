@@ -16,19 +16,15 @@ handlers:
     class: logging.FileHandler
     level: DEBUG
     formatter: simple
-    filename: autopytorch.log
+    filename: autoPyTorch.log
 
 root:
   level: DEBUG
   handlers: [console, file_handler]
 
 loggers:
-  autopytorch.metalearning:
-    level: DEBUG
-    handlers: [file_handler]
-    propagate: no
 
-  autopytorch.util.backend:
+  autoPyTorch.utils.backend:
     level: DEBUG
     handlers: [file_handler]
     propagate: no

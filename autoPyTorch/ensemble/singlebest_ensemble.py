@@ -7,7 +7,7 @@ from smac.runhistory.runhistory import RunHistory
 
 from autoPyTorch.ensemble.abstract_ensemble import AbstractEnsemble
 from autoPyTorch.pipeline.base_pipeline import BasePipeline
-from autoPyTorch.pipeline.components.training.metrics.base_metric import autoPyTorchMetric
+from autoPyTorch.pipeline.components.training.metrics.base import autoPyTorchMetric
 from autoPyTorch.utils.backend import Backend
 
 
@@ -48,10 +48,10 @@ class SingleBest(AbstractEnsemble):
 
         for run_key in self.run_history.data.keys():
             run_value = self.run_history.data[run_key]
-            score = self.metric._optimum - (self.metric._greater_is_better * run_value.cost)
+            score = self.metric._optimum - (self.metric._sign * run_value.cost)
 
-            if (score > best_model_score and self.metric._greater_is_better > 0) \
-                    or (score < best_model_score and self.metric._greater_is_better < 0):
+            if (score > best_model_score and self.metric._sign > 0) \
+                    or (score < best_model_score and self.metric._sign < 0):
 
                 # Make sure that the individual best model actually exists
                 model_dir = self.backend.get_numrun_directory(

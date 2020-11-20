@@ -15,7 +15,9 @@ import copy
 import os
 import time
 import typing
+import tempfile
 
+import dask
 import dask.distributed
 
 import numpy as np
@@ -26,10 +28,12 @@ from sklearn.utils.multiclass import type_of_target
 from sklearn.utils import check_array
 from sklearn.metrics import accuracy_score
 
+from autoPyTorch.data.xy_data_manager import XYDataManager
 from autoPyTorch.ensemble.ensemble_builder import EnsembleBuilderManager
-from autoPyTorch.pipeline.components.training.metrics.Accuracy import Accuracy
 from autoPyTorch.pipeline.tabular_classification import TabularClassificationPipeline
+from autoPyTorch.pipeline.components.training.metrics.metrics import accuracy
 from autoPyTorch.utils.backend import create, Backend
+from autoPyTorch.constants import MULTICLASS, TABULAR_CLASSIFICATION
 
 
 def get_data_to_train() -> typing.Tuple[typing.Dict[str, typing.Any]]:
@@ -92,10 +96,11 @@ def get_data_to_train() -> typing.Tuple[typing.Dict[str, typing.Any]]:
         'early_stopping': 20,
         'use_tensorboard_logger': True,
         'use_pynisher': False,
+        'memory_limit': 2048,
         'metrics_during_training': True,
         'seed': 0,
         'budget_type': 'epochs',
-        'epochs': 10,
+        'epochs': 10.0,
         'id': 0,
     }
 
@@ -169,17 +174,49 @@ if __name__ == "__main__":
     # Create some random models for the ensemble
     random_search_and_save(fit_dictionary, backend, num_models=1)
 
+    # We do not have yet a datamanager. As a WA use autosklearn
+    # datamanager
+    X_train = check_array(fit_dictionary['X_train'])
+    y_train = check_array(fit_dictionary['y_train'], ensure_2d=False)
+    X_test = check_array(fit_dictionary['X_test'])
+    y_test = check_array(fit_dictionary['y_test'], ensure_2d=False)
+    datamanager = XYDataManager(
+        X_train, y_train,
+        X_test=X_test,
+        y_test=y_test,
+        task=TABULAR_CLASSIFICATION,
+        dataset_name=fit_dictionary['job_id'],
+        feat_type=None,
+    )
+    backend.save_datamanager(datamanager)
+
     # Build a ensemble from the above components
     # Use dak client here to make sure this is proper working,
     # as with smac we will have to use a client
-    dask_client = dask.distributed.Client()
+    dask.config.set({'distributed.worker.daemon': False})
+    dask_client = dask.distributed.Client(
+        dask.distributed.LocalCluster(
+            n_workers=2,
+            processes=True,
+            threads_per_worker=1,
+            # We use the temporal directory to save the
+            # dask workers, because deleting workers
+            # more time than deleting backend directories
+            # This prevent an error saying that the worker
+            # file was deleted, so the client could not close
+            # the worker properly
+            local_directory=tempfile.gettempdir(),
+        )
+    )
     manager = EnsembleBuilderManager(
         start_time=time.time(),
         time_left_for_ensembles=100,
         backend=copy.deepcopy(backend),
         dataset_name=fit_dictionary['job_id'],
-        output_type=fit_dictionary['dataset_properties']['output_type'],
-        metric=Accuracy(),
+        output_type=MULTICLASS,
+        task_type=TABULAR_CLASSIFICATION,
+        metrics=[accuracy],
+        opt_metric='accuracy',
         ensemble_size=50,
         ensemble_nbest=50,
         max_models_on_disc=50,
@@ -189,6 +226,7 @@ if __name__ == "__main__":
         ensemble_memory_limit=fit_dictionary['memory_limit'],
         random_state=fit_dictionary['seed'],
         logger_name=fit_dictionary['job_id'],
+        precision=32,
     )
     manager.build_ensemble(dask_client)
     future = manager.futures.pop()

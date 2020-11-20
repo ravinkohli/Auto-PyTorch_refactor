@@ -30,14 +30,15 @@ from smac.runhistory.runhistory import RunInfo, RunValue
 from autoPyTorch.constants import BINARY
 from autoPyTorch.ensemble.abstract_ensemble import AbstractEnsemble
 from autoPyTorch.ensemble.ensemble_selection import EnsembleSelection
-from autoPyTorch.pipeline.components.training.metrics.base_metric import autoPyTorchMetric
+from autoPyTorch.pipeline.components.training.metrics.base import autoPyTorchMetric
+from autoPyTorch.pipeline.components.training.metrics.utils import calculate_score
 from autoPyTorch.utils.backend import Backend
 from autoPyTorch.utils.logging_ import PickableLoggerAdapter, get_logger, setup_logger
 
 Y_ENSEMBLE = 0
 Y_TEST = 1
 
-MODEL_FN_RE = r'_([0-9]*)_([0-9]*)_([0-9]{1,3}\.[0-9]*)\.npy'
+MODEL_FN_RE = r'_([0-9]*)_([0-9]*)_([0-9]+\.*[0-9]*)\.npy'
 
 
 class EnsembleBuilderManager(IncorporateRunResultCallback):
@@ -47,8 +48,10 @@ class EnsembleBuilderManager(IncorporateRunResultCallback):
         time_left_for_ensembles: float,
         backend: Backend,
         dataset_name: str,
+        task_type: int,
         output_type: int,
-        metric: autoPyTorchMetric,
+        metrics: List[autoPyTorchMetric],
+        opt_metric: str,
         ensemble_size: int,
         ensemble_nbest: int,
         max_models_on_disc: Union[float, int],
@@ -71,10 +74,12 @@ class EnsembleBuilderManager(IncorporateRunResultCallback):
             backend to write and read files
         dataset_name: str
             name of dataset
-        output_type: int
+        task_type: int
             what type of output is expected. If Binary, we need to argmax the one hot encoding.
-        metric: str
-            name of metric to score predictions
+        metrics: List[autoPyTorchMetric],
+            A set of metrics that will be used to get performance estimates
+        opt_metric: str
+            name of the optimization metrics
         ensemble_size: int
             maximal size of ensemble (passed to ensemble_selection)
         ensemble_nbest: int/float
@@ -115,8 +120,10 @@ class EnsembleBuilderManager(IncorporateRunResultCallback):
         self.time_left_for_ensembles = time_left_for_ensembles
         self.backend = backend
         self.dataset_name = dataset_name
+        self.task_type = task_type
         self.output_type = output_type
-        self.metric = metric
+        self.metrics = metrics
+        self.opt_metric = opt_metric
         self.ensemble_size = ensemble_size
         self.ensemble_nbest = ensemble_nbest
         self.max_models_on_disc = max_models_on_disc  # type: Union[float, int]
@@ -208,8 +215,10 @@ class EnsembleBuilderManager(IncorporateRunResultCallback):
                     fit_and_return_ensemble,
                     backend=self.backend,
                     dataset_name=self.dataset_name,
+                    task_type=self.task_type,
                     output_type=self.output_type,
-                    metric=self.metric,
+                    metrics=self.metrics,
+                    opt_metric=self.opt_metric,
                     ensemble_size=self.ensemble_size,
                     ensemble_nbest=self.ensemble_nbest,
                     max_models_on_disc=self.max_models_on_disc,
@@ -246,8 +255,10 @@ class EnsembleBuilderManager(IncorporateRunResultCallback):
 def fit_and_return_ensemble(
     backend: Backend,
     dataset_name: str,
+    task_type: int,
     output_type: int,
-    metric: autoPyTorchMetric,
+    metrics: List[autoPyTorchMetric],
+    opt_metric: str,
     ensemble_size: int,
     ensemble_nbest: int,
     max_models_on_disc: Union[float, int],
@@ -275,9 +286,11 @@ def fit_and_return_ensemble(
             backend to write and read files
         dataset_name: str
             name of dataset
-        metric: str
-            name of metric to score predictions
-        output_type: int
+        metrics: List[autoPyTorchMetric],
+            A set of metrics that will be used to get performance estimates
+        opt_metric:
+            Name of the metric to optimize
+        task_type: int
             type of output expected in the ground truth
         ensemble_size: int
             maximal size of ensemble (passed to ensemble.ensemble_selection)
@@ -320,8 +333,10 @@ def fit_and_return_ensemble(
     result = EnsembleBuilder(
         backend=backend,
         dataset_name=dataset_name,
+        task_type=task_type,
         output_type=output_type,
-        metric=metric,
+        metrics=metrics,
+        opt_metric=opt_metric,
         ensemble_size=ensemble_size,
         ensemble_nbest=ensemble_nbest,
         max_models_on_disc=max_models_on_disc,
@@ -344,8 +359,10 @@ class EnsembleBuilder(object):
             self,
             backend: Backend,
             dataset_name: str,
+            task_type: int,
             output_type: int,
-            metric: autoPyTorchMetric,
+            metrics: List[autoPyTorchMetric],
+            opt_metric: str,
             ensemble_size: int = 10,
             ensemble_nbest: int = 100,
             max_models_on_disc: Union[float, int] = 100,
@@ -365,10 +382,12 @@ class EnsembleBuilder(object):
                 backend to write and read files
             dataset_name: str
                 name of dataset
-            output_type: int
+            task_type: int
                 type of ML task
-            metric: str
+            metrics: List[autoPyTorchMetric],
                 name of metric to score predictions
+            opt_metric: str
+                name of the metric to optimize
             ensemble_size: int
                 maximal size of ensemble (passed to ensemble.ensemble_selection)
             ensemble_nbest: int/float
@@ -408,8 +427,10 @@ class EnsembleBuilder(object):
 
         self.backend = backend  # communication with filesystem
         self.dataset_name = dataset_name
+        self.task_type = task_type
         self.output_type = output_type
-        self.metric = metric
+        self.metrics = metrics
+        self.opt_metric = opt_metric
         self.ensemble_size = ensemble_size
         self.performance_range_threshold = performance_range_threshold
 
@@ -798,7 +819,7 @@ class EnsembleBuilder(object):
         for y_ens_fn in self.y_ens_files:
             match = self.model_fn_re.search(y_ens_fn)
             if match is None:
-                raise ValueError("Could not interpret file {y_ens_fn} "
+                raise ValueError(f"Could not interpret file {y_ens_fn} "
                                  "Something went wrong while scoring predictions")
             _seed = int(match.group(1))
             _num_run = int(match.group(2))
@@ -847,10 +868,21 @@ class EnsembleBuilder(object):
                 continue
 
             # actually read the predictions and score them
+            y_ensemble = self._read_np_fn(y_ens_fn)
+            scores = calculate_score(
+                metrics=self.metrics,
+                solution=self.y_true_ensemble,
+                prediction=y_ensemble,
+                task_type=self.task_type,
+            )
             try:
                 y_ensemble = self._read_np_fn(y_ens_fn)
-                score = self.metric(targets=self.y_true_ensemble,
-                                    predictions=y_ensemble)
+                scores = calculate_score(
+                    metrics=self.metrics,
+                    solution=self.y_true_ensemble,
+                    prediction=y_ensemble,
+                    task_type=self.task_type,
+                )
 
                 if np.isfinite(self.read_scores[y_ens_fn]["ens_score"]):
                     self.logger.debug(
@@ -858,12 +890,12 @@ class EnsembleBuilder(object):
                         'because file modification time changed? %f - %f',
                         y_ens_fn,
                         self.read_scores[y_ens_fn]["ens_score"],
-                        score,
+                        scores[self.opt_metric],
                         self.read_scores[y_ens_fn]["mtime_ens"],
                         os.path.getmtime(y_ens_fn),
                     )
 
-                self.read_scores[y_ens_fn]["ens_score"] = score
+                self.read_scores[y_ens_fn]["ens_score"] = scores[self.opt_metric]
 
                 # It is not needed to create the object here
                 # To save memory, we just score the object.
@@ -910,26 +942,30 @@ class EnsembleBuilder(object):
         # remove all that are at most as good as random
         # note: dummy model must have run_id=1 (there is no run_id=0)
         dummy_scores = list(filter(lambda x: x[2] == 1, sorted_keys))
-        # number of dummy models
-        num_dummy = len(dummy_scores)
-        dummy_score = dummy_scores[0]
-        self.logger.debug("Use %f as dummy score" % dummy_score[1])
-        sorted_keys = list(filter(lambda x: x[1] > dummy_score[1], sorted_keys))
-        # remove Dummy Classifier
-        sorted_keys = list(filter(lambda x: x[2] > 1, sorted_keys))
-        if not sorted_keys:
-            # no model left; try to use dummy score (num_run==0)
-            # log warning when there are other models but not better than dummy model
-            if num_keys > num_dummy:
-                self.logger.warning("No models better than random - using Dummy Score!"
-                                    "Number of models besides current dummy model: %d. "
-                                    "Number of dummy models: %d",
-                                    num_keys - 1,
-                                    num_dummy)
-            sorted_keys = [
-                (k, v["ens_score"], v["num_run"]) for k, v in self.read_scores.items()
-                if v["seed"] == self.seed and v["num_run"] == 1
-            ]
+
+        # Leave this here for when we enable dummy classifier/scorer
+        if dummy_scores:
+            # number of dummy models
+            num_dummy = len(dummy_scores)
+            dummy_score = dummy_scores[0]
+            self.logger.debug("Use %f as dummy score" % dummy_score[1])
+            sorted_keys = list(filter(lambda x: x[1] > dummy_score[1], sorted_keys))
+
+            # remove Dummy Classifier
+            sorted_keys = list(filter(lambda x: x[2] > 1, sorted_keys))
+            if not sorted_keys:
+                # no model left; try to use dummy score (num_run==0)
+                # log warning when there are other models but not better than dummy model
+                if num_keys > num_dummy:
+                    self.logger.warning("No models better than random - using Dummy Score!"
+                                        "Number of models besides current dummy model: %d. "
+                                        "Number of dummy models: %d",
+                                        num_keys - 1,
+                                        num_dummy)
+                sorted_keys = [
+                    (k, v["ens_score"], v["num_run"]) for k, v in self.read_scores.items()
+                    if v["seed"] == self.seed and v["num_run"] == 1
+                ]
         # reload predictions if scores changed over time and a model is
         # considered to be in the top models again!
         if not isinstance(self.ensemble_nbest, numbers.Integral):
@@ -1119,7 +1155,6 @@ class EnsembleBuilder(object):
             ensemble: EnsembleSelection
                 trained Ensemble
         """
-
         predictions_train = [self.read_preds[k][Y_ENSEMBLE] for k in selected_keys]
         include_num_runs = [
             (
@@ -1144,10 +1179,16 @@ class EnsembleBuilder(object):
             return None
         self.last_hash = current_hash
 
+        opt_metric = [m for m in self.metrics if m.name == self.opt_metric][0]
+        if not opt_metric:
+            raise ValueError(f"Cannot optimize for {self.opt_metric} in {self.metrics} "
+                             "as more than one unique optimization metric was found.")
+
         ensemble = EnsembleSelection(
             ensemble_size=self.ensemble_size,
-            metric=self.metric,
+            metric=opt_metric,
             random_state=self.random_state,
+            task_type=self.task_type,
         )
 
         try:
@@ -1257,20 +1298,23 @@ class EnsembleBuilder(object):
                     ((1 - test_pred).reshape((1, -1)), test_pred.reshape((1, -1)))
                 ).transpose()
 
+        train_scores = calculate_score(
+            metrics=self.metrics,
+            solution=self.y_true_ensemble,
+            prediction=train_pred,
+            task_type=self.task_type,
+        )
+        test_scores = calculate_score(
+            metrics=self.metrics,
+            solution=self.y_test,
+            prediction=test_pred,
+            task_type=self.task_type,
+        )
         performance_stamp = {
             'Timestamp': pd.Timestamp.now(),
-            'ensemble_optimization_score': self.metric(
-                targets=self.y_true_ensemble,
-                predictions=train_pred,
-            )
         }
-
-        # In case test_pred was provided
-        if test_pred is not None:
-            performance_stamp['ensemble_test_score'] = self.metric(
-                targets=self.y_test,
-                predictions=test_pred,
-            )
+        performance_stamp.update({'train_' + str(key): val for key, val in train_scores.items()})
+        performance_stamp.update({'test_' + str(key): val for key, val in test_scores.items()})
 
         self.ensemble_history.append(performance_stamp)
 

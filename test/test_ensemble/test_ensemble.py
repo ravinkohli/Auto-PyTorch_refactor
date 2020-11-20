@@ -15,7 +15,7 @@ import pytest
 
 from smac.runhistory.runhistory import RunHistory, RunKey, RunValue
 
-from autoPyTorch.constants import BINARY, MULTICLASS
+from autoPyTorch.constants import BINARY, MULTICLASS, TABULAR_CLASSIFICATION
 from autoPyTorch.ensemble.ensemble_builder import (
     EnsembleBuilder,
     EnsembleBuilderManager,
@@ -24,11 +24,11 @@ from autoPyTorch.ensemble.ensemble_builder import (
 )
 from autoPyTorch.ensemble.ensemble_selection import EnsembleSelection
 from autoPyTorch.ensemble.singlebest_ensemble import SingleBest
-from autoPyTorch.pipeline.components.training.metrics.Accuracy import Accuracy
+from autoPyTorch.pipeline.components.training.metrics.metrics import accuracy
 
 this_directory = os.path.dirname(__file__)
 sys.path.append(this_directory)
-from ensemble_utils import BackendMock, compare_read_preds, EnsembleBuilderMemMock, MockMetric  # noqa (E402: module level import not   at top of file)
+from ensemble_utils import BackendMock, compare_read_preds, EnsembleBuilderMemMock, mockmetric  # noqa (E402: module level import not   at top of file)
 
 
 # -----------------------------------------------------------------------------------------------
@@ -119,7 +119,9 @@ def testRead(ensemble_backend):
         backend=ensemble_backend,
         dataset_name="TEST",
         output_type=BINARY,
-        metric=Accuracy(),
+        task_type=TABULAR_CLASSIFICATION,
+        metrics=[accuracy],
+        opt_metric='accuracy',
         seed=0,  # important to find the test files
     )
 
@@ -133,7 +135,7 @@ def testRead(ensemble_backend):
         ".autoPyTorch/runs/0_1_0.0/predictions_ensemble_0_1_0.0.npy"
     )
     np.testing.assert_almost_equal(
-        ensbuilder.read_scores[filename]["ens_score"].data.numpy(),
+        ensbuilder.read_scores[filename]["ens_score"],
         np.array(0.8)
     )
 
@@ -142,7 +144,7 @@ def testRead(ensemble_backend):
         ".autoPyTorch/runs/0_2_0.0/predictions_ensemble_0_2_0.0.npy"
     )
     np.testing.assert_almost_equal(
-        ensbuilder.read_scores[filename]["ens_score"].data.numpy(),
+        ensbuilder.read_scores[filename]["ens_score"],
         np.array(1.0)
     )
 
@@ -163,7 +165,9 @@ def testNBest(ensemble_backend, ensemble_nbest, max_models_on_disc, exp):
         backend=ensemble_backend,
         dataset_name="TEST",
         output_type=BINARY,
-        metric=Accuracy(),
+        task_type=TABULAR_CLASSIFICATION,
+        metrics=[accuracy],
+        opt_metric='accuracy',
         seed=0,  # important to find the test files
         ensemble_nbest=ensemble_nbest,
         max_models_on_disc=max_models_on_disc,
@@ -202,7 +206,9 @@ def testMaxModelsOnDisc(ensemble_backend, test_case, exp):
         backend=ensemble_backend,
         dataset_name="TEST",
         output_type=BINARY,
-        metric=Accuracy(),
+        task_type=TABULAR_CLASSIFICATION,
+        metrics=[accuracy],
+        opt_metric='accuracy',
         seed=0,  # important to find the test files
         ensemble_nbest=ensemble_nbest,
         max_models_on_disc=test_case,
@@ -222,7 +228,9 @@ def testMaxModelsOnDisc2(ensemble_backend):
         backend=ensemble_backend,
         dataset_name="TEST",
         output_type=BINARY,
-        metric=Accuracy(),
+        task_type=TABULAR_CLASSIFICATION,
+        metrics=[accuracy],
+        opt_metric='accuracy',
         seed=0,  # important to find the test files
         ensemble_nbest=50,
         max_models_on_disc=10000.0,
@@ -255,7 +263,9 @@ def testPerformanceRangeThreshold(ensemble_backend, performance_range_threshold,
         backend=ensemble_backend,
         dataset_name="TEST",
         output_type=BINARY,
-        metric=Accuracy(),
+        task_type=TABULAR_CLASSIFICATION,
+        metrics=[accuracy],
+        opt_metric='accuracy',
         seed=0,  # important to find the test files
         ensemble_nbest=100,
         performance_range_threshold=performance_range_threshold
@@ -289,7 +299,9 @@ def testPerformanceRangeThresholdMaxBest(ensemble_backend, performance_range_thr
         backend=ensemble_backend,
         dataset_name="TEST",
         output_type=BINARY,
-        metric=Accuracy(),
+        task_type=TABULAR_CLASSIFICATION,
+        metrics=[accuracy],
+        opt_metric='accuracy',
         seed=0,  # important to find the test files
         ensemble_nbest=ensemble_nbest,
         performance_range_threshold=performance_range_threshold,
@@ -316,7 +328,9 @@ def testFallBackNBest(ensemble_backend):
     ensbuilder = EnsembleBuilder(backend=ensemble_backend,
                                  dataset_name="TEST",
                                  output_type=BINARY,
-                                 metric=Accuracy(),
+                                 task_type=TABULAR_CLASSIFICATION,
+                                 metrics=[accuracy],
+                                 opt_metric='accuracy',
                                  seed=0,  # important to find the test files
                                  ensemble_nbest=1
                                  )
@@ -356,7 +370,9 @@ def testGetTestPreds(ensemble_backend):
     ensbuilder = EnsembleBuilder(backend=ensemble_backend,
                                  dataset_name="TEST",
                                  output_type=BINARY,
-                                 metric=Accuracy(),
+                                 task_type=TABULAR_CLASSIFICATION,
+                                 metrics=[accuracy],
+                                 opt_metric='accuracy',
                                  seed=0,  # important to find the test files
                                  ensemble_nbest=1
                                  )
@@ -402,7 +418,9 @@ def testEntireEnsembleBuilder(ensemble_backend):
         backend=ensemble_backend,
         dataset_name="TEST",
         output_type=BINARY,
-        metric=Accuracy(),
+        task_type=TABULAR_CLASSIFICATION,
+        metrics=[accuracy],
+        opt_metric='accuracy',
         seed=0,  # important to find the test files
         ensemble_nbest=2,
     )
@@ -446,7 +464,9 @@ def test_main(ensemble_backend):
         backend=ensemble_backend,
         dataset_name="TEST",
         output_type=MULTICLASS,
-        metric=Accuracy(),
+        task_type=TABULAR_CLASSIFICATION,
+        metrics=[accuracy],
+        opt_metric='accuracy',
         seed=0,  # important to find the test files
         ensemble_nbest=2,
         max_models_on_disc=None,
@@ -469,8 +489,8 @@ def test_main(ensemble_backend):
     # As the data loader loads the same val/train/test
     # we expect 1.0 as score and all keys available
     expected_performance = {
-        'ensemble_test_score': 1.0,
-        'ensemble_optimization_score': 1.0,
+        'train_accuracy': 1.0,
+        'test_accuracy': 1.0,
     }
 
     # Make sure that expected performance is a subset of the run history
@@ -492,7 +512,9 @@ def test_run_end_at(ensemble_backend):
             backend=ensemble_backend,
             dataset_name="TEST",
             output_type=MULTICLASS,  # Multilabel Classification
-            metric=Accuracy(),
+            task_type=TABULAR_CLASSIFICATION,
+            metrics=[accuracy],
+            opt_metric='accuracy',
             seed=0,  # important to find the test files
             ensemble_nbest=2,
             max_models_on_disc=None,
@@ -511,7 +533,9 @@ def testLimit(ensemble_backend):
     ensbuilder = EnsembleBuilderMemMock(backend=ensemble_backend,
                                         dataset_name="TEST",
                                         output_type=BINARY,
-                                        metric=Accuracy(),
+                                        task_type=TABULAR_CLASSIFICATION,
+                                        metrics=[accuracy],
+                                        opt_metric='accuracy',
                                         seed=0,  # important to find the test files
                                         ensemble_nbest=10,
                                         # small to trigger MemoryException
@@ -576,7 +600,9 @@ def test_read_pickle_read_preds(ensemble_backend):
         backend=ensemble_backend,
         dataset_name="TEST",
         output_type=MULTICLASS,  # Multilabel Classification
-        metric=Accuracy(),
+        task_type=TABULAR_CLASSIFICATION,
+        metrics=[accuracy],
+        opt_metric='accuracy',
         seed=0,  # important to find the test files
         ensemble_nbest=2,
         max_models_on_disc=None,
@@ -616,7 +642,9 @@ def test_read_pickle_read_preds(ensemble_backend):
         backend=ensemble_backend,
         dataset_name="TEST",
         output_type=MULTICLASS,
-        metric=Accuracy(),
+        task_type=TABULAR_CLASSIFICATION,
+        metrics=[accuracy],
+        opt_metric='accuracy',
         seed=0,  # important to find the test files
         ensemble_nbest=2,
         max_models_on_disc=None,
@@ -633,7 +661,9 @@ def test_ensemble_builder_process_realrun(dask_client, ensemble_backend):
         backend=ensemble_backend,
         dataset_name='Test',
         output_type=BINARY,
-        metric=MockMetric(),
+        task_type=TABULAR_CLASSIFICATION,
+        metrics=[mockmetric],
+        opt_metric='mockmetric',
         ensemble_size=50,
         ensemble_nbest=10,
         max_models_on_disc=None,
@@ -651,10 +681,10 @@ def test_ensemble_builder_process_realrun(dask_client, ensemble_backend):
     result = future.result()
     history, _, _, _ = result
 
-    assert 'ensemble_optimization_score' in history[0]
-    assert history[0]['ensemble_optimization_score'] == 0.9
-    assert 'ensemble_test_score' in history[0]
-    assert history[0]['ensemble_test_score'] == 0.9
+    assert 'train_mockmetric' in history[0]
+    assert history[0]['train_mockmetric'] == 0.9
+    assert 'test_mockmetric' in history[0]
+    assert history[0]['test_mockmetric'] == 0.9
 
 
 @unittest.mock.patch('autoPyTorch.ensemble.ensemble_builder.EnsembleBuilder.fit_ensemble')
@@ -672,7 +702,9 @@ def test_ensemble_builder_nbest_remembered(fit_ensemble, ensemble_backend, dask_
         backend=ensemble_backend,
         dataset_name='Test',
         output_type=MULTICLASS,
-        metric=Accuracy(),
+        task_type=TABULAR_CLASSIFICATION,
+        metrics=[accuracy],
+        opt_metric='accuracy',
         ensemble_size=50,
         ensemble_nbest=10,
         max_models_on_disc=None,
@@ -716,7 +748,8 @@ def testPredict():
     # If none of the above is the case, predict() raises Error.
     ensemble = EnsembleSelection(ensemble_size=3,
                                  random_state=np.random.RandomState(0),
-                                 metric=Accuracy(),
+                                 metric=accuracy,
+                                 task_type=TABULAR_CLASSIFICATION,
                                  )
     # Test for case 1. Create (3, 2, 2) predictions.
     per_model_pred = np.array([
@@ -774,7 +807,7 @@ def testPredict():
 def test_get_identifiers_from_run_history(exists, ensemble_run_history, ensemble_backend):
     exists.return_value = True
     ensemble = SingleBest(
-        metric=Accuracy(),
+        metric=accuracy,
         seed=1,
         run_history=ensemble_run_history,
         backend=ensemble_backend,
