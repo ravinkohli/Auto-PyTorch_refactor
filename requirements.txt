@@ -10,3 +10,4 @@ scipy
 pynisher
 lockfile
 imgaug>=0.4.0
+smac>=0.13.1,<0.14
