@@ -38,7 +38,7 @@ class SimpleImputer(BaseImputer):
             instance of self
         """
         self.check_requirements(X, y)
-        if len(X['categorical_columns']):
+        if len(X['categorical_columns']) != 0:
             if self.categorical_strategy == 'constant_!missing!':
                 self.preprocessor['categorical'] = SklearnSimpleImputer(strategy='constant',
                                                                         fill_value='!missing!',
@@ -46,7 +46,7 @@ class SimpleImputer(BaseImputer):
             else:
                 self.preprocessor['categorical'] = SklearnSimpleImputer(strategy=self.categorical_strategy,
                                                                         copy=False)
-        if len(X['numerical_columns']):
+        if len(X['numerical_columns']) != 0:
             if self.numerical_strategy == 'constant_zero':
                 self.preprocessor['numerical'] = SklearnSimpleImputer(strategy='constant',
                                                                       fill_value=0,

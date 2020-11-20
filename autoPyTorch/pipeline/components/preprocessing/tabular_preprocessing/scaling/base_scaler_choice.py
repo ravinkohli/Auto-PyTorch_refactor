@@ -72,7 +72,7 @@ class ScalerChoice(autoPyTorchChoice):
                     break
 
         # add only no scaler to choice hyperparameters in case the dataset is only categorical
-        if not dataset_properties['numerical_columns']:
+        if len(dataset_properties['numerical_columns']) == 0:
             default = 'NoScaler'
             preprocessor = CSH.CategoricalHyperparameter('__choice__',
                                                          ['NoScaler'],
