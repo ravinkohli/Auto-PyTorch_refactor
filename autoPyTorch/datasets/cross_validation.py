@@ -127,12 +127,3 @@ def time_series_cross_validation(num_splits: int, indices: np.ndarray, **kwargs:
     cv = TimeSeriesSplit(n_splits=num_splits)
     splits = list(cv.split(indices))
     return splits
-
-
-if __name__ == "__main__":
-    test_indices = np.arange(20)
-    test_num_splits = 4
-    test_stratify = np.zeros((20,))
-    test_stratify[5: 10] = 1
-    print(stratified_k_fold_cross_validation(test_num_splits, test_indices, **{"stratify": test_stratify}))
-    print(time_series_cross_validation(test_num_splits, test_indices, **{"stratify": test_stratify}))
