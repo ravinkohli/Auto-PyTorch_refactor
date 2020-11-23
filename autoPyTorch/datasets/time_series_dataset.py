@@ -47,7 +47,7 @@ class TimeSeriesForecastingDataset(BaseDataset):
                                                           n_steps=n_steps)
         super().__init__(train_tensors=train, val_tensors=val, shuffle=False)
         self.cross_validators = get_cross_validators(CrossValTypes.time_series_cross_validation)
-        self.holdout_validators = get_holdout_validators(HoldoutValTypes.train_val_split)
+        self.holdout_validators = get_holdout_validators(HoldoutValTypes.holdout_validation)
 
 
 def _check_time_series_forecasting_inputs(target_variables: Tuple[int],
@@ -110,8 +110,8 @@ class TimeSeriesClassificationDataset(BaseDataset):
             CrossValTypes.stratified_shuffle_split_cross_validation
         )
         self.holdout_validators = get_holdout_validators(
-            HoldoutValTypes.train_val_split,
-            HoldoutValTypes.stratified_train_val_split
+            HoldoutValTypes.holdout_validation,
+            HoldoutValTypes.stratified_holdout_validation
         )
 
 
@@ -126,7 +126,7 @@ class TimeSeriesRegressionDataset(BaseDataset):
             CrossValTypes.shuffle_split_cross_validation
         )
         self.holdout_validators = get_holdout_validators(
-            HoldoutValTypes.train_val_split
+            HoldoutValTypes.holdout_validation
         )
 
 

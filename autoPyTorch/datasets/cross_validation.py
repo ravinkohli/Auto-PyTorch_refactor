@@ -18,14 +18,18 @@ from typing_extensions import Protocol
 # Use callback protocol as workaround, since callable with function fields count 'self' as argument
 class CROSS_VAL_FN(Protocol):
 
-    def __call__(self, num_splits: int, indices: np.ndarray, stratify: Optional[Any]
-                 ) -> List[Tuple[np.ndarray, np.ndarray]]: ...
+    def __call__(self,
+                 num_splits: int,
+                 indices: np.ndarray,
+                 stratify: Optional[Any]) -> List[Tuple[np.ndarray, np.ndarray]]:
+        ...
 
 
 class HOLDOUT_FN(Protocol):
 
     def __call__(self, val_share: float, indices: np.ndarray, stratify: Optional[Any]
-                 ) -> Tuple[np.ndarray, np.ndarray]: ...
+                 ) -> Tuple[np.ndarray, np.ndarray]:
+        ...
 
 
 class CrossValTypes(IntEnum):
@@ -37,8 +41,8 @@ class CrossValTypes(IntEnum):
 
 
 class HoldoutValTypes(IntEnum):
-    train_val_split = 1
-    stratified_train_val_split = 2
+    holdout_validation = 1
+    stratified_holdout_validation = 2
 
 
 def get_cross_validators(*cross_val_types: CrossValTypes) -> Dict[str, CROSS_VAL_FN]:

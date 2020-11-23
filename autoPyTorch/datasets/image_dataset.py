@@ -28,10 +28,9 @@ class ImageDataset(BaseDataset):
         train = _create_image_dataset(data=train)
         if val is not None:
             val = _create_image_dataset(data=val)
-        mean_std = _calc_mean_std(train=train)
-        self.mean = mean_std[0]
-        self.std = mean_std[0]
-        super().__init__(train_tensors=(train,), val_tensors=(val,), shuffle=True)
+        self.mean, self.std = _calc_mean_std(train=train)
+
+        super().__init__(train_tensors=train, val_tensors=val, shuffle=True)
         self.cross_validators = get_cross_validators(
             CrossValTypes.stratified_k_fold_cross_validation,
             CrossValTypes.k_fold_cross_validation,
@@ -39,16 +38,16 @@ class ImageDataset(BaseDataset):
             CrossValTypes.stratified_shuffle_split_cross_validation
         )
         self.holdout_validators = get_holdout_validators(
-            HoldoutValTypes.train_val_split,
-            HoldoutValTypes.stratified_train_val_split
+            HoldoutValTypes.holdout_validation,
+            HoldoutValTypes.stratified_holdout_validation
         )
 
 
 def _calc_mean_std(train: Dataset) -> Tuple[torch.Tensor, torch.Tensor]:
     mean = torch.zeros((3,), dtype=torch.float)
     var = torch.zeros((3,), dtype=torch.float)
-    for img, _ in train:
-        v, m = torch.var_mean(img, dim=[1, 2])
+    for i in range(len(train)):
+        v, m = torch.var_mean(train[i][0])  # 0 used to index images
         mean += m
         var += v
     mean /= len(train)
@@ -86,7 +85,7 @@ class _FilePathDataset(Dataset):
         self.file_paths = file_paths
         self.targets = targets
 
-    def __getitem__(self, index: int) -> Tuple[Image, torch.Tensor]:
+    def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
         with open(self.file_paths[index], "rb") as f:
             img = Image.open(f).convert("RGB")
         return TF.to_tensor(img), torch.tensor(self.targets[index])

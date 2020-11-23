@@ -48,8 +48,8 @@ class TabularDataset(BaseDataset):
             CrossValTypes.stratified_shuffle_split_cross_validation
         )
         self.holdout_validators = get_holdout_validators(
-            HoldoutValTypes.train_val_split,
-            HoldoutValTypes.stratified_train_val_split
+            HoldoutValTypes.holdout_validation,
+            HoldoutValTypes.stratified_holdout_validation
         )
 
     def interpret(self, data: Any, assert_single_column: bool = False) -> tuple:

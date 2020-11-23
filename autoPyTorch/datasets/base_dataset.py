@@ -1,5 +1,5 @@
 from abc import ABCMeta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -7,7 +7,7 @@ from torch.utils.data import Dataset, Subset
 
 from autoPyTorch.datasets.cross_validation import CROSS_VAL_FN, HOLDOUT_FN, is_stratified
 
-BASE_DATASET_INPUT = Tuple[Any, ...]
+BASE_DATASET_INPUT = Union[Tuple[Any, ...], Dataset]
 
 
 def check_valid_data(data: Any) -> None:
@@ -17,11 +17,11 @@ def check_valid_data(data: Any) -> None:
 
 
 def type_check(train_tensors: BASE_DATASET_INPUT, val_tensors: Optional[BASE_DATASET_INPUT] = None) -> None:
-    for t in train_tensors:
-        check_valid_data(t)
+    for i in range(len(train_tensors)):
+        check_valid_data(train_tensors[i])
     if val_tensors is not None:
-        for t in val_tensors:
-            check_valid_data(t)
+        for i in range(len(val_tensors)):
+            check_valid_data(val_tensors[i])
 
 
 class BaseDataset(Dataset, metaclass=ABCMeta):
@@ -44,7 +44,7 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         self.shuffle = shuffle
 
     def __getitem__(self, index: int) -> Tuple[np.ndarray, ...]:
-        return tuple(t[index] for t in self.train_tensors)
+        return self.train_tensors[index]
 
     def __len__(self) -> int:
         return len(self.train_tensors[0])
