@@ -115,6 +115,7 @@ class TimeSeriesClassificationDataset(BaseDataset):
         )
 
 
+
 class TimeSeriesRegressionDataset(BaseDataset):
     def __init__(self, train: Tuple[np.ndarray, np.ndarray], val: Optional[Tuple[np.ndarray, np.ndarray]] = None):
         _check_time_series_inputs(train=train,
