@@ -16,7 +16,7 @@ class DataFrameTest(unittest.TestCase):
         self.assertEqual(set(ds.itovs[2]), {np.nan, 1})
         self.assertEqual(set(ds.itovs[0]), {np.nan, 'a', 'b'})
 
-        self.assertEqual(ds.vtois[0]['a'], 2)
+        self.assertEqual(ds.vtois[0]['a'], 1)
         self.assertEqual(ds.vtois[0][np.nan], 0)
         self.assertEqual(ds.vtois[0][pd._libs.NaT], 0)
         self.assertEqual(ds.vtois[0][pd._libs.missing.NAType()], 0)
