@@ -23,9 +23,9 @@ class AbstractEnsemble(object):
         Args:
             base_models_predictions (np.ndarray):
                 array of shape = [n_base_models, n_data_points, n_targets]
-                n_targets is the number of classes in case of classification,
-                n_targets is 0 or 1 in case of regression
+                This are the predictions of the individual models found by SMAC
             true_targets (np.ndarray) : array of shape [n_targets]
+                This is the ground truth of the above predictions
             model_identifiers (List[Tuple[int, int, float]]): identifier for each base model.
                 Can be used for practical text output of the ensemble.
 
