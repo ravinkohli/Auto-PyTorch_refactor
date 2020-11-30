@@ -23,8 +23,10 @@ class ZeroPadAndCrop(BaseImageAugmenter):
         self.percent = percent
         self.pad_augmenter: Optional[Augmenter] = None
         self.crop_augmenter: Optional[Augmenter] = None
-        self.add_fit_requirements([FitRequirement('image_height', (int,)),
-                                  FitRequirement('image_width', (int,))])
+        self.add_fit_requirements([
+            FitRequirement('image_height', (int,), user_defined=True),
+            FitRequirement('image_width', (int,), user_defined=True)
+            ])
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> BaseImageAugmenter:
         self.check_requirements(X, y)

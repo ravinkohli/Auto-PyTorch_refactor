@@ -342,7 +342,7 @@ class BasePipeline(Pipeline):
         the pipeline and gets the fit requirement of that components.
         All the fit requirements are then aggregated into a list
         Returns:
-            List[NamedTuple]: List of
+            List[NamedTuple]: List of FitRequirements
         """
         fit_requirements = list()  # List[FitRequirement]
         for name, step in self.steps:
@@ -352,6 +352,7 @@ class BasePipeline(Pipeline):
 
         # remove duplicates in the list
         fit_requirements = list(set(fit_requirements))
+        fit_requirements = [req for req in fit_requirements if req.user_defined]
         return fit_requirements
 
     def _get_estimator_hyperparameter_name(self) -> str:

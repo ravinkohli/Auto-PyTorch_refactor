@@ -13,8 +13,10 @@ class BaseImputer(autoPyTorchTabularPreprocessingComponent):
 
     def __init__(self) -> None:
         super().__init__()
-        self.add_fit_requirements([FitRequirement('numerical_columns', (List,)),
-                                  FitRequirement('categorical_columns', (List,))])
+        self.add_fit_requirements([
+            FitRequirement('numerical_columns', (List,), user_defined=True),
+            FitRequirement('categorical_columns', (List,), user_defined=True)
+            ])
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
         """
