@@ -1,11 +1,12 @@
+# mypy: ignore-errors
 import typing
 from typing import Optional
 
 from ConfigSpace.configuration_space import \
     Configuration, \
     ConfigurationSpace
-import numpy as np
 
+import numpy as np
 
 # TODO search_space.saerch_space seems ugly.
 # Maybe we can refactor the package or module name
@@ -15,19 +16,19 @@ from autoPyTorch.search_space.search_space import SearchSpace
 def get_dataset_info(
         X_train: np.ndarray,
         y_train: np.ndarray,
-):
+) -> None:
     # placeholder for the function which will
     # be offered by the dataset objects
     pass
 
 
-def get_pipeline_defaults():
+def get_pipeline_defaults() -> None:
     # placeholder for the function that will
     # generate default pipeline configs
     pass
 
 
-class Task:
+class Task():
 
     def __init__(
         self,
@@ -60,8 +61,8 @@ class Task:
             search_space: (SearchSpace)
                 The search space for the hyperparameter optimization algorithm.
         """
-        #TODO discuss if we can have the dataset object here for the splits and also for the dataset properties
-        #TODO dataset_properties dict ->
+        # TODO discuss if we can have the dataset object here for the splits and also for the dataset properties
+        # TODO dataset_properties dict ->
         # get defaults for the default pipeline config
         if isinstance(dataset, dict):
             X_train = dataset['X_train']
