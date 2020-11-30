@@ -37,7 +37,7 @@ print(f"X_train={X_train.shape} train_indices={train_indices} output_type={outpu
 # Mock the categories
 categorical_columns = ['A1', 'A4', 'A5', 'A6', 'A8', 'A9', 'A11', 'A12']
 numerical_columns = ['A2', 'A3', 'A7', 'A10', 'A13', 'A14']
-categories = [np.unique(X[a]).tolist() for a in categorical_columns]
+categories = [np.unique(X[a]) for a in categorical_columns]
 
 # Create a proof of concept pipeline!
 dataset_properties = {

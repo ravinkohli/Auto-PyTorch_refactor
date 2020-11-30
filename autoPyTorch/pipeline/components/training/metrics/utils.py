@@ -103,7 +103,6 @@ def calculate_score(
             try:
                 score_dict[metric_.name] = metric_(solution, cprediction)
             except ValueError as e:
-                print(e, e.args[0])
                 if e.args[0] == "Mean Squared Logarithmic Error cannot be used when " \
                                 "targets contain negative values.":
                     continue
