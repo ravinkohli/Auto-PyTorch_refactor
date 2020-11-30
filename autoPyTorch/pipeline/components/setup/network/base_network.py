@@ -28,8 +28,7 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
 
         self.add_fit_requirements([
             FitRequirement('num_features', (numbers.Integral,), user_defined=True),
-            FitRequirement('num_classes', (numbers.Integral,), user_defined=True)
-            ])
+            FitRequirement('num_classes', (numbers.Integral,), user_defined=True)])
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> autoPyTorchSetupComponent:
         """

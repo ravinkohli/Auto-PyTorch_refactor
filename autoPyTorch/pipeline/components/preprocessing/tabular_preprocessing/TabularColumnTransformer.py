@@ -22,8 +22,7 @@ class TabularColumnTransformer(autoPyTorchTabularPreprocessingComponent):
         self.column_transformer: Optional[ColumnTransformer] = None
         self.add_fit_requirements([
             FitRequirement('numerical_columns', (List,), user_defined=True),
-            FitRequirement('categorical_columns', (List,), user_defined=True)
-            ])
+            FitRequirement('categorical_columns', (List,), user_defined=True)])
 
     def get_column_transformer(self) -> ColumnTransformer:
         """

@@ -15,8 +15,7 @@ class BaseOptimizerComponent(autoPyTorchSetupComponent):
         super().__init__()
         self.optimizer = None  # type: Optional[Optimizer]
         self.add_fit_requirements([
-            FitRequirement('network', (torch.nn.Module,), user_defined=False)
-            ])
+            FitRequirement('network', (torch.nn.Module,), user_defined=False)])
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
         """The transform function calls the transform function of the

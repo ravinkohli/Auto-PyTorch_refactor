@@ -51,8 +51,7 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
             FitRequirement("root", (str,), user_defined=True),
             FitRequirement("X_train", (np.ndarray,), user_defined=True),
             FitRequirement("train_indices", (List[int],), user_defined=True),
-            FitRequirement("is_small_preprocess", (bool,), user_defined=True)
-            ])
+            FitRequirement("is_small_preprocess", (bool,), user_defined=True)])
 
     def transform(self, X: np.ndarray) -> np.ndarray:
         """The transform function calls the transform function of the
