@@ -9,7 +9,7 @@ from sklearn.base import ClassifierMixin
 
 from autoPyTorch.pipeline.base_pipeline import BasePipeline
 from autoPyTorch.pipeline.components.base_choice import autoPyTorchChoice
-from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.TabularColumnTransformer import (
+from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.tabular_column_transformer import (
     TabularColumnTransformer
 )
 from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.encoding.base_encoder_choice import (
