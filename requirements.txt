@@ -2,7 +2,7 @@ torch
 torchvision
 ConfigSpace
 scikit-learn>=0.22.0,<0.23
-pandas==1.0.1
+pandas
 torchvision
 pytorch-lightning
 numpy
