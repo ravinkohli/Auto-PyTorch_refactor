@@ -12,7 +12,8 @@ import lockfile
 
 import numpy as np
 
-from autoPyTorch.ensemble.abstract_ensemble import AbstractEnsemble
+# TODO: Enable when ensemble is merged
+# from autoPyTorch.ensemble.abstract_ensemble import AbstractEnsemble
 from autoPyTorch.pipeline.base_pipeline import BasePipeline
 from autoPyTorch.utils import logging_ as logging
 
@@ -294,6 +295,29 @@ class Backend(object):
     def _get_datamanager_pickle_filename(self) -> str:
         return os.path.join(self.internals_directory, 'datamanager.pkl')
 
+    def _get_fit_dictionary_pickle_filename(self) -> str:
+        return os.path.join(self.internals_directory, 'fit_dictionary.pkl')
+
+    def save_fit_dictionary(self, fit_dictionary: Any) -> str:
+        self._make_internals_directory()
+        filepath = self._get_fit_dictionary_pickle_filename()
+
+        with lockfile.LockFile(filepath):
+            if not os.path.exists(filepath):
+                with tempfile.NamedTemporaryFile('wb', dir=os.path.dirname(
+                        filepath), delete=False) as fh:
+                    pickle.dump(fit_dictionary, fh, -1)
+                    tempname = fh.name
+                os.rename(tempname, filepath)
+
+        return filepath
+
+    def load_fit_dictionary(self) -> Dict[str, Any]:
+        filepath = self._get_fit_dictionary_pickle_filename()
+        with lockfile.LockFile(filepath):
+            with open(filepath, 'rb') as fh:
+                return pickle.load(fh)
+
     def save_datamanager(self, datamanager: Any) -> str:
         self._make_internals_directory()
         filepath = self._get_datamanager_pickle_filename()
@@ -419,7 +443,8 @@ class Backend(object):
     def get_ensemble_dir(self) -> str:
         return os.path.join(self.internals_directory, 'ensembles')
 
-    def load_ensemble(self, seed: int) -> Optional[AbstractEnsemble]:
+    # def load_ensemble(self, seed: int) -> Optional[AbstractEnsemble]:
+    def load_ensemble(self, seed: int) -> Any:
         ensemble_dir = self.get_ensemble_dir()
 
         if not os.path.exists(ensemble_dir):
@@ -441,7 +466,8 @@ class Backend(object):
 
         return ensemble_members_run_numbers
 
-    def save_ensemble(self, ensemble: AbstractEnsemble, idx: int, seed: int) -> None:
+    # def save_ensemble(self, ensemble: AbstractEnsemble, idx: int, seed: int) -> None:
+    def save_ensemble(self, ensemble: Any, idx: int, seed: int) -> None:
         try:
             os.makedirs(self.get_ensemble_dir())
         except Exception:
