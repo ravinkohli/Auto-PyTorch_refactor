@@ -87,6 +87,7 @@ class TabularDataset(BaseDataset):
         for col_index, (_, col) in enumerate(data.iteritems()):
             if data_types[col_index] != DataTypes.Float:
                 non_na_values = [v for v in set(col) if not pd.isna(v)]
+                non_na_values.sort()
                 itovs.append([np.nan] + non_na_values)
                 vtois.append(Value2Index(non_na_values))
             else:
