@@ -63,14 +63,12 @@ class TrainerChoice(autoPyTorchChoice):
                          random_state=random_state)
         self.run_summary = None  # type: Optional[RunSummary]
         self.writer = None  # type: Optional[SummaryWriter]
-        self._fit_requirements: Optional[List[FitRequirement]] = [FitRequirement("lr_scheduler", (_LRScheduler,)),
-                                                                  FitRequirement("network", (torch.nn.Sequential,)),
-                                                                  FitRequirement("optimizer", (Optimizer,)),
-                                                                  FitRequirement("train_data_loader",
-                                                                                 (torch.utils.data.DataLoader,)),
-                                                                  FitRequirement("val_data_loader",
-                                                                                 (torch.utils.data.DataLoader,))
-                                                                  ]
+        self._fit_requirements: Optional[List[FitRequirement]] = [
+            FitRequirement("lr_scheduler", (_LRScheduler,), user_defined=False, dataset_property=False),
+            FitRequirement("network", (torch.nn.Sequential,), user_defined=False, dataset_property=False),
+            FitRequirement("optimizer", (Optimizer,), user_defined=False, dataset_property=False),
+            FitRequirement("train_data_loader", (torch.utils.data.DataLoader,), user_defined=False, dataset_property=False),
+            FitRequirement("val_data_loader", (torch.utils.data.DataLoader,), user_defined=False, dataset_property=False)]
 
     def get_fit_requirements(self) -> Optional[List[FitRequirement]]:
         return self._fit_requirements

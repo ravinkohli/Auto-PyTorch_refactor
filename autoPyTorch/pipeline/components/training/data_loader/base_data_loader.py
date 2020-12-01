@@ -46,11 +46,12 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
         self.val_transform = None  # type: Optional[torchvision.transforms.Compose]
 
         # Define fit requirements
-        self.add_fit_requirements([FitRequirement("dataset", (str,)),
-                                  FitRequirement("root", (str,)),
-                                  FitRequirement("X_train", (np.ndarray,)),
-                                  FitRequirement("train_indices", (List[int],)),
-                                  FitRequirement("is_small_preprocess", (bool,))])
+        self.add_fit_requirements([
+            FitRequirement("dataset", (str,), user_defined=True, dataset_property=True),
+            FitRequirement("root", (str,), user_defined=True, dataset_property=True),
+            FitRequirement("X_train", (np.ndarray,), user_defined=True, dataset_property=True),
+            FitRequirement("train_indices", (List[int],), user_defined=True, dataset_property=True),
+            FitRequirement("is_small_preprocess", (bool,), user_defined=True, dataset_property=True)])
 
     def transform(self, X: np.ndarray) -> np.ndarray:
         """The transform function calls the transform function of the
