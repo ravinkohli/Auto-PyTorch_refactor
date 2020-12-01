@@ -25,8 +25,8 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
         self.random_state = random_state
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") if device is None else device
 
-        self._fit_requirements = [FitRequirement("input_shape", tuple),
-                                  FitRequirement("output_shape", tuple)]
+        self._fit_requirements = [FitRequirement("input_shape", [tuple]),
+                                  FitRequirement("output_shape", [tuple])]
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> autoPyTorchSetupComponent:
         """
