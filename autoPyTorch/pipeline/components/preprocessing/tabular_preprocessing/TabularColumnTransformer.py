@@ -21,8 +21,8 @@ class TabularColumnTransformer(autoPyTorchTabularPreprocessingComponent):
         self.random_state = random_state
         self.column_transformer: Optional[ColumnTransformer] = None
         self.add_fit_requirements([
-            FitRequirement('numerical_columns', (List,), user_defined=True),
-            FitRequirement('categorical_columns', (List,), user_defined=True)])
+            FitRequirement('numerical_columns', (List,), user_defined=True, dataset_property=True),
+            FitRequirement('categorical_columns', (List,), user_defined=True, dataset_property=True)])
 
     def get_column_transformer(self) -> ColumnTransformer:
         """

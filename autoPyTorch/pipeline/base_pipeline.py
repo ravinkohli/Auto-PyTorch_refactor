@@ -355,6 +355,26 @@ class BasePipeline(Pipeline):
         fit_requirements = [req for req in fit_requirements if req.user_defined]
         return fit_requirements
 
+    def get_dataset_requirements(self) -> List[FitRequirement]:
+        """
+        Utility function that goes through all the components in
+        the pipeline and gets the fit requirement that are expected to be
+        computed by the dataset for that components. All the fit requirements
+        are then aggregated into a list.
+        Returns:
+            List[NamedTuple]: List of FitRequirements
+        """
+        fit_requirements = list()  # List[FitRequirement]
+        for name, step in self.steps:
+            step_requirements = step.get_fit_requirements()
+            if step_requirements:
+                fit_requirements.extend(step_requirements)
+
+        # remove duplicates in the list
+        fit_requirements = list(set(fit_requirements))
+        fit_requirements = [req for req in fit_requirements if (req.user_defined and req.dataset_property)]
+        return fit_requirements
+
     def _get_estimator_hyperparameter_name(self) -> str:
         """The name of the current pipeline estimator, for representation purposes"""
         raise NotImplementedError()

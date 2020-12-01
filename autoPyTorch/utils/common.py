@@ -15,10 +15,11 @@ class FitRequirement(NamedTuple):
     name: str
     supported_types: Iterable[Type]
     user_defined: bool
+    dataset_property: bool
 
     def __str__(self) -> str:
         """
         String representation for the requirements
         """
-        return "Name: %s | Supported types: %s | User defined: %s" % (
-            self.name, self.supported_types, self.user_defined)
+        return "Name: %s | Supported types: %s | User defined: %s | Dataset property: %s" % (
+            self.name, self.supported_types, self.user_defined, self.dataset_property)

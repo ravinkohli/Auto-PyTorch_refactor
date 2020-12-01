@@ -22,8 +22,8 @@ class Resize(BaseImageAugmenter):
         super().__init__(use_augmenter=use_augmenter)
         self.random_state = random_state
         self.add_fit_requirements([
-            FitRequirement('image_height', (int,), user_defined=True),
-            FitRequirement('image_width', (int,), user_defined=True)])
+            FitRequirement('image_height', (int,), user_defined=True, dataset_property=True),
+            FitRequirement('image_width', (int,), user_defined=True, dataset_property=True)])
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> BaseImageAugmenter:
         self.check_requirements(X, y)
