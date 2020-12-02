@@ -1,4 +1,3 @@
-import numbers
 from abc import abstractmethod
 from typing import Any, Dict, Tuple, Optional
 
@@ -27,8 +26,8 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") if device is None else device
 
         self.add_fit_requirements([
-            FitRequirement("input_shape", (numbers.Integral,), user_defined=True, dataset_property=True),
-            FitRequirement("output_shape", (numbers.Integral,), user_defined=True, dataset_property=True)])
+            FitRequirement("input_shape", (tuple,), user_defined=True, dataset_property=True),
+            FitRequirement("output_shape", (tuple,), user_defined=True, dataset_property=True)])
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> autoPyTorchSetupComponent:
         """
