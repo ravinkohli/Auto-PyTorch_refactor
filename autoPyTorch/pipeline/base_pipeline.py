@@ -130,6 +130,8 @@ class BasePipeline(Pipeline):
 
         # Pre-process X
         if batch_size is None:
+            warnings.warn("Batch size not provided. "
+                          "Will predict on the whole data in a single iteration")
             batch_size = X.shape[0]
         loader = self.named_steps['data_loader'].get_loader(X=X, batch_size=batch_size)
         return self.named_steps['network'].predict(loader)

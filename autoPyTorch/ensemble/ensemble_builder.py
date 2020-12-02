@@ -479,6 +479,10 @@ class EnsembleBuilder(object):
         self.SAVE2DISC = True
 
         # already read prediction files
+        # We read in back this object to give the ensemble the possibility to have memory
+        # Every ensemble task is sent to dask as a function, that cannot take un-picklable
+        # objects as attributes. For this reason, we dump to disk the stage of the past
+        # ensemble iterations to kick-start the ensembling process
         # {"file name": {
         #    "ens_score": float
         #    "mtime_ens": str,
@@ -580,6 +584,35 @@ class EnsembleBuilder(object):
         Optional[np.ndarray],
         Optional[np.ndarray],
     ]:
+        """
+        This function is an interface to the main process and fundamentally calls main(), the
+        later has the actual ensemble selection logic.
+
+        The motivation towards this run() method is that it can be seen as a wrapper over the
+        whole ensemble_builder.main() process so that pynisher can manage the memory/time limits.
+
+        This is handy because this function reduces the number of members of the ensemble in case
+        we run into memory issues. It does so in a halving fashion.
+
+        Args:
+            time_left (float):
+                How much time is left for the ensemble builder process
+            iteration (int):
+                Which is the current iteration
+            return_predictions (bool):
+                Whether we want to return the predictions of the current model or not
+
+        Returns:
+            ensemble_history (Dict):
+                A snapshot of both test and optimization performance. For debugging.
+            ensemble_nbest (int):
+                The user provides a direction on how many models to use in ensemble selection.
+                This number can be reduced internally if the memory requirements force it.
+            train_predictions (np.ndarray):
+                The optimization prediction from the current ensemble.
+            test_predictions (np.ndarray):
+                The train prediction from the current ensemble.
+        """
 
         if time_left is None and end_at is None:
             raise ValueError('Must provide either time_left or end_at.')
@@ -661,6 +694,44 @@ class EnsembleBuilder(object):
         Optional[np.ndarray],
         Optional[np.ndarray],
     ]:
+        """
+        This is the main function of the ensemble builder process and can be considered
+        a wrapper over the ensemble selection method implemented y EnsembleSelection class.
+
+        This method is going to be called multiple times by the main process, to
+        build and ensemble, in case the SMAC process produced new models and to provide
+        anytime results.
+
+        On this regard, this method mainly:
+            1- select from all the individual models that smac created, the N-best candidates
+               (this in the scenario that N > ensemble_nbest argument to this class). This is
+               done based on a score calculated via the metrics argument.
+            2- This pre-selected candidates are provided to the ensemble selection method
+               and if a ensemble is found under the provided memory/time constraints, a new
+               ensemble is proposed.
+            3- Because this process will be called multiple times, it performs checks to make
+               sure a new ensenmble is only proposed if new predictions are available, as well
+               as making sure we do not run out of resources (like disk space)
+
+        Args:
+            time_left (float):
+                How much time is left for the ensemble builder process
+            iteration (int):
+                Which is the current iteration
+            return_predictions (bool):
+                Whether we want to return the predictions of the current model or not
+
+        Returns:
+            ensemble_history (Dict):
+                A snapshot of both test and optimization performance. For debugging.
+            ensemble_nbest (int):
+                The user provides a direction on how many models to use in ensemble selection.
+                This number can be reduced internally if the memory requirements force it.
+            train_predictions (np.ndarray):
+                The optimization prediction from the current ensemble.
+            test_predictions (np.ndarray):
+                The train prediction from the current ensemble.
+        """
 
         # Pynisher jobs inside dask 'forget'
         # the logger configuration. So we have to set it up
