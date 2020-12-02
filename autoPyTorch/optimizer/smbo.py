@@ -195,7 +195,7 @@ class AutoMLSMBO(object):
         else:
             self.datamanager = self.backend.load_datamanager()
 
-        self.task = self.datamanager.info['task']
+        self.task = self.datamanager.info['task_type']
 
     def run_smbo(self, func: typing.Optional[typing.Callable] = None
                  ) -> typing.Tuple[RunHistory, TrajLogger, str]:

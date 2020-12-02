@@ -14,7 +14,8 @@ from autoPyTorch.constants import (
     REGRESSION_TASKS,
     MULTICLASS,
     TABULAR_TASKS,
-    IMAGE_TASKS
+    IMAGE_TASKS,
+    STRING_TO_TASK_TYPES
 )
 from autoPyTorch.evaluation.utils import (
     convert_multioutput_multiclass_to_multilabel
@@ -112,7 +113,6 @@ def _fit_and_suppress_warnings(logger, model, X, y):
 class AbstractEvaluator(object):
     def __init__(self, backend: Backend, queue, metric,
                  configuration=None,
-                 all_supported_metrics=False,
                  seed=1,
                  output_y_hat_optimization=True,
                  num_run=None,
@@ -142,13 +142,12 @@ class AbstractEvaluator(object):
         self.y_test = self.datamanager.data.get('Y_test')
 
         self.metric = metric
-        self.task_type = self.datamanager.info['task_type']
+        self.task_type = STRING_TO_TASK_TYPES[self.datamanager.info['task_type']]
         self.output_type = self.datamanager.info['output_type']
         self.seed = seed
 
         self.output_y_hat_optimization = output_y_hat_optimization
         # TODO: Check if we need all supported metrics, as in our case even single metric is in a score_dict form
-        self.all_supported_metrics = all_supported_metrics
 
         if isinstance(disable_file_output, (bool, list)):
             self.disable_file_output = disable_file_output
@@ -176,31 +175,26 @@ class AbstractEvaluator(object):
                     raise ValueError('task {} not available'.format(self.task_type))
             self.predict_function = self._predict_proba
         if self.task_type in TABULAR_TASKS:
-            categorical_columns = []
-            numerical_columns = []
-            for i, feat in enumerate(self.datamanager.feat_type):
-                if feat.lower() == 'numerical':
-                    numerical_columns.append(i)
-                elif feat.lower() == 'categorical':
-                    categorical_columns.append(i)
-                else:
-                    raise ValueError(feat)
 
-            categories = [np.unique(self.X_train[a]).tolist() for a in categorical_columns]
             # TODO: maybe change to fit_dictionary
             self._init_params = {
                 'categorical_columns':
-                    categorical_columns,
+                    self.datamanager.info['categorical_columns'],
                 'numerical_columns':
-                    numerical_columns,
+                    self.datamanager.info['numerical_columns'],
                 'categories':
-                    categories
+                    self.datamanager.info['categories'],
+                'num_features':
+                    self.X_train.shape[1],
+                'num_classes':
+                    len(np.unique(self.y_train))
             }
             self.dataset_properties = {
                 'categorical_columns':
-                    categorical_columns,
+                    self.datamanager.info['categorical_columns'],
                 'numerical_columns':
-                    numerical_columns,}
+                    self.datamanager.info['numerical_columns']
+            }
             if init_params is not None:
                 self._init_params.update(init_params)
         elif self.task_type in IMAGE_TASKS:
@@ -214,7 +208,7 @@ class AbstractEvaluator(object):
         # Create dataset_properties
         # TODO: Change for our pipeline
         self.dataset_properties.update({
-                'task_type': self.task_type,
+                'task_type': self.datamanager.info['task_type'],
                 'sparse': self.datamanager.info['is_sparse'] == 1,
                 'output_type': self.output_type
             })
@@ -225,6 +219,7 @@ class AbstractEvaluator(object):
             'X_test': self.X_test,
             'y_test': self.y_test,
             'dataset_properties': self.dataset_properties,
+            'is_small_preprocess': self.datamanager.info['is_small_preprocess']
         })
 
         if num_run is None:

@@ -23,7 +23,7 @@ from autoPyTorch.utils.stopwatch import StopWatch
 from autoPyTorch.utils.pipeline import get_configuration_space
 
 
-def get_data_to_train() -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def get_data_to_train() -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, typing.Optional[np.ndarray]]:
     """
     This function returns a fit dictionary that within itself, contains all
     the information to fit a pipeline
@@ -38,8 +38,8 @@ def get_data_to_train() -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray, np.n
         random_state=1,
         test_size=0.2,
     )
-    feat_type = np.random.choice(['numerical', 'categorical'], (X_train.shape[1]))
-    return X_train, X_test, y_train, y_test, feat_type
+    # feat_type = np.random.choice(['numerical', 'categorical'], (X_train.shape[1]))
+    return X_train, X_test, y_train, y_test, None
 
 
 if __name__ == "__main__":
@@ -64,7 +64,7 @@ if __name__ == "__main__":
         X=X_train, y=y_train,
         X_test=X_test,
         y_test=y_test,
-        task=TABULAR_CLASSIFICATION,
+        task=TASK_TYPES_TO_STRING[TABULAR_CLASSIFICATION],
         dataset_name='Australian',
         feat_type=feat_type,
     )
@@ -94,9 +94,9 @@ if __name__ == "__main__":
         config_space=get_configuration_space(datamanager.info),
         dataset_name='Australian',
         backend=backend,
-        total_walltime_limit=100,
+        total_walltime_limit=300,
         dask_client=dask_client,
-        func_eval_time_limit=30,
+        func_eval_time_limit=200,
         memory_limit=1024,
         metric=get_metrics(dataset_properties=dict({'task_type': TASK_TYPES_TO_STRING[TABULAR_CLASSIFICATION],
                                                     'output_type': datamanager.info['output_type']})),

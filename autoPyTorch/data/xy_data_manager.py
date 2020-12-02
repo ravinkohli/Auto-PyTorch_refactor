@@ -6,6 +6,7 @@ import numpy as np
 from scipy import sparse
 from sklearn.utils.multiclass import type_of_target
 
+from autoPyTorch.constants import STRING_TO_TASK_TYPES
 from autoPyTorch.data.abstract_data_manager import AbstractDataManager
 
 
@@ -23,7 +24,7 @@ class XYDataManager(AbstractDataManager):
     ):
         super(XYDataManager, self).__init__(dataset_name)
 
-        self.info['task'] = task
+        self.info['task_type'] = task
         if sparse.issparse(X):
             self.info['is_sparse'] = 1
             self.info['has_missing'] = np.all(np.isfinite(X.data))
@@ -75,3 +76,4 @@ class XYDataManager(AbstractDataManager):
         self.info['numerical_columns'] = numerical_columns
         self.info['categories'] = [np.unique(self.data['X_train'][column]).tolist() for column in categorical_columns]
         self.info['output_type'] = type_of_target(y_test)
+        self.info['is_small_preprocess'] = True

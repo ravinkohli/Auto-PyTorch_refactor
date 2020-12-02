@@ -103,7 +103,6 @@ def _get_y_array(y, task_type):
 class TrainEvaluator(AbstractEvaluator):
     def __init__(self, backend, queue, metric,
                  configuration=None,
-                 all_supported_metrics=False,
                  seed=1,
                  output_y_hat_optimization=True,
                  resampling_strategy=None,
@@ -121,7 +120,6 @@ class TrainEvaluator(AbstractEvaluator):
             queue=queue,
             configuration=configuration,
             metric=metric,
-            all_supported_metrics=all_supported_metrics,
             seed=seed,
             output_y_hat_optimization=output_y_hat_optimization,
             num_run=num_run,
@@ -248,9 +246,9 @@ class TrainEvaluator(AbstractEvaluator):
                 ref_arg_dict = __baseCrossValidator_defaults__[class_name]
 
                 y = D.data['Y_train']
-                if (D.info['task'] in CLASSIFICATION_TASKS and
+                if (D.info['task_type'] in CLASSIFICATION_TASKS and
                     STRING_TO_OUTPUT_TYPES[D.info['output_type']] != MULTICLASSMULTIOUTPUT) or \
-                   (D.info['task'] in REGRESSION_TASKS and
+                   (D.info['task_type'] in REGRESSION_TASKS and
                     STRING_TO_OUTPUT_TYPES[D.info['output_type']] != CONTINUOUSMULTIOUTPUT):
 
                     y = y.ravel()
@@ -307,7 +305,7 @@ class TrainEvaluator(AbstractEvaluator):
                                                            train_size)
         test_size = float("%.4f" % (1 - train_size))
 
-        if D.info['task'] in CLASSIFICATION_TASKS and \
+        if D.info['task_type'] in CLASSIFICATION_TASKS and \
                 STRING_TO_OUTPUT_TYPES[D.info['output_type']] != MULTICLASSMULTIOUTPUT:
 
             y = y.ravel()
@@ -378,7 +376,6 @@ def eval_holdout(
         seed,
         num_run,
         instance,
-        all_scoring_functions,
         output_y_hat_optimization,
         include,
         exclude,

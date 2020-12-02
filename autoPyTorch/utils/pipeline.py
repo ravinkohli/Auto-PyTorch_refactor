@@ -14,7 +14,8 @@ from autoPyTorch.constants import (
     MULTICLASSMULTIOUTPUT,
     CONTINUOUSMULTIOUTPUT,
     CONTINUOUS,
-    REGRESSION_TASKS
+    REGRESSION_TASKS,
+    STRING_TO_TASK_TYPES
 )
 from autoPyTorch.pipeline.image_classification import ImageClassificationPipeline
 from autoPyTorch.pipeline.tabular_classification import TabularClassificationPipeline
@@ -44,26 +45,27 @@ def get_configuration_space(info: Dict[str, Any],
     elif exclude_preprocessors is not None:
         exclude['feature_preprocessor'] = exclude_preprocessors
 
+    task_type = STRING_TO_TASK_TYPES[info['task_type']]
     if include_estimators is not None and \
             exclude_estimators is not None:
         raise ValueError('Cannot specify include_estimators and '
                          'exclude_estimators.')
     elif include_estimators is not None:
-        if info['task'] in CLASSIFICATION_TASKS:
+        if task_type in CLASSIFICATION_TASKS:
             include['classifier'] = include_estimators
-        elif info['task'] in REGRESSION_TASKS:
+        elif task_type in REGRESSION_TASKS:
             include['regressor'] = include_estimators
         else:
-            raise ValueError(info['task'])
+            raise ValueError(info['task_type'])
     elif exclude_estimators is not None:
-        if info['task'] in CLASSIFICATION_TASKS:
+        if task_type in CLASSIFICATION_TASKS:
             exclude['classifier'] = exclude_estimators
-        elif info['task'] in REGRESSION_TASKS:
+        elif info['task_type'] in REGRESSION_TASKS:
             exclude['regressor'] = exclude_estimators
         else:
-            raise ValueError(info['task'])
+            raise ValueError(info['task_type'])
 
-    if info['task'] in REGRESSION_TASKS:
+    if task_type in REGRESSION_TASKS:
         return _get_regression_configuration_space(info, include, exclude)
     else:
         return _get_classification_configuration_space(info, include, exclude)
@@ -71,7 +73,7 @@ def get_configuration_space(info: Dict[str, Any],
 
 def _get_regression_configuration_space(info: Dict[str, Any], include: Dict[str, List[str]],
                                         exclude: Dict[str, List[str]]) -> ConfigurationSpace:
-    task_type = info['task']
+    task_type = STRING_TO_TASK_TYPES[info['task_type']]
     output_type = info['output_type']
     sparse = False
     if info['is_sparse'] == 1:
@@ -98,7 +100,7 @@ def _get_regression_configuration_space(info: Dict[str, Any], include: Dict[str,
 
 def _get_classification_configuration_space(info: Dict[str, Any], include: Dict[str, List[str]],
                                             exclude: Dict[str, List[str]]) -> ConfigurationSpace:
-    task_type = info['task']
+    task_type = STRING_TO_TASK_TYPES[info['task_type']]
     output_type = info['output_type']
     sparse = False
     if info['is_sparse'] == 1:
@@ -127,7 +129,7 @@ def _get_classification_configuration_space(info: Dict[str, Any], include: Dict[
 
 
 # def get_class(info: Dict[str, Any]) -> Pipeline:
-#     if info['task'] in REGRESSION_TASKS:
+#     if info['task_type'] in REGRESSION_TASKS:
 #         return SimpleRegressionPipeline
 #     else:
 #         return SimpleClassificationPipeline
