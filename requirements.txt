@@ -1,8 +1,8 @@
+pandas
 torch
 torchvision
 ConfigSpace
 scikit-learn>=0.22.0,<0.23
-pandas
 torchvision
 pytorch-lightning
 numpy
@@ -10,3 +10,4 @@ scipy
 pynisher
 lockfile
 imgaug>=0.4.0
+smac>=0.13.1,<0.14

@@ -125,6 +125,14 @@ class PipelineTest(unittest.TestCase):
     def test_pipeline_predict(self):
         pass
 
+    def test_get_default_options(self):
+        default_options = self.pipeline.get_default_pipeline_options()
+        # test if dict is returned
+        self.assertIsInstance(default_options, dict)
+        for option, default in default_options.items():
+            # check whether any defaults is none
+            self.assertIsNotNone(default)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,3 +1,4 @@
+import warnings
 from abc import ABCMeta
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -79,8 +80,8 @@ class BasePipeline(Pipeline):
             if isinstance(config, dict):
                 config = Configuration(self.config_space, config)
             if self.config_space != config.configuration_space:
-                print(self.config_space._children)
-                print(config.configuration_space._children)
+                warnings.warn(self.config_space._children)
+                warnings.warn(config.configuration_space._children)
                 import difflib
                 diff = difflib.unified_diff(
                     str(self.config_space).splitlines(),
@@ -136,10 +137,10 @@ class BasePipeline(Pipeline):
         configuration: Configuration,
         init_params: Optional[Dict] = None
     ) -> 'Pipeline':
-        """Method to set the hyperparamter configuration of the pipeline.
+        """Method to set the hyperparameter configuration of the pipeline.
 
         It iterates over the components of the pipeline and applies a given
-        configuration accordingly
+        configuration accordingly.
 
         Args:
             configuration (Configuration): configuration object to search and overwrite in
@@ -341,7 +342,7 @@ class BasePipeline(Pipeline):
         the pipeline and gets the fit requirement of that components.
         All the fit requirements are then aggregated into a list
         Returns:
-            List[NamedTuple]: List of
+            List[NamedTuple]: List of FitRequirements
         """
         fit_requirements = list()  # List[FitRequirement]
         for name, step in self.steps:
@@ -351,6 +352,27 @@ class BasePipeline(Pipeline):
 
         # remove duplicates in the list
         fit_requirements = list(set(fit_requirements))
+        fit_requirements = [req for req in fit_requirements if req.user_defined]
+        return fit_requirements
+
+    def get_dataset_requirements(self) -> List[FitRequirement]:
+        """
+        Utility function that goes through all the components in
+        the pipeline and gets the fit requirement that are expected to be
+        computed by the dataset for that components. All the fit requirements
+        are then aggregated into a list.
+        Returns:
+            List[NamedTuple]: List of FitRequirements
+        """
+        fit_requirements = list()  # List[FitRequirement]
+        for name, step in self.steps:
+            step_requirements = step.get_fit_requirements()
+            if step_requirements:
+                fit_requirements.extend(step_requirements)
+
+        # remove duplicates in the list
+        fit_requirements = list(set(fit_requirements))
+        fit_requirements = [req for req in fit_requirements if (req.user_defined and req.dataset_property)]
         return fit_requirements
 
     def _get_estimator_hyperparameter_name(self) -> str:
@@ -366,3 +388,19 @@ class BasePipeline(Pipeline):
             Dict: Additional information about the pipeline
         """
         return self._additional_run_info
+
+    @staticmethod
+    def get_default_pipeline_options() -> Dict[str, Any]:
+        return {
+            'job_id': '1',
+            'working_dir': '/tmp/experiment_1',
+            'device': 'cpu',
+            'budget_type': 'epochs',
+            'epochs': 20,
+            'runtime': 3600,
+            'torch_num_threads': 1,
+            'early_stopping': 10,
+            'use_tensorboard_logger': True,
+            'use_pynisher': False,
+            'metrics_during_training': True
+        }

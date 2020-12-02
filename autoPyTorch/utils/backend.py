@@ -5,6 +5,7 @@ import shutil
 import tempfile
 import time
 import uuid
+import warnings
 from typing import Dict, List, Optional, Tuple, Union
 
 import lockfile
@@ -158,8 +159,8 @@ class BackendContext(object):
                     self._logger.warning("Could not delete output dir: %s" %
                                          self.output_directory)
                 else:
-                    print("Could not delete output dir: %s" %
-                          self.output_directory)
+                    warnings.warn("Could not delete output dir: %s" %
+                                  self.output_directory)
 
         if self.delete_tmp_folder_after_terminate or force:
             if self._tmp_dir_created is False:
@@ -173,7 +174,7 @@ class BackendContext(object):
                 if self._logger is not None:
                     self._logger.warning("Could not delete tmp dir: %s" % self.temporary_directory)
                 else:
-                    print("Could not delete tmp dir: %s" % self.temporary_directory)
+                    warnings.warn("Could not delete tmp dir: %s" % self.temporary_directory)
 
 
 class Backend(object):

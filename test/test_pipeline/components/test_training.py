@@ -140,10 +140,11 @@ class BaseTrainerComponentTest(BaseTraining, unittest.TestCase):
             writer=None,
             metrics_during_training=True,
             scheduler=None,
+            task_type=self.task_type
         )
 
         prev_loss, prev_metrics = trainer.evaluate(self.loader, epoch=1)
-        self.assertIn('Accuracy', prev_metrics)
+        self.assertIn('accuracy', prev_metrics)
 
         # Fit the model
         self._overfit_model()
@@ -152,8 +153,8 @@ class BaseTrainerComponentTest(BaseTraining, unittest.TestCase):
         # And the prediction should be better than random
         loss, metrics = trainer.evaluate(self.loader, epoch=1)
         self.assertGreater(prev_loss, loss)
-        self.assertGreater(metrics['Accuracy'], prev_metrics['Accuracy'])
-        self.assertGreater(metrics['Accuracy'], 0.5)
+        self.assertGreater(metrics['accuracy'], prev_metrics['accuracy'])
+        self.assertGreater(metrics['accuracy'], 0.5)
 
 
 class StandartTrainerTest(BaseTraining, unittest.TestCase):
@@ -175,6 +176,7 @@ class StandartTrainerTest(BaseTraining, unittest.TestCase):
             logger=self.logger,
             writer=None,
             metrics_during_training=True,
+            task_type=self.task_type
         )
 
         # Train the model
@@ -183,7 +185,7 @@ class StandartTrainerTest(BaseTraining, unittest.TestCase):
         while accuracy < 0.7:
             loss, metrics = trainer.train_epoch(self.loader, epoch=1)
             counter += 1
-            accuracy = metrics['Accuracy']
+            accuracy = metrics['accuracy']
 
             if counter > 1000:
                 self.fail("Could not overfit a dummy binary classification under 1000 epochs")
@@ -208,6 +210,7 @@ class MixUpTrainerTest(BaseTraining, unittest.TestCase):
             logger=self.logger,
             writer=None,
             metrics_during_training=True,
+            task_type=self.task_type
         )
 
         # Train the model
@@ -216,7 +219,7 @@ class MixUpTrainerTest(BaseTraining, unittest.TestCase):
         while accuracy < 0.7:
             loss, metrics = trainer.train_epoch(self.loader, epoch=1)
             counter += 1
-            accuracy = metrics['Accuracy']
+            accuracy = metrics['accuracy']
 
             if counter > 1000:
                 self.fail("Could not overfit a dummy binary classification under 1000 epochs")

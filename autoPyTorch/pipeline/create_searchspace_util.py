@@ -1,5 +1,5 @@
 import itertools
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from ConfigSpace.configuration_space import ConfigurationSpace
 from ConfigSpace.forbidden import ForbiddenAndConjunction
@@ -136,7 +136,7 @@ def add_forbidden(
         idx += 1
 
     for choices_chain in choices_chains:
-        constraints = set()
+        constraints = set()  # type: Set[Tuple]
 
         chain_start = choices_chain[0]
         chain_stop = choices_chain[1]

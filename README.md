@@ -5,13 +5,6 @@ Copyright (C) 2019  [AutoML Group Freiburg](http://www.automl.org/)
 This a very early pre-alpha version of our upcoming Auto-PyTorch.
 So far, Auto-PyTorch supports featurized data (classification, regression) and image data (classification).
 
-Master status:
-
-[![Build Status](https://travis-ci.com/LMZimmer/Auto-PyTorch_refactor.svg?token=q6bcv5nKDU4n8GyGfeDy&branch=master)](https://travis-ci.com/LMZimmer/Auto-PyTorch_refactor)
-
-Development status:
-
-[![Build Status](https://travis-ci.com/LMZimmer/Auto-PyTorch_refactor.svg?token=q6bcv5nKDU4n8GyGfeDy&branch=development)](https://travis-ci.com/LMZimmer/Auto-PyTorch_refactor)
 
 ## Installation
 
