@@ -1,24 +1,27 @@
 import time
+from typing import Dict, Optional
 import warnings
 
 import numpy as np
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import VotingClassifier, VotingRegressor
 
-import autosklearn.pipeline.classification
-import autosklearn.pipeline.regression
-from autosklearn.constants import (
+from autoPyTorch.pipeline.tabular_regression import TabularRegressionPipeline
+from autoPyTorch.pipeline.tabular_classification import TabularClassificationPipeline
+from autoPyTorch.pipeline.image_classification import ImageClassificationPipeline
+from autoPyTorch.constants import (
     CLASSIFICATION_TASKS,
     REGRESSION_TASKS,
-    MULTILABEL_CLASSIFICATION,
-    MULTICLASS_CLASSIFICATION,
-    MULTIOUTPUT_REGRESSION
+    MULTICLASS,
+    TABULAR_TASKS,
+    IMAGE_TASKS
 )
-from autosklearn.pipeline.implementations.util import (
+from autoPyTorch.evaluation.utils import (
     convert_multioutput_multiclass_to_multilabel
 )
-from autosklearn.metrics import calculate_score, CLASSIFICATION_METRICS, REGRESSION_METRICS
-from autosklearn.util.logging_ import get_logger
+from autoPyTorch.pipeline.components.training.metrics.utils import calculate_score, CLASSIFICATION_METRICS, REGRESSION_METRICS
+from autoPyTorch.utils.backend import Backend
+from autoPyTorch.utils.logging_ import get_logger
 
 from ConfigSpace import Configuration
 
@@ -29,9 +32,9 @@ __all__ = [
 
 # TODO: make dummypipeline or model for autopytorch
 class MyDummyClassifier(DummyClassifier):
-    def __init__(self, configuration, random_state, init_params=None):
-        self.configuration = configuration
-        if configuration == 1:
+    def __init__(self, config, random_state, init_params=None):
+        self.configuration = config
+        if config == 1:
             super(MyDummyClassifier, self).__init__(strategy="uniform")
         else:
             super(MyDummyClassifier, self).__init__(strategy="most_frequent")
@@ -42,14 +45,13 @@ class MyDummyClassifier(DummyClassifier):
         return X, fit_params
 
     def fit(self, X, y, sample_weight=None):
-        return super(MyDummyClassifier, self).fit(np.ones((X.shape[0], 1)), y,
+        X_train = X['X_train'][X['train_indices']]
+        y_train = X['y_train'][X['train_indices']]
+        return super(MyDummyClassifier, self).fit(np.ones((X_train.shape[0], 1)), y_train,
                                                   sample_weight=sample_weight)
 
-    def fit_estimator(self, X, y, fit_params=None):
-        return self.fit(X, y)
-
     def predict_proba(self, X, batch_size=1000):
-        new_X = np.ones((X.shape[0], 1))
+        new_X = np.ones((X['X_train']['val_indices'].shape[0], 1))
         probas = super(MyDummyClassifier, self).predict_proba(new_X)
         probas = convert_multioutput_multiclass_to_multilabel(probas).astype(
             np.float32)
@@ -63,9 +65,9 @@ class MyDummyClassifier(DummyClassifier):
 
 
 class MyDummyRegressor(DummyRegressor):
-    def __init__(self, configuration, random_state, init_params=None):
-        self.configuration = configuration
-        if configuration == 1:
+    def __init__(self, config, random_state, init_params=None):
+        self.configuration = config
+        if config == 1:
             super(MyDummyRegressor, self).__init__(strategy='mean')
         else:
             super(MyDummyRegressor, self).__init__(strategy='median')
@@ -76,14 +78,13 @@ class MyDummyRegressor(DummyRegressor):
         return X, fit_params
 
     def fit(self, X, y, sample_weight=None):
-        return super(MyDummyRegressor, self).fit(np.ones((X.shape[0], 1)), y,
+        X_train = X['X_train'][X['train_indices']]
+        y_train = X['y_train'][X['train_indices']]
+        return super(MyDummyRegressor, self).fit(np.ones((X_train.shape[0], 1)), y_train,
                                                  sample_weight=sample_weight)
 
-    def fit_estimator(self, X, y, fit_params=None):
-        return self.fit(X, y)
-
     def predict(self, X, batch_size=1000):
-        new_X = np.ones((X.shape[0], 1))
+        new_X = np.ones((X['X_train']['val_indices'].shape[0], 1))
         return super(MyDummyRegressor, self).predict(new_X).astype(np.float32)
 
     def estimator_supports_iterative_fit(self):  # pylint: disable=R0201
@@ -109,9 +110,9 @@ def _fit_and_suppress_warnings(logger, model, X, y):
 
 # TODO: adjust for differences in image and tabular data, also maybe time series but its low priority
 class AbstractEvaluator(object):
-    def __init__(self, backend, queue, metric,
+    def __init__(self, backend: Backend, queue, metric,
                  configuration=None,
-                 all_scoring_functions=False,
+                 all_supported_metrics=False,
                  seed=1,
                  output_y_hat_optimization=True,
                  num_run=None,
@@ -134,17 +135,20 @@ class AbstractEvaluator(object):
         self.include = include
         self.exclude = exclude
 
-        self.X_valid = self.datamanager.data.get('X_valid')
-        self.y_valid = self.datamanager.data.get('Y_valid')
+        self.X_train = self.datamanager.data['X_train']
+        self.y_train = self.datamanager.data['Y_train']
+
         self.X_test = self.datamanager.data.get('X_test')
         self.y_test = self.datamanager.data.get('Y_test')
 
         self.metric = metric
-        self.task_type = self.datamanager.info['task']
+        self.task_type = self.datamanager.info['task_type']
+        self.output_type = self.datamanager.info['output_type']
         self.seed = seed
 
         self.output_y_hat_optimization = output_y_hat_optimization
-        self.all_scoring_functions = all_scoring_functions
+        # TODO: Check if we need all supported metrics, as in our case even single metric is in a score_dict form
+        self.all_supported_metrics = all_supported_metrics
 
         if isinstance(disable_file_output, (bool, list)):
             self.disable_file_output = disable_file_output
@@ -155,34 +159,73 @@ class AbstractEvaluator(object):
             if not isinstance(self.configuration, Configuration):
                 self.model_class = MyDummyRegressor
             else:
-                self.model_class = \
-                    autosklearn.pipeline.regression.SimpleRegressionPipeline
+                if self.task_type in TABULAR_TASKS:
+                    self.model_class = TabularRegressionPipeline
+                else:
+                    raise ValueError('task {} not available'.format(self.task_type))
             self.predict_function = self._predict_regression
         else:
             if not isinstance(self.configuration, Configuration):
                 self.model_class = MyDummyClassifier
             else:
-                self.model_class = autosklearn.pipeline.classification.SimpleClassificationPipeline
+                if self.task_type in TABULAR_TASKS:
+                    self.model_class = TabularClassificationPipeline
+                elif self.task_type in IMAGE_TASKS:
+                    self.model_class = ImageClassificationPipeline
+                else:
+                    raise ValueError('task {} not available'.format(self.task_type))
             self.predict_function = self._predict_proba
-        # TODO: if canonical or float, use numerical, if string infer as categorical, also use data_types from dataset
-        categorical_mask = []
-        for feat in self.datamanager.feat_type:
-            if feat.lower() == 'numerical':
-                categorical_mask.append(False)
-            elif feat.lower() == 'categorical':
-                categorical_mask.append(True)
-            else:
-                raise ValueError(feat)
-        # TODO: maybe change to fit_dictionary
-        if np.sum(categorical_mask) > 0:
+        if self.task_type in TABULAR_TASKS:
+            categorical_columns = []
+            numerical_columns = []
+            for i, feat in enumerate(self.datamanager.feat_type):
+                if feat.lower() == 'numerical':
+                    numerical_columns.append(i)
+                elif feat.lower() == 'categorical':
+                    categorical_columns.append(i)
+                else:
+                    raise ValueError(feat)
+
+            categories = [np.unique(self.X_train[a]).tolist() for a in categorical_columns]
+            # TODO: maybe change to fit_dictionary
             self._init_params = {
-                'data_preprocessing:categorical_features':
-                    categorical_mask
+                'categorical_columns':
+                    categorical_columns,
+                'numerical_columns':
+                    numerical_columns,
+                'categories':
+                    categories
             }
-        else:
-            self._init_params = {}
-        if init_params is not None:
-            self._init_params.update(init_params)
+            self.dataset_properties = {
+                'categorical_columns':
+                    categorical_columns,
+                'numerical_columns':
+                    numerical_columns,}
+            if init_params is not None:
+                self._init_params.update(init_params)
+        elif self.task_type in IMAGE_TASKS:
+            # TODO: Add image dataset properties to data manager
+            self._init_params = {
+                'image_height':
+                    self.datamanager.info['image_height'],
+                'image_width':
+                    self.datamanager.info['image_width']
+            }
+        # Create dataset_properties
+        # TODO: Change for our pipeline
+        self.dataset_properties.update({
+                'task_type': self.task_type,
+                'sparse': self.datamanager.info['is_sparse'] == 1,
+                'output_type': self.output_type
+            })
+
+        self._init_params.update({
+            'X_train': self.X_train,
+            'y_train': self.y_train,
+            'X_test': self.X_test,
+            'y_test': self.y_test,
+            'dataset_properties': self.dataset_properties,
+        })
 
         if num_run is None:
             num_run = 0
@@ -197,35 +240,34 @@ class AbstractEvaluator(object):
 
         self.budget = budget
         self.budget_type = budget_type
+        default_pipeline_options = self.model_class.get_default_pipeline_options()
+        if self.budget_type == 'runtime':
+            default_pipeline_options['runtime'] = self.budget
+            if 'epochs' in default_pipeline_options:
+                del default_pipeline_options['epochs']
+        elif self.budget_type == 'epochs':
+            default_pipeline_options['epochs'] = self.budget
+            if 'runtime' in default_pipeline_options:
+                del default_pipeline_options['runtime']
+        default_pipeline_options['budget_type'] = self.budget_type
+        self._init_params.update({**default_pipeline_options})
 
     def _get_model(self):
         if not isinstance(self.configuration, Configuration):
-            model = self.model_class(configuration=self.configuration,
-                                     random_state=self.seed,
+            model = self.model_class(config=self.configuration,
+                                     random_state=np.random.RandomState(self.seed),
                                      init_params=self._init_params)
         else:
-            if self.task_type in REGRESSION_TASKS:
-                dataset_properties = {
-                    'task': self.task_type,
-                    'sparse': self.datamanager.info['is_sparse'] == 1,
-                    'multioutput': self.task_type == MULTIOUTPUT_REGRESSION,
-                }
-            else:
-                dataset_properties = {
-                    'task': self.task_type,
-                    'sparse': self.datamanager.info['is_sparse'] == 1,
-                    'multilabel': self.task_type == MULTILABEL_CLASSIFICATION,
-                    'multiclass': self.task_type == MULTICLASS_CLASSIFICATION,
-                }
+
             model = self.model_class(config=self.configuration,
-                                     dataset_properties=dataset_properties,
-                                     random_state=self.seed,
+                                     dataset_properties=self.dataset_properties,
+                                     random_state=np.random.RandomState(self.seed),
                                      include=self.include,
                                      exclude=self.exclude,
                                      init_params=self._init_params)
         return model
 
-    def _loss(self, y_true, y_hat, all_scoring_functions=None):
+    def _loss(self, y_true, y_hat, all_supported_metrics=None):
         """Auto-sklearn follows a minimization goal, so the make_scorer
         sign is used as a guide to obtain the value to reduce.
 
@@ -237,24 +279,15 @@ class AbstractEvaluator(object):
                 For accuracy for example: optimum(1) - (+1 * actual score)
                 For logloss for example: optimum(0) - (-1 * actual score)
         """
-        # TODO: change to all_supported_metrics
-        all_scoring_functions = (
-            self.all_scoring_functions
-            if all_scoring_functions is None
-            else all_scoring_functions
-        )
+        # TODO: removed all_supported_metrics
+
         if not isinstance(self.configuration, Configuration):
-            if all_scoring_functions:
-                return {self.metric: 1.0}
-            else:
-                return 1.0
+            return {self.metric: 1.0}
 
         score = calculate_score(
-            y_true, y_hat, self.task_type, self.metric,
-            all_scoring_functions=all_scoring_functions)
+            y_true, y_hat, self.task_type, self.metric)
 
         if hasattr(score, '__len__'):
-            # But now this throws error...
             if self.task_type in CLASSIFICATION_TASKS:
                 err = {key: metric._optimum - score[key] for key, metric in
                        CLASSIFICATION_METRICS.items() if key in score}
@@ -267,7 +300,7 @@ class AbstractEvaluator(object):
         return err
 
     def finish_up(self, loss, train_loss,  opt_pred, valid_pred, test_pred,
-                  additional_run_info, file_output, final_call, status):
+                  additional_run_info, file_output, status):
         """This function does everything necessary after the fitting is done:
 
         * predicting
@@ -316,8 +349,8 @@ class AbstractEvaluator(object):
         rval_dict = {'loss': loss,
                      'additional_run_info': additional_run_info,
                      'status': status}
-        if final_call:
-            rval_dict['final_queue_element'] = True
+        # if final_call:
+        #     rval_dict['final_queue_element'] = True
 
         self.queue.put(rval_dict)
 
@@ -459,7 +492,7 @@ class AbstractEvaluator(object):
 
         with warnings.catch_warnings():
             warnings.showwarning = send_warnings_to_log
-            Y_pred = model.predict(X)
+            Y_pred = model.predict(X, batch_size=1000)
 
         if len(Y_pred.shape) == 1:
             Y_pred = Y_pred.reshape((-1, 1))
@@ -469,7 +502,7 @@ class AbstractEvaluator(object):
     def _ensure_prediction_array_sizes(self, prediction, Y_train):
         num_classes = self.datamanager.info['label_num']
 
-        if self.task_type == MULTICLASS_CLASSIFICATION and \
+        if self.output_type == MULTICLASS and \
                 prediction.shape[1] < num_classes:
             if Y_train is None:
                 raise ValueError('Y_train must not be None!')

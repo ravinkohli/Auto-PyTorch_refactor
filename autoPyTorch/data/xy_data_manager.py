@@ -4,6 +4,7 @@ from typing import List, Optional
 import numpy as np
 
 from scipy import sparse
+from sklearn.utils.multiclass import type_of_target
 
 from autoPyTorch.data.abstract_data_manager import AbstractDataManager
 
@@ -46,6 +47,7 @@ class XYDataManager(AbstractDataManager):
 
         self.feat_type = feat_type
 
+
         if len(y.shape) > 2:
             raise ValueError('y must not have more than two dimensions, '
                              'but has %d.' % len(y.shape))
@@ -60,3 +62,16 @@ class XYDataManager(AbstractDataManager):
             raise ValueError('X and feat_type must have the same number of columns, '
                              'but are %d and %d.' %
                              (X.shape[1], len(self.feat_type)))
+        categorical_columns = []
+        numerical_columns = []
+        for i, feat in enumerate(self.feat_type):
+            if feat.lower() == 'numerical':
+                numerical_columns.append(i)
+            elif feat.lower() == 'categorical':
+                categorical_columns.append(i)
+            else:
+                raise ValueError(feat)
+        self.info['categorical_columns'] = categorical_columns
+        self.info['numerical_columns'] = numerical_columns
+        self.info['categories'] = [np.unique(self.data['X_train'][column]).tolist() for column in categorical_columns]
+        self.info['output_type'] = type_of_target(y_test)

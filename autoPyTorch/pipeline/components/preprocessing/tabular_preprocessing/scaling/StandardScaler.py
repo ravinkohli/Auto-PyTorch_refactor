@@ -22,7 +22,7 @@ class StandardScaler(BaseScaler):
     def fit(self, X: Dict[str, Any], y: Any = None) -> BaseScaler:
 
         self.check_requirements(X, y)
-
+        # TODO: have checking for sparsity done in Dataset
         with_mean, with_std = (False, False) if issparse(X['X_train']) else (True, True)
         self.preprocessor['numerical'] = SklearnStandardScaler(with_mean=with_mean, with_std=with_std, copy=False)
         return self
