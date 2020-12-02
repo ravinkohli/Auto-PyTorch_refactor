@@ -27,6 +27,7 @@ from smac.tae import StatusType, TAEAbortException
 from smac.tae.execute_func import AbstractTAFunc
 
 
+import autoPyTorch.evaluation.train_evaluator
 from autoPyTorch.evaluation.utils import extract_learning_curve, read_queue, empty_queue
 from autoPyTorch.utils.logging_ import get_logger, PickableLoggerAdapter
 from autoPyTorch.utils.backend import Backend
@@ -112,8 +113,8 @@ class ExecuteTaFuncWithQueue(AbstractTAFunc):
 
         eval_function = None
         # COMMENTED AS A WA THAT THIS IS NOT YET READY. Uncomment when Ravin finishes
-        # if resampling_strategy == 'holdout':
-        #     eval_function = autoPyTorch.evaluation.train_evaluator.eval_holdout
+        if resampling_strategy == 'holdout':
+            eval_function = autoPyTorch.evaluation.train_evaluator.eval_holdout
         # elif resampling_strategy == 'cv' or (
         #         isinstance(resampling_strategy, type) and (
         #         issubclass(resampling_strategy, (BaseCrossValidator,

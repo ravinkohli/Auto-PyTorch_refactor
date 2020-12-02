@@ -80,7 +80,7 @@ class AutoMLSMBO(object):
                  total_walltime_limit: float,
                  func_eval_time_limit: float,
                  memory_limit: typing.Optional[int],
-                 metric: autoPyTorchMetric,
+                 metric: typing.List[autoPyTorchMetric],
                  watcher: StopWatch,
                  n_jobs: int,
                  dask_client: typing.Optional[dask.distributed.Client],
@@ -168,7 +168,7 @@ class AutoMLSMBO(object):
         self.resampling_strategy_args = resampling_strategy_args
 
         # and a bunch of useful limits
-        self.worst_possible_result = get_cost_of_crash(self.metric)
+        self.worst_possible_result = get_cost_of_crash(self.metric[0])
         self.total_walltime_limit = int(total_walltime_limit)
         self.func_eval_time_limit = int(func_eval_time_limit)
         self.memory_limit = memory_limit
