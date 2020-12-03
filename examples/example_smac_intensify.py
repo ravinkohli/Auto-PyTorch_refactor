@@ -1,5 +1,7 @@
 import typing
+import time
 import os
+import multiprocessing
 
 import dask
 import dask.distributed
@@ -21,7 +23,7 @@ from autoPyTorch.pipeline.components.training.metrics.utils import get_metrics
 from autoPyTorch.utils.backend import create
 from autoPyTorch.utils.stopwatch import StopWatch
 from autoPyTorch.utils.pipeline import get_configuration_space
-
+from autoPyTorch.utils.logging_ import setup_logger, get_logger, start_log_server
 
 def get_data_to_train() -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
@@ -41,6 +43,50 @@ def get_data_to_train() -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray, np.n
     feat_type = np.random.choice(['numerical', 'categorical'], (X_train.shape[1]))
     return X_train, X_test, y_train, y_test, feat_type
 
+def _get_logger(name, logging_config, backend, stop_logging_server):
+    logger_name = 'AutoML(%d):%s' % (name)
+    setup_logger(
+        filename='%s.log' % str(logger_name),
+        logging_config=logging_config,
+        output_dir=backend.temporary_directory,
+    )
+
+    # As Auto-sklearn works with distributed process,
+    # we implement a logger server that can receive tcp
+    # pickled messages. They are unpickled and processed locally
+    # under the above logging configuration setting
+    # We need to specify the logger_name so that received records
+    # are treated under the logger_name ROOT logger setting
+    context = multiprocessing.get_context('spawn')
+    stop_logging_server = context.Event()
+    port = context.Value('l')  # be safe by using a long
+    port.value = -1
+
+    logging_server = context.Process(
+        target=start_log_server,
+        kwargs=dict(
+            host='localhost',
+            logname=logger_name,
+            event=stop_logging_server,
+            port=port,
+            filename='%s.log' % str(logger_name),
+            logging_config=logging_config,
+            output_dir=backend.temporary_directory,
+        ),
+    )
+
+    logging_server.start()
+
+    while True:
+        with port.get_lock():
+            if port.value == -1:
+                time.sleep(0.01)
+            else:
+                break
+
+    _logger_port = int(port.value)
+
+    return get_logger(logger_name)
 
 if __name__ == "__main__":
     # Get data to train
