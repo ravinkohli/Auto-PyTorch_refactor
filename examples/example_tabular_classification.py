@@ -91,7 +91,7 @@ fit_dictionary = {
     'use_pynisher': False,
     'metrics_during_training': True,
     'backend': backend,
-    'split': 0,
+    'split_id': 0,
 }
 
 # Configuration space

@@ -91,7 +91,7 @@ class PipelineTest(unittest.TestCase):
              'use_tensorboard_logger': True,
              'use_pynisher': False,
              'metrics_during_training': True,
-             'split': 0,
+             'split_id': 0,
              'backend': self.backend,
              }
         )
@@ -128,7 +128,7 @@ class PipelineTest(unittest.TestCase):
              'use_tensorboard_logger': True,
              'use_pynisher': False,
              'metrics_during_training': True,
-             'split': 0,
+             'split_id': 0,
              'backend': self.backend,
              }
         )
@@ -158,7 +158,7 @@ class PipelineTest(unittest.TestCase):
              'use_tensorboard_logger': True,
              'use_pynisher': False,
              'metrics_during_training': True,
-             'split': 0,
+             'split_id': 0,
              'backend': self.backend,
              }
         for key in X.keys():

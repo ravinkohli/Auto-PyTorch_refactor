@@ -100,8 +100,7 @@ def get_data_to_train() -> typing.Tuple[typing.Dict[str, typing.Any]]:
         'seed': 0,
         'budget_type': 'epochs',
         'epochs': 10.0,
-        'id': 0,
-        'split': 0,
+        'split_id': 0,
     }
 
     return fit_dictionary

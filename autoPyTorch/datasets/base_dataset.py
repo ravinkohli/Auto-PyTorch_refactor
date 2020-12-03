@@ -1,3 +1,4 @@
+import warnings
 from abc import ABCMeta
 from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
@@ -125,6 +126,10 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         It is done once per dataset to have comparable results among pipelines
         """
         # Create just the split once
+        # This is gonna be called multiple times, because the current dataset
+        # is being used for multiple pipelines. That is, to be efficient with memory
+        # we dump the dataset to memory and read it on a need basis. So this function
+        # should be robust against multiple calls, and it does so by remembering the splits
         if self.splits is None:
             if not isinstance(cross_val_type, CrossValTypes):
                 raise NotImplementedError(f'The selected `cross_val_type` "{cross_val_type}" is not implemented.')
@@ -134,6 +139,9 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
                 kwargs["stratify"] = self.train_tensors[-1]
             self.splits = self.cross_validators[cross_val_type.name](
                 num_splits, self._get_indices(), **kwargs)
+        else:
+            warnings.warn("Calling create_cross_val_splits more that once will not overwrite "
+                          "the previously created split of {self.splits}")
         return
 
     def create_val_split(self,
@@ -163,7 +171,7 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
             val = BaseDataset(self.val_tensors)
             return self, val
 
-    def get_dataset_for_training(self, split: int) -> Tuple[Dataset, Dataset]:
+    def get_dataset_for_training(self, split_id: int) -> Tuple[Dataset, Dataset]:
         """
         The above split methods employ the Subset to internally subsample the whole dataset.
 
@@ -192,15 +200,16 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
             if self.resampling_strategy_args is not None:
                 num_splits = self.resampling_strategy_args.get('num_splits', num_splits)
             # Create the split if it was not created before
-            self.create_cross_val_splits(
-                cross_val_type=self.resampling_strategy,
-                num_splits=cast(int, num_splits),
-            )
+            if self.splits is None:
+                self.create_cross_val_splits(
+                    cross_val_type=self.resampling_strategy,
+                    num_splits=cast(int, num_splits),
+                )
 
             # Subset creates a dataset
-            # Asser for mypy -- self.splits is created above in self.create_cross_val_splits
+            # Assert for mypy -- self.splits is created above in self.create_cross_val_splits
             assert self.splits is not None
-            return (Subset(self, self.splits[split][0]), Subset(self, self.splits[split][1]))
+            return (Subset(self, self.splits[split_id][0]), Subset(self, self.splits[split_id][1]))
         else:
             raise ValueError(f"Unsupported resampling strategy {self.resampling_strategy}")
 

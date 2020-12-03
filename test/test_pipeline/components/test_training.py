@@ -64,11 +64,11 @@ class BaseDataLoaderTest(unittest.TestCase):
 
         # No input in fit dictionary
         with self.assertRaisesRegex(ValueError,
-                                    'Split is needed to select the respampled dataset. Curren'):
+                                    'split_id is needed to select the respampled dataset. Curren'):
             loader.fit(fit_dictionary)
 
         # Backend Missing
-        fit_dictionary.update({'split': 0})
+        fit_dictionary.update({'split_id': 0})
         with self.assertRaisesRegex(ValueError,
                                     'backend is needed to load the data from'):
             loader.fit(fit_dictionary)
@@ -89,7 +89,7 @@ class BaseDataLoaderTest(unittest.TestCase):
             'val_indices': [2],
             'is_small_preprocess': True,
             'working_dir': '/tmp',
-            'split': 0,
+            'split_id': 0,
             'backend': backend,
         }
         dataset = unittest.mock.MagicMock()

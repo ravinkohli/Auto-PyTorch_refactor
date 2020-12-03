@@ -38,7 +38,7 @@ class TabularPreprocessingTest(unittest.TestCase):
                  torch_num_threads=1,
                  early_stopping=20,
                  dataset_properties=dataset_properties,
-                 split=0,
+                 split_id=0,
                  backend=self.backend,
                  )
         pipeline = TabularClassificationPipeline(dataset_properties=dataset_properties)
@@ -69,7 +69,7 @@ class TabularPreprocessingTest(unittest.TestCase):
                  torch_num_threads=1,
                  early_stopping=20,
                  dataset_properties=dataset_properties,
-                 split=0,
+                 split_id=0,
                  backend=self.backend,
                  )
 
