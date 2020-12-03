@@ -103,7 +103,7 @@ def _get_y_array(y, task_type):
 class TrainEvaluator(AbstractEvaluator):
     def __init__(self, backend, queue, metric,
                  configuration=None,
-                 all_supported_metrics=False,
+                 logger_port=None,
                  seed=1,
                  output_y_hat_optimization=True,
                  resampling_strategy=None,
@@ -121,7 +121,7 @@ class TrainEvaluator(AbstractEvaluator):
             queue=queue,
             configuration=configuration,
             metric=metric,
-            all_supported_metrics=all_supported_metrics,
+            logger_port=logger_port,
             seed=seed,
             output_y_hat_optimization=output_y_hat_optimization,
             num_run=num_run,
@@ -154,7 +154,7 @@ class TrainEvaluator(AbstractEvaluator):
     def fit_predict_and_loss(self):
         """Fit, predict and compute the loss for cross-validation and
         holdout"""
-
+        self.logger.info("Trial of logger")
         if self.num_cv_folds == 1:
 
             for train_split, test_split in self.splitter.split(
@@ -378,7 +378,6 @@ def eval_holdout(
         seed,
         num_run,
         instance,
-        all_scoring_functions,
         output_y_hat_optimization,
         include,
         exclude,
@@ -386,6 +385,7 @@ def eval_holdout(
         init_params=None,
         budget=100.0,
         budget_type=None,
+        logger_port=None
 ):
     evaluator = TrainEvaluator(
         backend=backend,
@@ -403,6 +403,7 @@ def eval_holdout(
         init_params=init_params,
         budget=budget,
         budget_type=budget_type,
+        logger_port=logger_port
     )
     evaluator.fit_predict_and_loss()
 

@@ -29,7 +29,7 @@ from smac.tae.execute_func import AbstractTAFunc
 
 import autoPyTorch.evaluation.train_evaluator
 from autoPyTorch.evaluation.utils import extract_learning_curve, read_queue, empty_queue
-from autoPyTorch.utils.logging_ import get_logger, PickableLoggerAdapter
+from autoPyTorch.utils.logging_ import get_named_client_logger # get_logger, PickableLoggerAdapter
 from autoPyTorch.utils.backend import Backend
 from autoPyTorch.pipeline.components.training.metrics.base import autoPyTorchMetric
 
@@ -93,7 +93,6 @@ class ExecuteTaFuncWithQueue(AbstractTAFunc):
         seed: int,
         resampling_strategy: str,
         metric: autoPyTorchMetric,
-        logger: PickableLoggerAdapter,
         cost_for_crash: float,
         abort_on_first_run_crash: bool,
         initial_num_run: int = 1,
@@ -108,6 +107,7 @@ class ExecuteTaFuncWithQueue(AbstractTAFunc):
         init_params: typing.Dict[str, typing.Any] = None,
         budget_type: str = None,
         ta: typing.Optional[typing.Callable] = None,
+        logger_port=None,
         **resampling_strategy_args
     ):
 
@@ -160,7 +160,7 @@ class ExecuteTaFuncWithQueue(AbstractTAFunc):
         self.disable_file_output = disable_file_output
         self.init_params = init_params
         self.budget_type = budget_type
-        self.logger = logger
+        self.logger = get_named_client_logger(name="TAE", output_dir=self.backend.temporary_directory, port=logger_port)
 
         if memory_limit is not None:
             memory_limit = int(math.ceil(memory_limit))
@@ -253,7 +253,7 @@ class ExecuteTaFuncWithQueue(AbstractTAFunc):
             init_params.update(self.init_params)
 
         arguments = dict(
-            logger=get_logger("pynisher"),
+            logger=self.logger,  # get_logger("pynisher"),
             wall_time_in_s=cutoff,
             mem_in_mb=self.memory_limit,
             capture_output=True,

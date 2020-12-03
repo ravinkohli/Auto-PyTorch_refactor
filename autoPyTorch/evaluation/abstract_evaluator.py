@@ -21,7 +21,7 @@ from autoPyTorch.evaluation.utils import (
 )
 from autoPyTorch.pipeline.components.training.metrics.utils import calculate_score, CLASSIFICATION_METRICS, REGRESSION_METRICS
 from autoPyTorch.utils.backend import Backend
-from autoPyTorch.utils.logging_ import get_logger
+from autoPyTorch.utils.logging_ import get_named_client_logger
 
 from ConfigSpace import Configuration
 
@@ -112,7 +112,6 @@ def _fit_and_suppress_warnings(logger, model, X, y):
 class AbstractEvaluator(object):
     def __init__(self, backend: Backend, queue, metric,
                  configuration=None,
-                 all_supported_metrics=False,
                  seed=1,
                  output_y_hat_optimization=True,
                  num_run=None,
@@ -121,7 +120,8 @@ class AbstractEvaluator(object):
                  disable_file_output=False,
                  init_params=None,
                  budget=None,
-                 budget_type=None):
+                 budget_type=None,
+                 logger_port=None):
 
         self.starttime = time.time()
 
@@ -148,7 +148,6 @@ class AbstractEvaluator(object):
 
         self.output_y_hat_optimization = output_y_hat_optimization
         # TODO: Check if we need all supported metrics, as in our case even single metric is in a score_dict form
-        self.all_supported_metrics = all_supported_metrics
 
         if isinstance(disable_file_output, (bool, list)):
             self.disable_file_output = disable_file_output
@@ -233,7 +232,8 @@ class AbstractEvaluator(object):
 
         logger_name = '%s(%d):%s' % (self.__class__.__name__.split('.')[-1],
                                      self.seed, self.datamanager.name)
-        self.logger = get_logger(logger_name)
+        self.logger = get_named_client_logger(name=logger_name, port=logger_port,
+                                              output_dir=self.backend.temporary_directory)
 
         self.Y_optimization = None
         self.Y_actual_train = None

@@ -20,8 +20,8 @@ from smac.utils.io.traj_logging import TrajLogger
 # from autoPyTorch.ensemble.ensemble_builder import EnsembleBuilderManager
 from autoPyTorch.data.abstract_data_manager import AbstractDataManager
 from autoPyTorch.utils.backend import Backend
-from autoPyTorch.utils.logging_ import get_logger
 from autoPyTorch.utils.stopwatch import StopWatch
+from autoPyTorch.utils.logging_ import get_named_client_logger
 from autoPyTorch.evaluation.tae import ExecuteTaFuncWithQueue, get_cost_of_crash
 from autoPyTorch.pipeline.components.training.metrics.base import autoPyTorchMetric
 
@@ -96,6 +96,7 @@ class AutoMLSMBO(object):
                  # TODO: Re-enable when ensemble merged
                  # ensemble_callback: typing.Optional[EnsembleBuilderManager] = None,
                  ensemble_callback: typing.Any = None,
+                 logger_port=None
                  ):
         """
         Interface to SMAC. This method calls the SMAC optimize method, and allows
@@ -185,7 +186,8 @@ class AutoMLSMBO(object):
 
         dataset_name_ = "" if dataset_name is None else dataset_name
         logger_name = '%s(%d):%s' % (self.__class__.__name__, self.seed, ":" + dataset_name_)
-        self.logger = get_logger(logger_name)
+        self.logger = get_named_client_logger(name=logger_name, port=logger_port,
+                                              output_dir=self.backend.temporary_directory)
 
     def reset_data_manager(self) -> None:
         if self.datamanager is not None:

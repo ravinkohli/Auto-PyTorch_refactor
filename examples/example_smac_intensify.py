@@ -23,7 +23,7 @@ from autoPyTorch.pipeline.components.training.metrics.utils import get_metrics
 from autoPyTorch.utils.backend import create
 from autoPyTorch.utils.stopwatch import StopWatch
 from autoPyTorch.utils.pipeline import get_configuration_space
-from autoPyTorch.utils.logging_ import setup_logger, get_logger, start_log_server
+from autoPyTorch.utils.logging_ import setup_logger, start_log_server
 
 def get_data_to_train() -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
@@ -43,7 +43,8 @@ def get_data_to_train() -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray, np.n
     feat_type = np.random.choice(['numerical', 'categorical'], (X_train.shape[1]))
     return X_train, X_test, y_train, y_test, feat_type
 
-def _get_logger(name, logging_config, backend, stop_logging_server):
+
+def _start_logger(name, logging_config, backend):
     logger_name = 'AutoML(%d):%s' % (name)
     setup_logger(
         filename='%s.log' % str(logger_name),
@@ -84,9 +85,8 @@ def _get_logger(name, logging_config, backend, stop_logging_server):
             else:
                 break
 
-    _logger_port = int(port.value)
+    return int(port.value)
 
-    return get_logger(logger_name)
 
 if __name__ == "__main__":
     # Get data to train
@@ -136,20 +136,11 @@ if __name__ == "__main__":
     )
 
     # Make the optimizer
-    smbo = AutoMLSMBO(
-        config_space=get_configuration_space(datamanager.info),
-        dataset_name='Australian',
-        backend=backend,
-        total_walltime_limit=100,
-        dask_client=dask_client,
-        func_eval_time_limit=30,
-        memory_limit=1024,
-        metric=get_metrics(dataset_properties=dict({'task_type': TASK_TYPES_TO_STRING[TABULAR_CLASSIFICATION],
-                                                    'output_type': datamanager.info['output_type']})),
-        watcher=StopWatch(),
-        n_jobs=2,
-        ensemble_callback=None,
-    )
+    smbo = AutoMLSMBO(config_space=get_configuration_space(datamanager.info), dataset_name='Australian',
+                      backend=backend, total_walltime_limit=100, dask_client=dask_client, func_eval_time_limit=30,
+                      memory_limit=1024, metric=get_metrics(
+            dataset_properties=dict({'task_type': TASK_TYPES_TO_STRING[TABULAR_CLASSIFICATION],
+                                     'output_type': datamanager.info['output_type']})), watcher=StopWatch(), n_jobs=2, logger_port=_start_logger("trial_australian", logging_config=None, backend=backend))
 
     # Then run the optimization
     run_history, trajectory, budget = smbo.run_smbo()
