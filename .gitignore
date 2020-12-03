@@ -131,3 +131,6 @@ dmypy.json
 # Idea workspace and task
 **/.idea/workspace.xml
 **/.idea/tasks.xml
+
+# Dask
+dask-worker-space/
