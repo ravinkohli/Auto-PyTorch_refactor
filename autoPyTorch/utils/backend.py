@@ -6,15 +6,16 @@ import tempfile
 import time
 import uuid
 import warnings
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import lockfile
 
 import numpy as np
 
+from autoPyTorch.datasets.base_dataset import BaseDataset
 from autoPyTorch.ensemble.abstract_ensemble import AbstractEnsemble
 from autoPyTorch.pipeline.base_pipeline import BasePipeline
-from autoPyTorch.utils import logging_ as logging
+from autoPyTorch.utils.logging_ import PicklableClientLogger, get_named_client_logger
 
 
 __all__ = [
@@ -94,8 +95,8 @@ class BackendContext(object):
             )
         )
         self._output_directory = output_directory
-        self._logger = logging.get_logger(__name__)
         self.create_directories()
+        self._logger = None  # type: Optional[PicklableClientLogger]
 
     @property
     def output_directory(self) -> Optional[str]:
@@ -166,7 +167,7 @@ class Backend(object):
     """
 
     def __init__(self, context: BackendContext):
-        self.logger = logging.get_logger(__name__)
+        self._logger = None  # type: Optional[PicklableClientLogger]
         self.context = context
 
         # Create the temporary directory if it does not yet exist
@@ -182,6 +183,15 @@ class Backend(object):
         self.internals_directory = os.path.join(self.temporary_directory, ".autoPyTorch")
         self._make_internals_directory()
 
+    def setup_logger(self, name: str, port: int) -> None:
+        self._logger = get_named_client_logger(
+            output_dir=self.temporary_directory,
+            name=name,
+            port=port,
+        )
+        self.context._logger = self._logger
+        return
+
     @property
     def output_directory(self) -> Optional[str]:
         return self.context.output_directory
@@ -194,11 +204,13 @@ class Backend(object):
         try:
             os.makedirs(self.internals_directory)
         except Exception as e:
-            self.logger.debug("_make_internals_directory: %s" % e)
+            if self._logger is not None:
+                self._logger.debug("_make_internals_directory: %s" % e)
         try:
             os.makedirs(self.get_runs_directory())
         except Exception as e:
-            self.logger.debug("_make_internals_directory: %s" % e)
+            if self._logger is not None:
+                self._logger.debug("_make_internals_directory: %s" % e)
 
     def _get_start_time_filename(self, seed: Union[str, int]) -> str:
         if isinstance(seed, str):
@@ -294,7 +306,7 @@ class Backend(object):
     def _get_datamanager_pickle_filename(self) -> str:
         return os.path.join(self.internals_directory, 'datamanager.pkl')
 
-    def save_datamanager(self, datamanager: Any) -> str:
+    def save_datamanager(self, datamanager: BaseDataset) -> str:
         self._make_internals_directory()
         filepath = self._get_datamanager_pickle_filename()
 
@@ -308,7 +320,7 @@ class Backend(object):
 
         return filepath
 
-    def load_datamanager(self) -> Any:  # Any here because I don't know what the datamanager looks!
+    def load_datamanager(self) -> BaseDataset:
         filepath = self._get_datamanager_pickle_filename()
         with lockfile.LockFile(filepath):
             with open(filepath, 'rb') as fh:
@@ -423,7 +435,10 @@ class Backend(object):
         ensemble_dir = self.get_ensemble_dir()
 
         if not os.path.exists(ensemble_dir):
-            self.logger.warning('Directory %s does not exist' % ensemble_dir)
+            if self._logger is not None:
+                self._logger.warning('Directory %s does not exist' % ensemble_dir)
+            else:
+                warnings.warn('Directory %s does not exist' % ensemble_dir)
             return None
 
         if seed >= 0:
@@ -496,4 +511,5 @@ class Backend(object):
                 fh.write(data)
                 tempname = fh.name
             os.rename(tempname, filepath)
-            self.logger.debug('Created %s file %s' % (name, filepath))
+            if self._logger is not None:
+                self._logger.debug('Created %s file %s' % (name, filepath))

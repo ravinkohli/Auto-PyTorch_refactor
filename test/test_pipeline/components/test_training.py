@@ -64,40 +64,39 @@ class BaseDataLoaderTest(unittest.TestCase):
 
         # No input in fit dictionary
         with self.assertRaisesRegex(ValueError,
-                                    'Data loader requires the user to provide the input data'):
+                                    'Split is needed to select the respampled dataset. Curren'):
             loader.fit(fit_dictionary)
 
-        # Wrong dataset
-        fit_dictionary.update({'dataset': 'wrong'})
+        # Backend Missing
+        fit_dictionary.update({'split': 0})
         with self.assertRaisesRegex(ValueError,
-                                    'Unsupported dataset'):
+                                    'backend is needed to load the data from'):
             loader.fit(fit_dictionary)
-        fit_dictionary['dataset'] = 'CIFAR10'
-        with self.assertRaisesRegex(ValueError,
-                                    'DataLoader needs the root of where'):
-            loader.fit(fit_dictionary)
-        fit_dictionary.pop('dataset')
 
-        # X,y testing
-        fit_dictionary.update({'X_train': unittest.mock.Mock()})
+        # Then the is small fit
+        fit_dictionary.update({'backend': unittest.mock.Mock()})
         with self.assertRaisesRegex(ValueError,
-                                    'Data loader cannot access the train features-targets'):
-            loader.fit(fit_dictionary)
-        fit_dictionary.update({'y_train': unittest.mock.Mock()})
-        with self.assertRaisesRegex(ValueError,
-                                    'Data loader cannot access the indices needed to'):
+                                    'is_small_pre-process is required to know if th'):
             loader.fit(fit_dictionary)
 
     def test_fit_transform(self):
         """ Makes sure that fit and transform work as intended """
+        backend = unittest.mock.Mock()
         fit_dictionary = {
             'X_train': np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]),
             'y_train': np.array([0, 1, 0]),
             'train_indices': [0, 1],
             'val_indices': [2],
-            'is_small_preprocess': False,
+            'is_small_preprocess': True,
             'working_dir': '/tmp',
+            'split': 0,
+            'backend': backend,
         }
+        dataset = unittest.mock.MagicMock()
+        dataset.__len__.return_value = 1
+        datamanager = unittest.mock.MagicMock()
+        datamanager.get_dataset_for_training.return_value = (dataset, dataset)
+        fit_dictionary['backend'].load_datamanager.return_value = datamanager
 
         # Mock child classes requirements
         loader = BaseDataLoaderComponent()

@@ -40,7 +40,7 @@ class BackendMock(object):
             'runs', '0_3_100.0',
             'predictions_test_0_3_100.0.npy'
         ))
-        manager.data.get.return_value = array
+        manager.test_tensors = (None, array)
         return manager
 
     def load_targets_ensemble(self):

@@ -368,7 +368,7 @@ class BasePipeline(Pipeline):
         Returns:
             List[NamedTuple]: List of FitRequirements
         """
-        fit_requirements = list()  # List[FitRequirement]
+        fit_requirements = list()  # type: List[FitRequirement]
         for name, step in self.steps:
             step_requirements = step.get_fit_requirements()
             if step_requirements:
@@ -397,7 +397,6 @@ class BasePipeline(Pipeline):
     def get_default_pipeline_options() -> Dict[str, Any]:
         return {
             'job_id': '1',
-            'working_dir': '/tmp/experiment_1',
             'device': 'cpu',
             'budget_type': 'epochs',
             'epochs': 20,

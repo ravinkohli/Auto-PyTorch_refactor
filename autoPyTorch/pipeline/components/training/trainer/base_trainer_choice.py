@@ -1,4 +1,5 @@
 import collections
+import logging.handlers
 import os
 import time
 from typing import Any, Dict, List, Optional, Tuple, cast
@@ -31,8 +32,8 @@ from autoPyTorch.pipeline.components.training.trainer.base_trainer import (
     BudgetTracker,
     RunSummary,
 )
-from autoPyTorch.utils import logging_ as logging
 from autoPyTorch.utils.common import FitRequirement
+from autoPyTorch.utils.logging_ import get_named_client_logger
 
 trainer_directory = os.path.split(__file__)[0]
 _trainers = find_components(__package__,
@@ -66,9 +67,14 @@ class TrainerChoice(autoPyTorchChoice):
         self._fit_requirements: Optional[List[FitRequirement]] = [
             FitRequirement("lr_scheduler", (_LRScheduler,), user_defined=False, dataset_property=False),
             FitRequirement("network", (torch.nn.Sequential,), user_defined=False, dataset_property=False),
-            FitRequirement("optimizer", (Optimizer,), user_defined=False, dataset_property=False),
-            FitRequirement("train_data_loader", (torch.utils.data.DataLoader,), user_defined=False, dataset_property=False),
-            FitRequirement("val_data_loader", (torch.utils.data.DataLoader,), user_defined=False, dataset_property=False)]
+            FitRequirement(
+                "optimizer", (Optimizer,), user_defined=False, dataset_property=False),
+            FitRequirement("train_data_loader",
+                           (torch.utils.data.DataLoader,),
+                           user_defined=False, dataset_property=False),
+            FitRequirement("val_data_loader",
+                           (torch.utils.data.DataLoader,),
+                           user_defined=False, dataset_property=False)]
 
     def get_fit_requirements(self) -> Optional[List[FitRequirement]]:
         return self._fit_requirements
@@ -177,7 +183,13 @@ class TrainerChoice(autoPyTorchChoice):
         self.check_requirements(X, y)
 
         # Setup the logger
-        logger = logging.get_logger(X['job_id'])
+        self.logger = get_named_client_logger(
+            output_dir=X['backend'].temporary_directory,
+            name=X['job_id'],
+            # Log to a user provided port else to the default logging port
+            port=X['logger_port'
+                   ] if 'logger_port' in X else logging.handlers.DEFAULT_TCP_LOGGING_PORT,
+        )
 
         fit_function = self._fit
         if X['use_pynisher']:
@@ -186,7 +198,7 @@ class TrainerChoice(autoPyTorchChoice):
             fit_function = pynisher.enforce_limits(
                 wall_time_in_s=wall_time_in_s,
                 mem_in_mb=memory_limit,
-                logger=logger
+                logger=self.logger
             )(self._fit)
 
         # Call the actual fit function.
@@ -221,10 +233,6 @@ class TrainerChoice(autoPyTorchChoice):
             A instance of self
         """
 
-        # Create a logger as a work around, while the logging server is available
-        # in autosklearn
-        logger = logging.get_logger(X['job_id'])
-
         # Comply with mypy
         # Notice that choice here stands for the component choice framework,
         # where we dynamically build the configuration space by selecting the available
@@ -235,7 +243,7 @@ class TrainerChoice(autoPyTorchChoice):
         # Writer is not pickable -- make sure it is not saved in self
         writer = None
         if 'use_tensorboard_logger' in X and X['use_tensorboard_logger']:
-            writer = SummaryWriter(log_dir=X['working_dir'])
+            writer = SummaryWriter(log_dir=X['backend'].temporary_directory)
 
         if X["torch_num_threads"] > 0:
             torch.set_num_threads(X["torch_num_threads"])
@@ -281,7 +289,7 @@ class TrainerChoice(autoPyTorchChoice):
             train_loss, train_metrics = self.choice.train_epoch(
                 train_loader=X['train_data_loader'],
                 epoch=epoch,
-                logger=logger,
+                logger=self.logger,
                 writer=writer,
             )
 
@@ -312,7 +320,7 @@ class TrainerChoice(autoPyTorchChoice):
             if self.choice.on_epoch_end(X=X, epoch=epoch):
                 break
 
-            logger.debug(self.run_summary.repr_last_epoch())
+            self.logger.debug(self.run_summary.repr_last_epoch())
 
             # Reached max epoch on next iter, don't even go there
             if budget_tracker.is_max_epoch_reached(epoch + 1):
@@ -338,10 +346,10 @@ class TrainerChoice(autoPyTorchChoice):
                 val_metrics=val_metrics,
                 test_metrics=test_metrics,
             )
-            logger.debug(self.run_summary.repr_last_epoch())
+            self.logger.debug(self.run_summary.repr_last_epoch())
             self.save_model_for_ensemble()
 
-        logger.info(f"Finished training with {self.run_summary.repr_last_epoch()}")
+        self.logger.info(f"Finished training with {self.run_summary.repr_last_epoch()}")
 
         # Tag as fitted
         self.fitted_ = True
@@ -406,9 +414,9 @@ class TrainerChoice(autoPyTorchChoice):
         super().check_requirements(X, y)
 
         # We need a working dir in where to put our data
-        if 'working_dir' not in X:
-            raise ValueError('Need a working directory to output trainer information, '
-                             "yet 'working_dir' was not found in the fit dictionary")
+        if 'backend' not in X:
+            raise ValueError('Need a backend to provide the working directory, '
+                             "yet 'backend' was not found in the fit dictionary")
 
         # For resource allocation, we need to know if pynisher is enabled
         if 'use_pynisher' not in X:

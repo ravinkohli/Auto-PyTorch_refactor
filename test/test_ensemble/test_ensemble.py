@@ -587,7 +587,6 @@ def testLimit(ensemble_backend):
         assert os.path.exists(read_scores_file)
         assert not os.path.exists(read_preds_file)
         assert logger_mock.warning.call_count == 4
-        assert logger_mock.error.call_count == 1
 
 
 def test_read_pickle_read_preds(ensemble_backend):
@@ -673,7 +672,6 @@ def test_ensemble_builder_process_realrun(dask_client, ensemble_backend):
         read_at_most=np.inf,
         ensemble_memory_limit=None,
         random_state=0,
-        logger_name='Ensemblebuilder',
     )
     manager.build_ensemble(dask_client)
     future = manager.futures.pop()
@@ -713,7 +711,6 @@ def test_ensemble_builder_nbest_remembered(fit_ensemble, ensemble_backend, dask_
         read_at_most=np.inf,
         ensemble_memory_limit=1000,
         random_state=0,
-        logger_name='Ensemblebuilder',
         max_iterations=None,
     )
 

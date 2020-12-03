@@ -13,10 +13,10 @@ import torch
 
 import torchvision
 
+
+from autoPyTorch.datasets.base_dataset import BaseDataset
 from autoPyTorch.pipeline.components.training.base_training import autoPyTorchTrainingComponent
-from autoPyTorch.pipeline.components.training.data_loader.transformable_tensor_dataset import (
-    CustomXYTensorDataset
-)
+from autoPyTorch.utils.backend import Backend
 from autoPyTorch.utils.common import FitRequirement, custom_collate_fn
 
 
@@ -32,8 +32,6 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
     def __init__(self, batch_size: int = 64) -> None:
         super().__init__()
         self.batch_size = batch_size
-        self.train_dataset = None  # type: Optional[torch.utils.data.Dataset]
-        self.val_dataset = None  # type: Optional[torch.utils.data.Dataset]
         self.train_data_loader = None  # type: Optional[torch.utils.data.DataLoader]
         self.val_data_loader = None  # type: Optional[torch.utils.data.DataLoader]
 
@@ -49,8 +47,9 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
         self.add_fit_requirements([
             FitRequirement("dataset", (str,), user_defined=True, dataset_property=True),
             FitRequirement("root", (str,), user_defined=True, dataset_property=True),
-            FitRequirement("X_train", (np.ndarray,), user_defined=True, dataset_property=True),
+            FitRequirement("split", (int,), user_defined=True, dataset_property=True),
             FitRequirement("train_indices", (List[int],), user_defined=True, dataset_property=True),
+            FitRequirement("Backend", (Backend,), user_defined=True, dataset_property=False),
             FitRequirement("is_small_preprocess", (bool,), user_defined=True, dataset_property=True)])
 
     def transform(self, X: np.ndarray) -> np.ndarray:
@@ -85,35 +84,15 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
         self.train_transform = self.build_transform(X, train=True)
         self.val_transform = self.build_transform(X, train=False)
 
-        if 'dataset' in X:
-            self.train_dataset = self.get_torchvision_datasets()[X['dataset']](
-                root=X['root'],
-                transformation=self.train_transform,
-                train=True,
-            )
-            self.val_dataset = self.get_torchvision_datasets()[X['dataset']](
-                root=X['root'],
-                transformation=self.val_transform,
-                train=False,
-            )
-        else:
-            # Make sure that the train data is numpy-compatible
-            X_train = check_array(X['X_train'])
-            y_train = check_array(X['y_train'], ensure_2d=False)
-            self.train_dataset = CustomXYTensorDataset(
-                X=np.take(X_train, X['train_indices'], axis=0),
-                y=np.take(y_train, X['train_indices'], axis=0),
-                transform=self.train_transform
-            )
-            self.val_dataset = CustomXYTensorDataset(
-                X=np.take(X_train, X['val_indices'], axis=0),
-                y=np.take(y_train, X['val_indices'], axis=0),
-                transform=self.val_transform
-            )
-
+        datamanager = X['backend'].load_datamanager()
+        if X["is_small_preprocess"]:
+            # This parameter indicates that the data has been pre-processed for speed
+            # Overwrite the datamanager with the pre-processes data
+            datamanager.replace_data(X['X_train'], X['X_test'] if 'X_test' in X else None)
+        train_dataset, val_dataset = datamanager.get_dataset_for_training(split=X['split'])
         self.train_data_loader = torch.utils.data.DataLoader(
-            self.train_dataset,
-            batch_size=min(self.batch_size, len(self.train_dataset)),
+            train_dataset,
+            batch_size=min(self.batch_size, len(train_dataset)),
             shuffle=True,
             num_workers=X.get('num_workers', 0),
             pin_memory=X.get('pin_memory', True),
@@ -122,8 +101,8 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
         )
 
         self.val_data_loader = torch.utils.data.DataLoader(
-            self.val_dataset,
-            batch_size=min(self.batch_size, len(self.val_dataset)),
+            val_dataset,
+            batch_size=min(self.batch_size, len(val_dataset)),
             shuffle=False,
             num_workers=X.get('num_workers', 0),
             pin_memory=X.get('pin_memory', True),
@@ -139,13 +118,15 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
         Creates a data loader object from the provided data,
         applying the transformations meant to validation objects
         """
+
+        # We need the proper dtype on the data
+        # This has to be changed according to
         X = check_array(X)
         if y:
             y = check_array(y, ensure_2d=False)
-        dataset = CustomXYTensorDataset(
-            X=X,
-            y=y,
-            transform=self.val_transform
+        dataset = BaseDataset(
+            train_tensors=(X, y),
+            transforms=self.val_transform
         )
         return torch.utils.data.DataLoader(
             dataset,
@@ -202,54 +183,15 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
 
         # We allow reading data from a user provided dataset
         # or from X, Y pairs
-        if 'dataset' in X and 'X_train' in X:
-            raise ValueError("Ambiguous definition of input for data loader. "
-                             "Cannot provide both a dataset and a X,y input pair. "
+        if 'split' not in X:
+            raise ValueError("Split is needed to select the respampled dataset. "
                              "Currently X={}.".format(
                                  X
                              )
                              )
-        elif 'dataset' not in X and 'X_train' not in X:
-            raise ValueError("Data loader requires the user to provide the input data "
-                             "via a dataset object or through X, y pairs but neither was "
-                             "provided. Currently X={}.".format(
-                                 X
-                             )
-                             )
+        if 'backend' not in X:
+            raise ValueError("backend is needed to load the data from disk")
 
-        elif 'dataset' in X:
-
-            if isinstance(X['dataset'], str) and X['dataset'] not in self.vision_datasets:
-                raise ValueError(
-                    "Unsupported dataset: {}. Supported datasets are {} ". format(
-                        X['dataset'],
-                        self.vision_datasets.keys(),
-                    )
-                )
-
-            if 'root' not in X:
-                raise ValueError("DataLoader needs the root of where the vision dataset will "
-                                 "be located, yet X only contains {}.".format(
-                                     X
-                                 )
-                                 )
-        else:
-            # We will be creating a tensor X,y dataset
-            if 'X_train' not in X or 'y_train' not in X:
-                raise ValueError("Data loader cannot access the train features-targets to "
-                                 "be loaded. We expect both X_train and y_train to be arguments "
-                                 "to the dataloader, yet X only contains {}.".format(
-                                     X
-                                 )
-                                 )
-
-            if 'train_indices' not in X or 'val_indices' not in X:
-                raise ValueError("Data loader cannot access the indices needed to "
-                                 "define training and validation data. "
-                                 "X only contains {}.".format(
-                                     X
-                                 )
-                                 )
         if 'is_small_preprocess' not in X:
             raise ValueError("is_small_pre-process is required to know if the data was preprocessed"
                              " or if the data-loader should transform it while loading a batch")
@@ -305,8 +247,6 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
         # Remove unwanted info
         info.pop('train_data_loader', None)
         info.pop('val_data_loader', None)
-        info.pop('train_dataset', None)
-        info.pop('val_dataset', None)
         info.pop('vision_datasets', None)
         info.pop('random_state', None)
         string += " (" + str(info) + ")"

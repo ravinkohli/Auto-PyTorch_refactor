@@ -13,11 +13,12 @@ class FitRequirement(NamedTuple):
     name: The name of the variable expected in the input dictionary
     supported_types: An iterable of all types that are supported
     user_defined: If false, this requirement does not have to be given to the pipeline
+    """
+
     name: str
     supported_types: Iterable[Type]
     user_defined: bool
     dataset_property: bool
-    """
 
     def __str__(self) -> str:
         """
