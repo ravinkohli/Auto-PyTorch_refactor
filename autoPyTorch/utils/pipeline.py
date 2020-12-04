@@ -1,30 +1,19 @@
 # -*- encoding: utf-8 -*-
 from typing import Any, Dict, List, Optional
 
-from ConfigSpace.configuration_space import ConfigurationSpace
-
 from autoPyTorch.constants import (
-    IMAGE_TASKS,
-    TABULAR_TASKS,
-    BINARY,
     CLASSIFICATION_TASKS,
-    MULTICLASS,
-    MULTICLASSMULTIOUTPUT,
-    CONTINUOUSMULTIOUTPUT,
-    CONTINUOUS,
+    IMAGE_TASKS,
     REGRESSION_TASKS,
-    STRING_TO_TASK_TYPES,
-    STRING_TO_OUTPUT_TYPES
+    TABULAR_TASKS,
 )
 from autoPyTorch.pipeline.image_classification import ImageClassificationPipeline
 from autoPyTorch.pipeline.tabular_classification import TabularClassificationPipeline
 from autoPyTorch.pipeline.tabular_regression import TabularRegressionPipeline
-
 from autoPyTorch.utils.common import FitRequirement
 
 __all__ = [
     'get_dataset_requirements',
-    # 'get_class',
 ]
 
 
@@ -119,10 +108,3 @@ def _get_classification_dataset_requirements(info: Dict[str, Any], include: Dict
             get_dataset_requirements()
     else:
         raise ValueError("Task_type not supported")
-
-
-# def get_class(info: Dict[str, Any]) -> Pipeline:
-#     if info['task_type'] in REGRESSION_TASKS:
-#         return SimpleRegressionPipeline
-#     else:
-#         return SimpleClassificationPipeline

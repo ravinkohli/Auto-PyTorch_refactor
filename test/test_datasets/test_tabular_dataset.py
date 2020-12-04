@@ -1,5 +1,5 @@
-import unittest
 import typing
+import unittest
 
 import numpy as np
 
@@ -9,7 +9,7 @@ import sklearn.datasets
 import sklearn.model_selection
 
 from autoPyTorch.datasets.tabular_dataset import DataTypes, TabularDataset
-from autoPyTorch.utils.backend import create, Backend
+from autoPyTorch.utils.backend import create
 from autoPyTorch.utils.pipeline import get_dataset_requirements
 
 
@@ -43,10 +43,11 @@ class NumpyArrayTest(unittest.TestCase):
         self.assertEqual(ds.vtois[0][pd._libs.missing.NAType()], 0)
         self.assertTrue((ds.nan_mask == np.array([[0, 0, 0], [0, 1, 0]], dtype=np.bool)).all())
 
+
 def get_data_to_train() -> typing.Dict[str, typing.Any]:
     """
     This function returns a fit dictionary that within itself, contains all
-    the information to fit a pipeline
+    the information needed
     """
 
     # Get the training data for tabular classification

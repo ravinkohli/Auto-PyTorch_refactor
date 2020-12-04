@@ -22,6 +22,7 @@ from autoPyTorch.datasets.resampling_strategy import (
     HoldoutValTypes,
     is_stratified,
 )
+from autoPyTorch.utils.common import FitRequirement
 
 BASE_DATASET_INPUT = Union[Tuple[np.ndarray, np.ndarray], Dataset]
 
@@ -68,9 +69,9 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         self.shuffle = shuffle
         self.resampling_strategy = resampling_strategy
         self.resampling_strategy_args = resampling_strategy_args
-        self.task_type = None
-        self.issparse = issparse(self.train_tensors[0])
-        self.output_type = STRING_TO_OUTPUT_TYPES[type_of_target(self.train_tensors[1])]
+        self.task_type: Optional[int] = None
+        self.issparse: bool = issparse(self.train_tensors[0])
+        self.output_type: int = STRING_TO_OUTPUT_TYPES[type_of_target(self.train_tensors[1])]
 
         # TODO: Look for a criteria to define small enough to preprocess
         self.is_small_preprocess = True
@@ -244,11 +245,8 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
             self.test_tensors = (X_test, self.test_tensors[1])
         return self
 
-    def get_dataset_properties(self, dataset_requirements) -> Dict[str, Any]:
+    def get_dataset_properties(self, dataset_requirements: List[FitRequirement]) -> Dict[str, Any]:
         dataset_properties = dict()
         for dataset_requirement in dataset_requirements:
-            try:
-                dataset_properties[dataset_requirement.name] = getattr(self, dataset_requirement.name)
-            except:
-                raise AttributeError("{} not defined for {}".format(dataset_requirement.name, self.__class__.__name__))
+            dataset_properties[dataset_requirement.name] = getattr(self, dataset_requirement.name)
         return dataset_properties

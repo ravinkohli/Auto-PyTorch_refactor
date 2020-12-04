@@ -83,12 +83,11 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
         self.val_transform = self.build_transform(X, train=False)
 
         datamanager = X['backend'].load_datamanager()
-        train_dataset, val_dataset = datamanager.get_dataset_for_training(split_id=X['split_id'])
-
         if X["is_small_preprocess"]:
             # This parameter indicates that the data has been pre-processed for speed
             # Overwrite the datamanager with the pre-processes data
             datamanager.replace_data(X['X_train'], X['X_test'] if 'X_test' in X else None)
+        train_dataset, val_dataset = datamanager.get_dataset_for_training(split_id=X['split_id'])
         self.train_data_loader = torch.utils.data.DataLoader(
             train_dataset,
             batch_size=min(self.batch_size, len(train_dataset)),

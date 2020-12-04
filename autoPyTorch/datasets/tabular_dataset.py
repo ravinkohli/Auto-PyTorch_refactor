@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, List, Optional, Union, Tuple
+from typing import Any, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -15,6 +15,7 @@ from autoPyTorch.datasets.resampling_strategy import (
     get_cross_validators,
     get_holdout_validators
 )
+
 
 class DataTypes(Enum):
     Canonical = 1
@@ -137,7 +138,8 @@ class TabularDataset(BaseDataset):
 
         return data, data_types, nan_mask, itovs, vtois
 
-    def interpret_dataset_properties(self, X, y) -> Tuple[List[int], List[int], List[object], int, Optional[int]]:
+    def interpret_dataset_properties(self, X: Any, y: Any) \
+            -> Tuple[List[int], List[int], List[object], int, Optional[int]]:
 
         categorical_columns = []
         numerical_columns = []
