@@ -9,6 +9,15 @@ from autoPyTorch.pipeline.tabular_classification import TabularClassificationPip
 
 
 class TabularPreprocessingTest(unittest.TestCase):
+    def setUp(self):
+        # Setup the backed for this test
+        self.backend = unittest.mock.Mock()
+        dataset = unittest.mock.MagicMock()
+        dataset.__len__.return_value = 1
+        datamanager = unittest.mock.MagicMock()
+        datamanager.get_dataset_for_training.return_value = (dataset, dataset)
+        self.backend.load_datamanager.return_value = datamanager
+
     def test_tabular_preprocess(self):
         dataset_properties = dict(numerical_columns=list(range(15)), categorical_columns=[],)
         X = dict(X_train=np.random.random((10, 15)),
@@ -29,6 +38,8 @@ class TabularPreprocessingTest(unittest.TestCase):
                  torch_num_threads=1,
                  early_stopping=20,
                  dataset_properties=dataset_properties,
+                 split_id=0,
+                 backend=self.backend,
                  )
         pipeline = TabularClassificationPipeline(dataset_properties=dataset_properties)
         # Remove the trainer
@@ -58,6 +69,8 @@ class TabularPreprocessingTest(unittest.TestCase):
                  torch_num_threads=1,
                  early_stopping=20,
                  dataset_properties=dataset_properties,
+                 split_id=0,
+                 backend=self.backend,
                  )
 
         pipeline = TabularClassificationPipeline(dataset_properties=dataset_properties)

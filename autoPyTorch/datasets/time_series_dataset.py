@@ -3,7 +3,7 @@ from typing import Optional, Tuple, Union
 import numpy as np
 
 from autoPyTorch.datasets.base_dataset import BaseDataset
-from autoPyTorch.datasets.cross_validation import (
+from autoPyTorch.datasets.resampling_strategy import (
     CrossValTypes,
     HoldoutValTypes,
     get_cross_validators,

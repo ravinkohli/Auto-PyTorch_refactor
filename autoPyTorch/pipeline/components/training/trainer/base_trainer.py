@@ -1,4 +1,3 @@
-import logging
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
@@ -12,6 +11,7 @@ from torch.utils.tensorboard.writer import SummaryWriter
 
 from autoPyTorch.pipeline.components.training.base_training import autoPyTorchTrainingComponent
 from autoPyTorch.pipeline.components.training.metrics.utils import calculate_score
+from autoPyTorch.utils.logging_ import PicklableClientLogger
 
 
 class BudgetTracker(object):
@@ -173,14 +173,10 @@ class BaseTrainerComponent(autoPyTorchTrainingComponent):
         budget_tracker: BudgetTracker,
         optimizer: Optimizer,
         device: torch.device,
-        logger: logging.Logger,
-        writer: Optional[SummaryWriter],
         metrics_during_training: bool,
         scheduler: _LRScheduler,
         task_type: int
     ) -> None:
-
-        self.logger = logger
 
         # Save the device to be used
         self.device = device
@@ -199,9 +195,6 @@ class BaseTrainerComponent(autoPyTorchTrainingComponent):
 
         # The budget tracker
         self.budget_tracker = budget_tracker
-
-        # A summary writer for tensorboard
-        self.writer = writer
 
         # For best performance, we allow option to prevent comparing metrics every time
         self.metrics_during_training = metrics_during_training
@@ -229,7 +222,8 @@ class BaseTrainerComponent(autoPyTorchTrainingComponent):
         """
         return False
 
-    def train_epoch(self, train_loader: torch.utils.data.DataLoader, epoch: int
+    def train_epoch(self, train_loader: torch.utils.data.DataLoader, epoch: int,
+                    logger: PicklableClientLogger, writer: Optional[SummaryWriter],
                     ) -> Tuple[float, Dict[str, float]]:
         '''
             Trains the model for a single epoch.
@@ -252,7 +246,7 @@ class BaseTrainerComponent(autoPyTorchTrainingComponent):
         for step, (data, targets) in enumerate(train_loader):
 
             if self.budget_tracker.is_max_time_reached():
-                self.logger.info("Stopping training as max time reached")
+                logger.info("Stopping training as max time reached")
                 break
 
             loss, outputs = self.train_step(data, targets)
@@ -265,8 +259,8 @@ class BaseTrainerComponent(autoPyTorchTrainingComponent):
             loss_sum += loss * batch_size
             N += batch_size
 
-            if self.writer:
-                self.writer.add_scalar(
+            if writer:
+                writer.add_scalar(
                     'Train/loss',
                     loss,
                     epoch * len(train_loader) + step,
@@ -311,7 +305,8 @@ class BaseTrainerComponent(autoPyTorchTrainingComponent):
 
         return loss.item(), outputs
 
-    def evaluate(self, test_loader: torch.utils.data.DataLoader, epoch: int
+    def evaluate(self, test_loader: torch.utils.data.DataLoader, epoch: int,
+                 writer: Optional[SummaryWriter],
                  ) -> Tuple[float, Dict[str, float]]:
         '''
             Evaluates the model in both metrics and criterion
@@ -345,8 +340,8 @@ class BaseTrainerComponent(autoPyTorchTrainingComponent):
                 outputs_data.append(outputs.detach())
                 targets_data.append(targets.detach())
 
-                if self.writer:
-                    self.writer.add_scalar(
+                if writer:
+                    writer.add_scalar(
                         'Val/loss',
                         loss.item(),
                         epoch * len(test_loader) + step,

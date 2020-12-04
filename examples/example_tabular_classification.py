@@ -13,6 +13,8 @@ import sklearn.model_selection
 from sklearn.utils.multiclass import type_of_target
 
 from autoPyTorch.pipeline.tabular_classification import TabularClassificationPipeline
+from autoPyTorch.utils.backend import create, Backend
+from autoPyTorch.datasets.tabular_dataset import TabularDataset
 
 
 # Get the training data for tabular classification
@@ -46,21 +48,23 @@ dataset_properties = {
     'numerical_columns': numerical_columns,
     'output_type': output_type,
 }
+
+
+# Save data via backend to fit the pipeline
+datamanager = TabularDataset(
+    X=X_train, Y=y_train,
+    X_test=X_test, Y_test=y_test,
+)
+
+backend = create(temporary_directory='/tmp/autoPyTorch_tabular_classification_tmp',
+                 output_directory='/tmp/autoPyTorch_tabular_classification_out',
+                 delete_tmp_folder_after_terminate=False)
+backend.save_datamanager(datamanager)
+
 pipeline = TabularClassificationPipeline(dataset_properties=dataset_properties)
 
-# Configuration space
-pipeline_cs = pipeline.get_hyperparameter_search_space()
-print("Pipeline CS:\n", '_' * 40, f"\n{pipeline_cs}")
-config = pipeline_cs.sample_configuration()
-print("Pipeline Random Config:\n", '_' * 40, f"\n{config}")
-pipeline.set_hyperparameters(config)
-
-# Make sure the working directory exists. Something that backend will handle
-os.makedirs('/tmp/example_tabular_classification_1', exist_ok=True)
-
-# Fit the pipeline
-print("Fitting the pipeline...")
-pipeline.fit(X={
+# Create a fit dictionary
+fit_dictionary = {
     'categorical_columns': categorical_columns,
     'numerical_columns': numerical_columns,
     'num_features': X.shape[1],
@@ -86,7 +90,23 @@ pipeline.fit(X={
     'use_tensorboard_logger': True,
     'use_pynisher': False,
     'metrics_during_training': True,
-})
+    'backend': backend,
+    'split_id': 0,
+}
+
+# Configuration space
+pipeline_cs = pipeline.get_hyperparameter_search_space()
+print("Pipeline CS:\n", '_' * 40, f"\n{pipeline_cs}")
+config = pipeline_cs.sample_configuration()
+print("Pipeline Random Config:\n", '_' * 40, f"\n{config}")
+pipeline.set_hyperparameters(config)
+
+# Make sure the working directory exists. Something that backend will handle
+os.makedirs('/tmp/example_tabular_classification_1', exist_ok=True)
+
+# Fit the pipeline
+print("Fitting the pipeline...")
+pipeline.fit(fit_dictionary)
 
 # Showcase some components of the pipeline
 print(pipeline)

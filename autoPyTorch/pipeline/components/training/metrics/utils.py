@@ -1,3 +1,4 @@
+import warnings
 from typing import Any, Dict, Iterable, List, Optional
 
 import numpy as np
@@ -103,6 +104,7 @@ def calculate_score(
             try:
                 score_dict[metric_.name] = metric_(solution, cprediction)
             except ValueError as e:
+                warnings.warn(f"{e} {e.args[0]}")
                 if e.args[0] == "Mean Squared Logarithmic Error cannot be used when " \
                                 "targets contain negative values.":
                     continue
