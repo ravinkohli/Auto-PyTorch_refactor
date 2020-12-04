@@ -1,3 +1,5 @@
+import logging
+import math
 from collections import OrderedDict
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -56,7 +58,7 @@ class ConvNetImageBackbone(BaseBackbone):
         for i in range(2, self.config["num_layers"] + 1):
             cw, ch = self._get_layer_size(cw, ch)
             if cw == 0 or ch == 0:
-                print("> reduce network size due to too small layers.")
+                logging.info("> reduce network size due to too small layers.")
                 break
             self._add_layer(layers, init_filter, init_filter * 2)
             init_filter *= 2
@@ -189,7 +191,6 @@ class DenseNetBackbone(BaseBackbone):
 
         image_size, min_image_size = min(iw, ih), 1
 
-        import math
         division_steps = math.floor(math.log2(image_size) - math.log2(min_image_size) - 1e-5) + 1
 
         if division_steps > len(block_config) + 1:

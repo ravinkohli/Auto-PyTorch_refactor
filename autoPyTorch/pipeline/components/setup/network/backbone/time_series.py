@@ -231,7 +231,7 @@ class _TemporalBlock(nn.Module):
 class _TemporalConvNet(nn.Module):
     def __init__(self, num_inputs: int, num_channels: List[int], kernel_size: int = 2, dropout: float = 0.2):
         super(_TemporalConvNet, self).__init__()
-        layers = []
+        layers: List[Any] = []
         num_levels = len(num_channels)
         for i in range(num_levels):
             dilation_size = 2 ** i

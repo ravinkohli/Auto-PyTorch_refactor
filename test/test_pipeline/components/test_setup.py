@@ -323,9 +323,6 @@ class NetworkTest(unittest.TestCase):
             # test 10 random configurations
             for i in range(10):
                 config = cs.sample_configuration()
-                print(
-                    f'Testing with backbone={config["BackboneHeadNet:backbone"]} '
-                    f'and head={config["BackboneHeadNet:head"]}')
                 network_choice.set_hyperparameters(config)
                 network_choice.fit(X={"input_shape": input_shape, "output_shape": output_shape}, y=None)
                 self.assertNotEqual(network_choice.choice.network, None)
