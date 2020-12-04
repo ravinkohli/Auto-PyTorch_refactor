@@ -12,10 +12,9 @@ We will remove this file, once SMAC + ensemble builder work
 ======================
 """
 import copy
-import os
+import tempfile
 import time
 import typing
-import tempfile
 
 import dask
 import dask.distributed
@@ -24,15 +23,15 @@ import numpy as np
 
 import sklearn.datasets
 import sklearn.model_selection
-from sklearn.utils.multiclass import type_of_target
 from sklearn.metrics import accuracy_score
+from sklearn.utils.multiclass import type_of_target
 
+from autoPyTorch.constants import MULTICLASS, TABULAR_CLASSIFICATION
 from autoPyTorch.datasets.tabular_dataset import TabularDataset
 from autoPyTorch.ensemble.ensemble_builder import EnsembleBuilderManager
-from autoPyTorch.pipeline.tabular_classification import TabularClassificationPipeline
 from autoPyTorch.pipeline.components.training.metrics.metrics import accuracy
-from autoPyTorch.utils.backend import create, Backend
-from autoPyTorch.constants import MULTICLASS, TABULAR_CLASSIFICATION
+from autoPyTorch.pipeline.tabular_classification import TabularClassificationPipeline
+from autoPyTorch.utils.backend import Backend, create
 
 
 def get_data_to_train() -> typing.Tuple[typing.Dict[str, typing.Any]]:

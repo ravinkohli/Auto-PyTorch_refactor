@@ -12,9 +12,9 @@ import sklearn.datasets
 import sklearn.model_selection
 from sklearn.utils.multiclass import type_of_target
 
-from autoPyTorch.pipeline.tabular_classification import TabularClassificationPipeline
-from autoPyTorch.utils.backend import create, Backend
 from autoPyTorch.datasets.tabular_dataset import TabularDataset
+from autoPyTorch.pipeline.tabular_classification import TabularClassificationPipeline
+from autoPyTorch.utils.backend import create
 
 
 # Get the training data for tabular classification

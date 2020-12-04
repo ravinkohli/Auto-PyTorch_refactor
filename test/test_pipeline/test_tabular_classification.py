@@ -185,7 +185,7 @@ class PipelineTest(unittest.TestCase):
         # Make sure that fitting a network adds a "network" to X
         self.assertIn('network', pipeline.named_steps.keys())
         X = pipeline.named_steps['network'].fit(
-            {'num_features': 10, 'num_classes': 2},
+            {'num_features': 10, 'num_classes': 2, 'X_train': self.X, 'y_train': self.y},
             None
         ).transform({})
         self.assertIn('network', X)

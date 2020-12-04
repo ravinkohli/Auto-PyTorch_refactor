@@ -3,6 +3,8 @@ import unittest.mock
 
 from ConfigSpace.configuration_space import ConfigurationSpace
 
+import numpy as np
+
 from sklearn.base import clone
 
 import torch
@@ -309,12 +311,12 @@ class NetworkTest(unittest.TestCase):
 
     def test_backbone_head_net(self):
         network_choice = NetworkChoice(dataset_properties={})
-        task_types = {"image_classification": ((3, 64, 64), (5,)),
-                      "image_regression": ((3, 64, 64), (1,)),
-                      "time_series_classification": ((32, 6), (5,)),
-                      "time_series_regression": ((32, 6), (1,)),
-                      "tabular_classification": ((100,), (5,)),
-                      "tabular_regression": ((100,), (1,))}
+        task_types = {"image_classification": ((1, 3, 64, 64), (5,)),
+                      "image_regression": ((1, 3, 64, 64), (1,)),
+                      "time_series_classification": ((1, 32, 6), (5,)),
+                      "time_series_regression": ((1, 32, 6), (1,)),
+                      "tabular_classification": ((1, 100,), (5,)),
+                      "tabular_regression": ((1, 100), (1,))}
 
         device = torch.device("cpu")
         for task_type, (input_shape, output_shape) in task_types.items():
@@ -324,10 +326,10 @@ class NetworkTest(unittest.TestCase):
             for i in range(10):
                 config = cs.sample_configuration()
                 network_choice.set_hyperparameters(config)
-                network_choice.fit(X={"input_shape": input_shape, "output_shape": output_shape}, y=None)
+                network_choice.fit(X={"X_train": np.zeros(input_shape), "y_train": np.zeros(output_shape)}, y=None)
                 self.assertNotEqual(network_choice.choice.network, None)
                 network_choice.choice.to(device)
-                dummy_input = torch.randn((2, *input_shape), dtype=torch.float)
+                dummy_input = torch.randn((2, *input_shape[1:]), dtype=torch.float)
                 output = network_choice.choice.network(dummy_input)
                 self.assertEqual(output.shape[1:], output_shape)
 
