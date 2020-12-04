@@ -118,6 +118,25 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
         else:
             self.network = self.network.to(self.device)
 
+    def predict(self, loader: torch.utils.data.DataLoader) -> torch.Tensor:
+        """
+        Performs batched prediction given a loader object
+        """
+        assert self.network is not None
+        self.network.eval()
+
+        # Batch prediction
+        Y_batch_preds = list()
+
+        for i, (X_batch, Y_batch) in enumerate(loader):
+            # Predict on batch
+            X_batch = torch.autograd.Variable(X_batch).float().to(self.device)
+
+            Y_batch_pred = self.network(X_batch).detach().cpu()
+            Y_batch_preds.append(Y_batch_pred)
+
+        return torch.cat(Y_batch_preds, 0).cpu().numpy()
+
     def __str__(self) -> str:
         """ Allow a nice understanding of what components where used """
         string = self.network.__class__.__name__

@@ -1,4 +1,7 @@
-from typing import Any, Dict, Iterable, NamedTuple, Type
+from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Type
+
+import torch
+from torch.utils.data.dataloader import default_collate
 
 
 class FitRequirement(NamedTuple):
@@ -43,3 +46,29 @@ def replace_prefix_in_config_dict(config: Dict[str, Any], prefix: str, replace: 
     return {k.replace(prefix, replace, 1): v
             for k, v in config.items() if
             k.startswith(prefix)}
+
+def custom_collate_fn(batch: List) -> List[Optional[torch.tensor]]:
+    """
+    In the case of not providing a y tensor, in a
+    dataset of form {X, y}, y would be None.
+
+    This custom collate function allows to yield
+    None data for functions that require only features,
+    like predict.
+
+    Args:
+        batch (List): a batch from a dataset
+
+    Returns:
+        List[Optional[torch.Tensor]]
+    """
+
+    items = list(zip(*batch))
+
+    # The feature will always be available
+    items[0] = default_collate(items[0])
+    if None in items[1]:
+        items[1] = list(items[1])
+    else:
+        items[1] = default_collate(items[1])
+    return items
