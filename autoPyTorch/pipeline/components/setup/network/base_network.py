@@ -3,6 +3,8 @@ from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 
+import pandas as pd
+
 import torch
 from torch import nn
 
@@ -26,9 +28,9 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
         self.random_state = random_state
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") if device is None else device
 
-        self.add_fit_requirements([
-            FitRequirement("input_shape", (tuple,), user_defined=True, dataset_property=True),
-            FitRequirement("output_shape", (tuple,), user_defined=True, dataset_property=True)])
+        #self.add_fit_requirements([
+        #    FitRequirement("input_shape", (tuple,), user_defined=True, dataset_property=True),
+        #    FitRequirement("output_shape", (tuple,), user_defined=True, dataset_property=True)])
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> autoPyTorchSetupComponent:
         """
@@ -45,8 +47,10 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
         # information to fit this stage
         self.check_requirements(X, y)
 
-        input_shape = X['input_shape']
-        output_shape = X['output_shape']
+        input_shape = X['X_train'].shape[1:]
+        if isinstance(X['y_train'], pd.core.series.Series):
+            X['y_train'] = X['y_train'].to_numpy()
+        output_shape = X['y_train'].shape
 
         self.network = self.build_network(input_shape=input_shape,
                                           output_shape=output_shape)
@@ -90,20 +94,6 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
 
         # Honor the parent requirements
         super().check_requirements(X, y)
-
-        # For the Network, we need the number of input features,
-        # to build the first network layer
-        if 'input_shape' not in X.keys():
-            raise ValueError("Could not find the input shape in the fit dictionary. "
-                             "To fit a network, the input shape is needed to define "
-                             "the hidden layers, yet the dict contains only: {}".format(X.keys()))
-
-        # For the Network, we need the number of classes,
-        # to build the last layer
-        if 'output_shape' not in X:
-            raise ValueError("Could not find the output shape in the fit dictionary. "
-                             "To fit a network, the output shape is needed to define "
-                             "the hidden layers, yet the dict contains only: {}".format(X.keys()))
 
     def get_network_weights(self) -> torch.nn.parameter.Parameter:
         """Returns the weights of the network"""
