@@ -134,3 +134,6 @@ dmypy.json
 
 # Dask
 dask-worker-space/
+
+# Test output
+test/test_ensemble/data/.autoPyTorch
