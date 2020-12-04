@@ -45,10 +45,8 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
 
         # Define fit requirements
         self.add_fit_requirements([
-            FitRequirement("dataset", (str,), user_defined=True, dataset_property=True),
-            FitRequirement("root", (str,), user_defined=True, dataset_property=True),
-            FitRequirement("split_id", (int,), user_defined=True, dataset_property=True),
-            FitRequirement("train_indices", (List[int],), user_defined=True, dataset_property=True),
+            FitRequirement("split_id", (int,), user_defined=True, dataset_property=False),
+            FitRequirement("train_indices", (List[int],), user_defined=True, dataset_property=False),
             FitRequirement("Backend", (Backend,), user_defined=True, dataset_property=False),
             FitRequirement("is_small_preprocess", (bool,), user_defined=True, dataset_property=True)])
 
@@ -85,11 +83,12 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
         self.val_transform = self.build_transform(X, train=False)
 
         datamanager = X['backend'].load_datamanager()
+        train_dataset, val_dataset = datamanager.get_dataset_for_training(split_id=X['split_id'])
+
         if X["is_small_preprocess"]:
             # This parameter indicates that the data has been pre-processed for speed
             # Overwrite the datamanager with the pre-processes data
             datamanager.replace_data(X['X_train'], X['X_test'] if 'X_test' in X else None)
-        train_dataset, val_dataset = datamanager.get_dataset_for_training(split_id=X['split_id'])
         self.train_data_loader = torch.utils.data.DataLoader(
             train_dataset,
             batch_size=min(self.batch_size, len(train_dataset)),

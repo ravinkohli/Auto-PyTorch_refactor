@@ -4,10 +4,16 @@ from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import numpy as np
 
+from scipy.sparse import issparse
+
+from sklearn.utils.multiclass import type_of_target
+
+
 from torch.utils.data import Dataset, Subset
 
 import torchvision
 
+from autoPyTorch.constants import STRING_TO_OUTPUT_TYPES
 from autoPyTorch.datasets.resampling_strategy import (
     CROSS_VAL_FN,
     CrossValTypes,
@@ -62,6 +68,12 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         self.shuffle = shuffle
         self.resampling_strategy = resampling_strategy
         self.resampling_strategy_args = resampling_strategy_args
+        self.task_type = None
+        self.issparse = issparse(self.train_tensors[0])
+        self.output_type = STRING_TO_OUTPUT_TYPES[type_of_target(self.train_tensors[1])]
+
+        # TODO: Look for a criteria to define small enough to preprocess
+        self.is_small_preprocess = True
 
         # Make sure cross validation splits are created once
         self.splits = None  # type: Optional[List]
@@ -231,3 +243,12 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         if X_test is not None and self.test_tensors is not None:
             self.test_tensors = (X_test, self.test_tensors[1])
         return self
+
+    def get_dataset_properties(self, dataset_requirements) -> Dict[str, Any]:
+        dataset_properties = dict()
+        for dataset_requirement in dataset_requirements:
+            try:
+                dataset_properties[dataset_requirement.name] = getattr(self, dataset_requirement.name)
+            except:
+                raise AttributeError("{} not defined for {}".format(dataset_requirement.name, self.__class__.__name__))
+        return dataset_properties

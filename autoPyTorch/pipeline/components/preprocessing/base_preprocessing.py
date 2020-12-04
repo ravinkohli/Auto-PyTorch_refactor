@@ -23,7 +23,7 @@ class autoPyTorchPreprocessingComponent(autoPyTorchComponent):
         self.add_fit_requirements([
             FitRequirement('X_train',
                            (np.ndarray, pd.DataFrame, csr_matrix),
-                           user_defined=True, dataset_property=True)])
+                           user_defined=True, dataset_property=False)])
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
         """

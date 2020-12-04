@@ -43,7 +43,7 @@ class autoPyTorchChoice(object):
             self.random_state = check_random_state(random_state)
 
         self.dataset_properties = dataset_properties
-        self._check_dataset_properties(dataset_properties)
+        # self._check_dataset_properties(dataset_properties)
         # Since the pipeline will initialize the hyperparameters, it is not
         # necessary to do this upon the construction of this object
         # self.set_hyperparameters(self.configuration)
