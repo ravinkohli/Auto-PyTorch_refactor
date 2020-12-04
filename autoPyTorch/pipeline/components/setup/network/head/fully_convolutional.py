@@ -1,9 +1,11 @@
-from typing import Tuple, Optional, Dict, Any, List
-import torch
-from torch import nn
+from typing import Any, Dict, List, Optional, Tuple
+
 import ConfigSpace as CS
 from ConfigSpace.configuration_space import ConfigurationSpace
-from ConfigSpace.hyperparameters import UniformIntegerHyperparameter, CategoricalHyperparameter
+from ConfigSpace.hyperparameters import CategoricalHyperparameter, UniformIntegerHyperparameter
+
+import torch
+from torch import nn
 
 from autoPyTorch.pipeline.components.setup.network.head.base_head import BaseHead
 

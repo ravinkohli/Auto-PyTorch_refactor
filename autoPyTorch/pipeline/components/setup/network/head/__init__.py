@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import Type, Dict
+from typing import Dict, Type
 
 from autoPyTorch.pipeline.components.base_component import (
     ThirdPartyComponents

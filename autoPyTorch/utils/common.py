@@ -23,7 +23,7 @@ class FitRequirement(NamedTuple):
         """
         return "Name: %s | Supported types: %s | User defined: %s | Dataset property: %s" % (
             self.name, self.supported_types, self.user_defined, self.dataset_property)
-      
+
 
 def replace_prefix_in_config_dict(config: Dict[str, Any], prefix: str, replace: str = "") -> Dict[str, Any]:
     """

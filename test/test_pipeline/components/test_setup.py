@@ -2,7 +2,9 @@ import copy
 import unittest.mock
 
 from ConfigSpace.configuration_space import ConfigurationSpace
+
 from sklearn.base import clone
+
 import torch
 
 import autoPyTorch.pipeline.components.setup.lr_scheduler.base_scheduler_choice as lr_components

@@ -1,14 +1,14 @@
 from collections import OrderedDict
-from typing import Type, Dict
+from typing import Dict, Type
 
 from autoPyTorch.pipeline.components.base_component import (
     ThirdPartyComponents,
 )
 from autoPyTorch.pipeline.components.setup.network.backbone.base_backbone import BaseBackbone
 from autoPyTorch.pipeline.components.setup.network.backbone.image import ConvNetImageBackbone, DenseNetBackbone
-from autoPyTorch.pipeline.components.setup.network.backbone.tabular import ResNetBackbone, ShapedMLPBackbone, \
-    MLPBackbone
-from autoPyTorch.pipeline.components.setup.network.backbone.time_series import TCNBackbone, InceptionTimeBackbone
+from autoPyTorch.pipeline.components.setup.network.backbone.tabular import MLPBackbone, ResNetBackbone, \
+    ShapedMLPBackbone
+from autoPyTorch.pipeline.components.setup.network.backbone.time_series import InceptionTimeBackbone, TCNBackbone
 
 _backbones = {
     ConvNetImageBackbone.get_name(): ConvNetImageBackbone,
@@ -26,7 +26,7 @@ def add_backbone(backbone: BaseBackbone) -> None:
     _addons.add_component(backbone)
 
 
-def get_available_backbones() -> Dict[str, Type[BaseBackbone]]:
+def get_available_backbones() -> OrderedDict[str, Type[BaseBackbone]]:
     backbones = OrderedDict()
     backbones.update(_backbones)
     backbones.update(_addons.components)

@@ -1,16 +1,17 @@
 from typing import Any, Dict, Optional, Tuple, Type
 
-import numpy as np
 from ConfigSpace.configuration_space import ConfigurationSpace
 from ConfigSpace.hyperparameters import (
     CategoricalHyperparameter
 )
+
+import numpy as np
+
 from torch import nn
 
-from autoPyTorch.pipeline.components.setup.network.backbone import get_available_backbones, BaseBackbone
+from autoPyTorch.pipeline.components.setup.network.backbone import BaseBackbone, get_available_backbones
 from autoPyTorch.pipeline.components.setup.network.base_network import BaseNetworkComponent
-from autoPyTorch.pipeline.components.setup.network.head import get_available_heads, BaseHead
-
+from autoPyTorch.pipeline.components.setup.network.head import BaseHead, get_available_heads
 from autoPyTorch.utils import common
 
 

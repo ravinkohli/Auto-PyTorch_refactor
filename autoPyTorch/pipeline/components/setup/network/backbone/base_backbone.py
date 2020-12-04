@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Set, Any, Dict, Tuple
+from typing import Any, Dict, Set, Tuple
 
 import torch
 from torch import nn

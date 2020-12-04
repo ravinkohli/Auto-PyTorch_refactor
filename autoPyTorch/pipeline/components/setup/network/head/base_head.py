@@ -1,9 +1,9 @@
 from abc import abstractmethod
-from typing import Set, Any, Dict, Tuple
+from typing import Any, Dict, Set, Tuple
 
 import torch.nn as nn
 
-from autoPyTorch.pipeline.components.base_component import autoPyTorchComponent, BaseEstimator
+from autoPyTorch.pipeline.components.base_component import BaseEstimator, autoPyTorchComponent
 
 
 class BaseHead(autoPyTorchComponent):
