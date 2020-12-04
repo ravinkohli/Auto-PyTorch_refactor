@@ -39,8 +39,30 @@ class CrossValTypes(IntEnum):
 
 
 class HoldoutValTypes(IntEnum):
-    holdout_validation = 1
-    stratified_holdout_validation = 2
+    holdout_validation = 6
+    stratified_holdout_validation = 7
+
+
+DEFAULT_RESAMPLING_PARAMETERS = {
+    HoldoutValTypes.holdout_validation: {
+        'val_share': 0.33,
+    },
+    HoldoutValTypes.stratified_holdout_validation: {
+        'val_share': 0.33,
+    },
+    CrossValTypes.k_fold_cross_validation: {
+        'num_splits': 3,
+    },
+    CrossValTypes.stratified_k_fold_cross_validation: {
+        'num_splits': 3,
+    },
+    CrossValTypes.shuffle_split_cross_validation: {
+        'num_splits': 3,
+    },
+    CrossValTypes.time_series_cross_validation: {
+        'num_splits': 3,
+    },
+}  # type: Dict[Union[HoldoutValTypes, CrossValTypes], Dict[str, Any]]
 
 
 def get_cross_validators(*cross_val_types: CrossValTypes) -> Dict[str, CROSS_VAL_FN]:

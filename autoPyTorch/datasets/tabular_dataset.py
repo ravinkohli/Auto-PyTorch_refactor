@@ -1,12 +1,14 @@
 from enum import Enum
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 
 import numpy as np
 
 import pandas as pd
 
+from sklearn.utils import check_array
+
 from autoPyTorch.datasets.base_dataset import BaseDataset
-from autoPyTorch.datasets.cross_validation import (
+from autoPyTorch.datasets.resampling_strategy import (
     CrossValTypes,
     HoldoutValTypes,
     get_cross_validators,
@@ -18,6 +20,7 @@ class DataTypes(Enum):
     Canonical = 1
     Float = 2
     String = 3
+    Categorical = 4
 
 
 class Value2Index(object):
@@ -37,10 +40,37 @@ class TabularDataset(BaseDataset):
     Support for Numpy Arrays is missing Strings.
     """
 
-    def __init__(self, X: Any, Y: Any):
+    def __init__(self, X: Any, Y: Any,
+                 X_test: Optional[Union[np.ndarray, pd.DataFrame]] = None,
+                 Y_test: Optional[Union[np.ndarray, pd.DataFrame]] = None):
         X, self.data_types, self.nan_mask, self.itovs, self.vtois = self.interpret(X)
-        Y, _, self.target_nan_mask, self.target_itov, self.target_vtoi = self.interpret(Y, assert_single_column=True)
-        super().__init__(train_tensors=(X, Y), shuffle=True)
+
+        if Y is not None:
+            Y, _, self.target_nan_mask, self.target_itov, self.target_vtoi = self.interpret(
+                Y, assert_single_column=True)
+            # For tabular classification, we expect also that it complies with Sklearn
+            # The below check_array performs input data checks and make sure that a numpy array
+            # is returned, as both Pytorch/Sklearn deal directly with numpy/list objects.
+            # In this particular case, the interpret() returns a pandas object (needed to extract)
+            # the data types, yet check_array translate the np.array. When Sklearn support pandas
+            # the below function will simply return Pandas DataFrame.
+            Y = check_array(Y, ensure_2d=False)
+
+        # Allow support for X_test, Y_test. They will NOT be used for optimization, but
+        # rather to have a performance through time on the test data
+        if X_test is not None:
+            X_test, self._test_data_types, _, _, _ = self.interpret(X_test)
+
+            # Some quality checks on the data
+            if self.data_types != self._test_data_types:
+                raise ValueError(f"The train data inferred types {self.data_types} are "
+                                 "different than the test inferred types {self._test_data_types}")
+            if Y_test is not None:
+                Y_test, _, _, _, _ = self.interpret(
+                    Y_test, assert_single_column=True)
+                Y_test = check_array(Y_test, ensure_2d=False)
+
+        super().__init__(train_tensors=(X, Y), test_tensors=(X_test, Y_test), shuffle=True)
         self.cross_validators = get_cross_validators(
             CrossValTypes.stratified_k_fold_cross_validation,
             CrossValTypes.k_fold_cross_validation,
@@ -80,6 +110,10 @@ class TabularDataset(BaseDataset):
                 data_types.append(DataTypes.Canonical)
             elif isinstance(dtype, pd.StringDtype):
                 data_types.append(DataTypes.String)
+            elif dtype.name == 'category':
+                # OpenML format categorical columns as category
+                # So add support for that
+                data_types.append(DataTypes.Categorical)
             else:
                 raise ValueError(f"The dtype in column {col_index} is {dtype} which is not supported.")
         itovs: List[Optional[List[Any]]] = []

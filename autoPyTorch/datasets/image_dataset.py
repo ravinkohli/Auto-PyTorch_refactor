@@ -10,7 +10,7 @@ from torch.utils.data import Dataset, TensorDataset
 from torchvision.transforms import functional as TF
 
 from autoPyTorch.datasets.base_dataset import BaseDataset
-from autoPyTorch.datasets.cross_validation import (
+from autoPyTorch.datasets.resampling_strategy import (
     CrossValTypes,
     HoldoutValTypes,
     get_cross_validators,
@@ -23,14 +23,17 @@ IMAGE_DATASET_INPUT = Union[Dataset, Tuple[Union[np.ndarray, List[str]], np.ndar
 class ImageDataset(BaseDataset):
     def __init__(self,
                  train: IMAGE_DATASET_INPUT,
-                 val: Optional[IMAGE_DATASET_INPUT] = None):
+                 val: Optional[IMAGE_DATASET_INPUT] = None,
+                 test: Optional[IMAGE_DATASET_INPUT] = None):
         _check_image_inputs(train=train, val=val)
         train = _create_image_dataset(data=train)
         if val is not None:
             val = _create_image_dataset(data=val)
+        if test is not None:
+            test = _create_image_dataset(data=test)
         self.mean, self.std = _calc_mean_std(train=train)
 
-        super().__init__(train_tensors=train, val_tensors=val, shuffle=True)
+        super().__init__(train_tensors=train, val_tensors=val, test_tensors=test, shuffle=True)
         self.cross_validators = get_cross_validators(
             CrossValTypes.stratified_k_fold_cross_validation,
             CrossValTypes.k_fold_cross_validation,

@@ -21,7 +21,9 @@ class autoPyTorchPreprocessingComponent(autoPyTorchComponent):
     def __init__(self) -> None:
         super().__init__()
         self.add_fit_requirements([
-            FitRequirement('X_train', (np.ndarray, pd.DataFrame, csr_matrix), user_defined=True, dataset_property=True)])
+            FitRequirement('X_train',
+                           (np.ndarray, pd.DataFrame, csr_matrix),
+                           user_defined=True, dataset_property=True)])
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
         """
