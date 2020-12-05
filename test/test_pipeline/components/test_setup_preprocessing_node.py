@@ -1,4 +1,5 @@
 import unittest
+from unittest import mock
 
 import numpy as np
 
@@ -11,15 +12,18 @@ from autoPyTorch.pipeline.tabular_classification import TabularClassificationPip
 class TabularPreprocessingTest(unittest.TestCase):
     def setUp(self):
         # Setup the backed for this test
-        self.backend = unittest.mock.Mock()
-        dataset = unittest.mock.MagicMock()
+        self.backend = mock.Mock()
+        dataset = mock.MagicMock()
         dataset.__len__.return_value = 1
-        datamanager = unittest.mock.MagicMock()
+        datamanager = mock.MagicMock()
         datamanager.get_dataset_for_training.return_value = (dataset, dataset)
         self.backend.load_datamanager.return_value = datamanager
 
     def test_tabular_preprocess(self):
-        dataset_properties = dict(numerical_columns=list(range(15)), categorical_columns=[],)
+        dataset_properties = {
+            'numerical_columns': list(range(15)),
+            'categorical_columns': [],
+            'task_type': 'tabular_classification'}
         X = dict(X_train=np.random.random((10, 15)),
                  y_train=np.random.random(10),
                  train_indices=[0, 1, 2, 3, 4, 5],

@@ -176,7 +176,10 @@ class PipelineTest(unittest.TestCase):
         """Fitting a network should put the network in the X"""
 
         # Create the pipeline to check. A random config should be sufficient
-        dataset_properties = {'numerical_columns': [], 'categorical_columns': []}
+        dataset_properties = {
+            'numerical_columns': [],
+            'categorical_columns': [],
+            'task_type': 'tabular_classification'}
         pipeline = TabularClassificationPipeline(dataset_properties=dataset_properties)
         cs = pipeline.get_hyperparameter_search_space()
         config = cs.sample_configuration()
