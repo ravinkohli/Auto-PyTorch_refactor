@@ -1,22 +1,23 @@
 import copy
-import unittest
 import unittest.mock
 
 from ConfigSpace.configuration_space import ConfigurationSpace
 
+import numpy as np
+
 from sklearn.base import clone
 
-import torch.nn as nn
+import torch
 
 import autoPyTorch.pipeline.components.setup.lr_scheduler.base_scheduler_choice as lr_components
 import autoPyTorch.pipeline.components.setup.network.base_network_choice as network_components
-import autoPyTorch.pipeline.components.setup.network_initializer.base_network_init_choice as network_initializer_components  # noqa: E501
+import \
+    autoPyTorch.pipeline.components.setup.network_initializer.base_network_init_choice as network_initializer_components  # noqa: E501
 import autoPyTorch.pipeline.components.setup.optimizer.base_optimizer_choice as optimizer_components
 from autoPyTorch.pipeline.components.setup.lr_scheduler.base_scheduler_choice import (
     BaseLRComponent,
     SchedulerChoice
 )
-from autoPyTorch.pipeline.components.setup.network.MLPNet import MLPNet
 from autoPyTorch.pipeline.components.setup.network.base_network_choice import (
     BaseNetworkComponent,
     NetworkChoice
@@ -279,7 +280,7 @@ class NetworkTest(unittest.TestCase):
         network_choice = NetworkChoice(dataset_properties={})
 
         # Make sure all components are returned
-        self.assertEqual(len(network_choice.get_components().keys()), 4)
+        self.assertEqual(len(network_choice.get_components().keys()), 1)
 
         # For every network in the components, make sure
         # that it complies with the scikit learn estimator.
@@ -308,13 +309,37 @@ class NetworkTest(unittest.TestCase):
                 param2 = params_set[name]
                 self.assertEqual(param1, param2)
 
+    def test_backbone_head_net(self):
+        network_choice = NetworkChoice(dataset_properties={})
+        task_types = {"image_classification": ((1, 3, 64, 64), (5,)),
+                      "image_regression": ((1, 3, 64, 64), (1,)),
+                      "time_series_classification": ((1, 32, 6), (5,)),
+                      "time_series_regression": ((1, 32, 6), (1,)),
+                      "tabular_classification": ((1, 100,), (5,)),
+                      "tabular_regression": ((1, 100), (1,))}
+
+        device = torch.device("cpu")
+        for task_type, (input_shape, output_shape) in task_types.items():
+            cs = network_choice.get_hyperparameter_search_space(dataset_properties={"task_type": task_type},
+                                                                include=["BackboneHeadNet"])
+            # test 10 random configurations
+            for i in range(10):
+                config = cs.sample_configuration()
+                network_choice.set_hyperparameters(config)
+                network_choice.fit(X={"X_train": np.zeros(input_shape), "y_train": np.zeros(output_shape)}, y=None)
+                self.assertNotEqual(network_choice.choice.network, None)
+                network_choice.choice.to(device)
+                dummy_input = torch.randn((2, *input_shape[1:]), dtype=torch.float)
+                output = network_choice.choice.network(dummy_input)
+                self.assertEqual(output.shape[1:], output_shape)
+
     def test_get_set_config_space(self):
         """Make sure that we can setup a valid choice in the network
         choice"""
         network_choice = NetworkChoice(dataset_properties={})
         cs = network_choice.get_hyperparameter_search_space()
 
-        # Make sure that all hyperparameters are part of the serach space
+        # Make sure that all hyperparameters are part of the search space
         self.assertListEqual(
             sorted(cs.get_hyperparameter('__choice__').choices),
             sorted(list(network_choice.get_components().keys()))
@@ -334,9 +359,11 @@ class NetworkTest(unittest.TestCase):
 
             # Then check the choice configuration
             selected_choice = config_dict.pop('__choice__', None)
+            self.assertNotEqual(selected_choice, None)
             for key, value in config_dict.items():
                 # Remove the selected_choice string from the parameter
                 # so we can query in the object for it
+
                 key = key.replace(selected_choice + ':', '')
                 # In the case of MLP, parameters are dynamic, so they exist in config
                 parameters = vars(network_choice.choice)
@@ -354,98 +381,6 @@ class NetworkTest(unittest.TestCase):
         self.assertEqual(len(network_components._addons.components), 1)
         cs = NetworkChoice(dataset_properties={}).get_hyperparameter_search_space()
         self.assertIn('DummyNet', str(cs))
-
-    def test_mlp_network_builder(self):
-        """Makes sure that we honor the given network architecture
-        when building an MLP"""
-
-        X = {
-            'num_features': 10,
-            'num_classes': 2,
-        }
-        for num_groups, activation, use_dropout, dictionary in [
-            (
-                3, 'relu', True, {
-                'num_units_1': 11,
-                'num_units_2': 18,
-                'num_units_3': 11,
-                'dropout_1': 0.5,
-                'dropout_2': 0.5,
-                'dropout_3': 0.5,
-                }
-            ),
-            (
-                3, 'relu', False, {
-                'num_units_1': 12,
-                'num_units_2': 14,
-                'num_units_3': 14,
-                }
-            ),
-            (
-                5, 'tanh', False, {
-                'num_units_1': 12,
-                'num_units_2': 14,
-                'num_units_3': 14,
-                'num_units_4': 17,
-                'num_units_5': 14,
-                }
-            )
-        ]:
-            network = MLPNet(
-                num_groups=num_groups,
-                intermediate_activation=activation,
-                use_dropout=use_dropout,
-                **dictionary,
-            )
-
-            # Fit the network and check it's contents
-            network.fit(X, y=None)
-
-            # Make sure we properly fitted a module
-            self.assertIsInstance(network.network, nn.Sequential)
-
-            # Make sure that every parameter comply with the desired output
-
-            # The last layer has size equal to the number of classes
-            self.assertEqual(
-                list(network.network.named_modules())[1][1].in_features,
-                X['num_features']
-            )
-
-            # The last layer has size equal to the number of classes
-            self.assertEqual(
-                list(network.network.named_modules())[-1][1].out_features,
-                X['num_classes']
-            )
-
-            # Make sure the number of layers is honored
-            layers = [module for name, module in list(network.network.named_modules())
-                      if isinstance(module, nn.Linear)]
-            self.assertEqual(len(layers), num_groups + 1)
-
-            # Make sure the number of units is honored
-            num_units = [module.out_features for name, module in list(
-                network.network.named_modules()) if isinstance(module, nn.Linear)]
-            self.assertEqual([dictionary['num_units_' + str(i)] for i in range(1, num_groups + 1)
-                              ] + [X['num_classes']],
-                             num_units
-                             )
-
-            dropouts = [module for name, module in list(network.network.named_modules())
-                        if isinstance(module, nn.Dropout)]
-
-            if use_dropout:
-                self.assertEqual(len(dropouts), num_groups)
-            else:
-                self.assertEqual(len(dropouts), 0)
-
-            if 'relu' in activation:
-                activations = [module for name, module in list(network.network.named_modules())
-                               if isinstance(module, nn.ReLU)]
-            elif 'tanh' in activation:
-                activations = [module for name, module in list(network.network.named_modules())
-                               if isinstance(module, nn.Tanh)]
-            self.assertEqual(len(activations), num_groups)
 
 
 class NetworkInitializerTest(unittest.TestCase):

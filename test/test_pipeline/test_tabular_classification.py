@@ -176,7 +176,10 @@ class PipelineTest(unittest.TestCase):
         """Fitting a network should put the network in the X"""
 
         # Create the pipeline to check. A random config should be sufficient
-        dataset_properties = {'numerical_columns': [], 'categorical_columns': []}
+        dataset_properties = {
+            'numerical_columns': [],
+            'categorical_columns': [],
+            'task_type': 'tabular_classification'}
         pipeline = TabularClassificationPipeline(dataset_properties=dataset_properties)
         cs = pipeline.get_hyperparameter_search_space()
         config = cs.sample_configuration()
@@ -185,7 +188,7 @@ class PipelineTest(unittest.TestCase):
         # Make sure that fitting a network adds a "network" to X
         self.assertIn('network', pipeline.named_steps.keys())
         X = pipeline.named_steps['network'].fit(
-            {'num_features': 10, 'num_classes': 2},
+            {'num_features': 10, 'num_classes': 2, 'X_train': self.X, 'y_train': self.y},
             None
         ).transform({})
         self.assertIn('network', X)
