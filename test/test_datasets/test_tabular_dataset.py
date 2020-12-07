@@ -1,4 +1,5 @@
 import os
+import pytest
 import typing
 import unittest
 
@@ -71,7 +72,7 @@ def get_data_to_train() -> typing.Dict[str, typing.Any]:
     return fit_dictionary
 
 
-@unittest.skipIf(os.path.exists('/tmp/autoPyTorch_ensemble_test_tmp'), "Folder already exists, skipping rest of test")
+@pytest.mark.xfail(raises=FileExistsError)
 class TabularDatasetTest(unittest.TestCase):
 
     def test_get_dataset_properties(self):
