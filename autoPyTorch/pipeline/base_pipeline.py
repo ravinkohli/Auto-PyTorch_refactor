@@ -1,5 +1,6 @@
 import warnings
 from abc import ABCMeta
+from collections import Counter
 from typing import Any, Dict, List, Optional, Tuple
 
 from ConfigSpace import Configuration
@@ -366,11 +367,6 @@ class BasePipeline(Pipeline):
             multiple_fit_requirements = [req for req in fit_requirements if req.name in multiple_names]
             raise ValueError("Found fit requirements with different values %s" % multiple_fit_requirements)
         return fit_requirements
-
-    def get_default_config(self) -> Dict:
-        fit_requirements = self.get_fit_requirements()
-        default_config = {req.name: req.default for req in fit_requirements}
-        return default_config
 
     def get_dataset_requirements(self) -> List[FitRequirement]:
         """
