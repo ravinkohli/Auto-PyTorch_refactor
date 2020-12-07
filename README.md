@@ -8,12 +8,12 @@ So far, Auto-PyTorch supports tabular data (classification, regression), image d
 
 ## Installation
 
-# Pip
+### Pip
 ```sh
 $ pip install autoPyTorch
 ```
 
-# Manually
+### Manually
 ```sh
 $ cd install/path
 $ git clone https://github.com/automl/Auto-PyTorch.git
@@ -47,11 +47,11 @@ For ore examples, checkout `examples/`.
 
 ## Configuration
 
-# Pipeline configuration
+### Pipeline configuration
 
-# Search space
+### Search space
 
-# Fitting single configurations
+### Fitting single configurations
 
 
 ## License
