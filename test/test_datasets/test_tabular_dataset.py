@@ -77,9 +77,13 @@ class TabularDatasetTest(unittest.TestCase):
         fit_dictionary = get_data_to_train()
 
         # Build a repository with random fitted models
-        backend = create(temporary_directory='/tmp/autoPyTorch_ensemble_test_tmp',
-                         output_directory='/tmp/autoPyTorch_ensemble_test_out',
-                         delete_tmp_folder_after_terminate=False)
+        try:
+            backend = create(temporary_directory='/tmp/autoPyTorch_ensemble_test_tmp',
+                             output_directory='/tmp/autoPyTorch_ensemble_test_out',
+                             delete_tmp_folder_after_terminate=False)
+        except Exception as e:
+            self.assertRaises(FileExistsError)
+            unittest.skip("File already exists, skipping rest of test")
         fit_dictionary['backend'] = backend
 
         # Create the directory structure
