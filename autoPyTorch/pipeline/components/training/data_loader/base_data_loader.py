@@ -46,7 +46,7 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
         # Define fit requirements
         self.add_fit_requirements([
             FitRequirement("split_id", (int,), user_defined=True, dataset_property=False),
-            FitRequirement("train_indices", (List[int],), user_defined=True, dataset_property=False),
+            FitRequirement("train_indices", (List,), user_defined=True, dataset_property=False),
             FitRequirement("Backend", (Backend,), user_defined=True, dataset_property=False),
             FitRequirement("is_small_preprocess", (bool,), user_defined=True, dataset_property=True)])
 
