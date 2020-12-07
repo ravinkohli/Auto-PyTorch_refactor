@@ -348,7 +348,7 @@ class BasePipeline(Pipeline):
         Returns:
             List[NamedTuple]: List of FitRequirements
         """
-        fit_requirements = list()  # type: List[FitRequirement]
+        fit_requirements = list()  # List[FitRequirement]
         for name, step in self.steps:
             step_requirements = step.get_fit_requirements()
             if step_requirements:
@@ -356,8 +356,21 @@ class BasePipeline(Pipeline):
 
         # remove duplicates in the list
         fit_requirements = list(set(fit_requirements))
-        fit_requirements = [req for req in fit_requirements if req.user_defined]
+        fit_requirements = [req for req in fit_requirements if (req.user_defined and not req.dataset_property)]
+        req_names = [req.name for req in fit_requirements]
+
+        # check wether requirement names are unique
+        if len(set(req_names)) != len(fit_requirements):
+            name_occurences = Counter(req_names)
+            multiple_names = [name for name, num_occ in name_occurences.items() if num_occ > 1]
+            multiple_fit_requirements = [req for req in fit_requirements if req.name in multiple_names]
+            raise ValueError("Found fit requirements with different values %s" % multiple_fit_requirements)
         return fit_requirements
+
+    def get_default_config(self) -> Dict:
+        fit_requirements = self.get_fit_requirements()
+        default_config = {req.name: req.default for req in fit_requirements}
+        return default_config
 
     def get_dataset_requirements(self) -> List[FitRequirement]:
         """
