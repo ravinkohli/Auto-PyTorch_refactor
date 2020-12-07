@@ -72,7 +72,7 @@ def get_data_to_train() -> typing.Dict[str, typing.Any]:
     return fit_dictionary
 
 
-@pytest.mark.xfail(raises=FileExistsError)
+@unittest.skipIf(condition=os.path.exists('/tmp/autoPyTorch_ensemble_test_tmp'), reason="Temporary file exists")
 class TabularDatasetTest(unittest.TestCase):
 
     def test_get_dataset_properties(self):
