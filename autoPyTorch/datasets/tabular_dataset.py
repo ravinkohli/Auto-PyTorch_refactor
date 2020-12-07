@@ -58,7 +58,7 @@ class TabularDataset(BaseDataset):
             Y = check_array(Y, ensure_2d=False)
 
         self.categorical_columns, self.numerical_columns, self.categories, self.num_features, self.num_classes = \
-            self.interpret_dataset_properties(X, Y)
+            self.infer_dataset_properties(X, Y)
 
         # Allow support for X_test, Y_test. They will NOT be used for optimization, but
         # rather to have a performance through time on the test data
@@ -138,7 +138,7 @@ class TabularDataset(BaseDataset):
 
         return data, data_types, nan_mask, itovs, vtois
 
-    def interpret_dataset_properties(self, X: Any, y: Any) \
+    def infer_dataset_properties(self, X: Any, y: Any) \
             -> Tuple[List[int], List[int], List[object], int, Optional[int]]:
 
         categorical_columns = []

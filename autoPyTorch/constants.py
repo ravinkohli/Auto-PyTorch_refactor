@@ -22,6 +22,8 @@ STRING_TO_TASK_TYPES = \
      'tabular_regression': TABULAR_REGRESSION,
      'image_regression': IMAGE_REGRESSION}
 
+# Output types have been defined as in scikit-learn type_of_target
+# (https://scikit-learn.org/stable/modules/generated/sklearn.utils.multiclass.type_of_target.html)
 BINARY = 10
 CONTINUOUSMULTIOUTPUT = 11
 MULTICLASS = 12

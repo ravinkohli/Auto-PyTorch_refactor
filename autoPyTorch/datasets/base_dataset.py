@@ -8,7 +8,6 @@ from scipy.sparse import issparse
 
 from sklearn.utils.multiclass import type_of_target
 
-
 from torch.utils.data import Dataset, Subset
 
 import torchvision
