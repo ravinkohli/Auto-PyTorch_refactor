@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -7,6 +7,7 @@ import pandas as pd
 
 from sklearn.utils import check_array
 
+from autoPyTorch.constants import TABULAR_CLASSIFICATION
 from autoPyTorch.datasets.base_dataset import BaseDataset
 from autoPyTorch.datasets.resampling_strategy import (
     CrossValTypes,
@@ -43,10 +44,10 @@ class TabularDataset(BaseDataset):
     def __init__(self, X: Any, Y: Any,
                  X_test: Optional[Union[np.ndarray, pd.DataFrame]] = None,
                  Y_test: Optional[Union[np.ndarray, pd.DataFrame]] = None):
-        X, self.data_types, self.nan_mask, self.itovs, self.vtois = self.interpret(X)
+        X, self.data_types, self.nan_mask, self.itovs, self.vtois = self.interpret_columns(X)
 
         if Y is not None:
-            Y, _, self.target_nan_mask, self.target_itov, self.target_vtoi = self.interpret(
+            Y, _, self.target_nan_mask, self.target_itov, self.target_vtoi = self.interpret_columns(
                 Y, assert_single_column=True)
             # For tabular classification, we expect also that it complies with Sklearn
             # The below check_array performs input data checks and make sure that a numpy array
@@ -56,21 +57,25 @@ class TabularDataset(BaseDataset):
             # the below function will simply return Pandas DataFrame.
             Y = check_array(Y, ensure_2d=False)
 
+        self.categorical_columns, self.numerical_columns, self.categories, self.num_features, self.num_classes = \
+            self.infer_dataset_properties(X, Y)
+
         # Allow support for X_test, Y_test. They will NOT be used for optimization, but
         # rather to have a performance through time on the test data
         if X_test is not None:
-            X_test, self._test_data_types, _, _, _ = self.interpret(X_test)
+            X_test, self._test_data_types, _, _, _ = self.interpret_columns(X_test)
 
             # Some quality checks on the data
             if self.data_types != self._test_data_types:
                 raise ValueError(f"The train data inferred types {self.data_types} are "
                                  "different than the test inferred types {self._test_data_types}")
             if Y_test is not None:
-                Y_test, _, _, _, _ = self.interpret(
+                Y_test, _, _, _, _ = self.interpret_columns(
                     Y_test, assert_single_column=True)
                 Y_test = check_array(Y_test, ensure_2d=False)
 
         super().__init__(train_tensors=(X, Y), test_tensors=(X_test, Y_test), shuffle=True)
+        self.task_type = TABULAR_CLASSIFICATION
         self.cross_validators = get_cross_validators(
             CrossValTypes.stratified_k_fold_cross_validation,
             CrossValTypes.k_fold_cross_validation,
@@ -82,7 +87,7 @@ class TabularDataset(BaseDataset):
             HoldoutValTypes.stratified_holdout_validation
         )
 
-    def interpret(self, data: Any, assert_single_column: bool = False) -> tuple:
+    def interpret_columns(self, data: Any, assert_single_column: bool = False) -> tuple:
         single_column = False
         if isinstance(data, np.ndarray):
             if len(data.shape) == 1 and ',' not in str(data.dtype):
@@ -132,3 +137,21 @@ class TabularDataset(BaseDataset):
             return data.iloc[:, 0], data_types[0], nan_mask[0], itovs[0], vtois[0]
 
         return data, data_types, nan_mask, itovs, vtois
+
+    def infer_dataset_properties(self, X: Any, y: Any) \
+            -> Tuple[List[int], List[int], List[object], int, Optional[int]]:
+
+        categorical_columns = []
+        numerical_columns = []
+        for i, data_type in enumerate(self.data_types):
+            if data_type == DataTypes.String or data_type == DataTypes.Categorical:
+                categorical_columns.append(i)
+            else:
+                numerical_columns.append(i)
+        categories = [np.unique(X.iloc[:, a]).tolist() for a in categorical_columns]
+        num_features = X.shape[1]
+        num_classes = None
+        if y is not None:
+            num_classes = len(np.unique(y))
+
+        return categorical_columns, numerical_columns, categories, num_features, num_classes

@@ -26,8 +26,8 @@ class ImageNormalizer(BaseNormalizer):
             autoPyTorchImagePreprocessingComponent: self
         """
         self.check_requirements(X, y)
-        self.mean = X['channelwise_mean']
-        self.std = X['channelwise_std']
+        self.mean = X['mean']
+        self.std = X['std']
         return self
 
     def __call__(self, X: Union[np.ndarray, torch.tensor]) -> Union[np.ndarray, torch.tensor]:

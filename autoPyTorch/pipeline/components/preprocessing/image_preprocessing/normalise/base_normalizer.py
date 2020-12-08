@@ -12,8 +12,8 @@ class BaseNormalizer(autoPyTorchImagePreprocessingComponent):
     def __init__(self) -> None:
         super(BaseNormalizer, self).__init__()
         self.add_fit_requirements([
-            FitRequirement('channelwise_mean', (np.ndarray,), user_defined=True, dataset_property=True),
-            FitRequirement('channelwise_std', (np.ndarray,), user_defined=True, dataset_property=True)])
+            FitRequirement('mean', (np.ndarray,), user_defined=True, dataset_property=True),
+            FitRequirement('std', (np.ndarray,), user_defined=True, dataset_property=True)])
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
 
@@ -33,7 +33,7 @@ class BaseNormalizer(autoPyTorchImagePreprocessingComponent):
         """
         super().check_requirements(X, y)
 
-        if 0 in X['channelwise_std']:
+        if 0 in X['std']:
             raise ZeroDivisionError("Can't normalise when std is zero")
 
     def __str__(self) -> str:

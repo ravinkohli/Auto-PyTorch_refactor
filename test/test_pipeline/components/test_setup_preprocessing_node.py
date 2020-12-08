@@ -96,8 +96,8 @@ class ImagePreprocessingTest(unittest.TestCase):
                  train_indices=[0, 1, 2, 3, 4, 5],
                  val_indices=[6, 7, 8, 9],
                  is_small_preprocess=True,
-                 channelwise_mean=np.array([np.mean(data[:, :, :, i]) for i in range(3)]),
-                 channelwise_std=np.array([np.std(data[:, :, :, i]) for i in range(3)]),
+                 mean=np.array([np.mean(data[:, :, :, i]) for i in range(3)]),
+                 std=np.array([np.std(data[:, :, :, i]) for i in range(3)]),
                  )
         dataset_properties = dict()
         pipeline = ImageClassificationPipeline(dataset_properties=dataset_properties)
@@ -114,8 +114,8 @@ class ImagePreprocessingTest(unittest.TestCase):
                  image_height=2,
                  image_width=2,
                  is_small_preprocess=False,
-                 channelwise_mean=np.array([np.mean(data[:, :, :, i]) for i in range(3)]),
-                 channelwise_std=np.array([np.std(data[:, :, :, i]) for i in range(3)]),
+                 mean=np.array([np.mean(data[:, :, :, i]) for i in range(3)]),
+                 std=np.array([np.std(data[:, :, :, i]) for i in range(3)]),
                  )
         dataset_properties = dict()
         pipeline = ImageClassificationPipeline(dataset_properties=dataset_properties)
