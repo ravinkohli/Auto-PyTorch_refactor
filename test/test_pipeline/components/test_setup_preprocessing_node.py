@@ -1,4 +1,5 @@
 import unittest
+from unittest import mock
 
 import numpy as np
 
@@ -9,8 +10,20 @@ from autoPyTorch.pipeline.tabular_classification import TabularClassificationPip
 
 
 class TabularPreprocessingTest(unittest.TestCase):
+    def setUp(self):
+        # Setup the backed for this test
+        self.backend = mock.Mock()
+        dataset = mock.MagicMock()
+        dataset.__len__.return_value = 1
+        datamanager = mock.MagicMock()
+        datamanager.get_dataset_for_training.return_value = (dataset, dataset)
+        self.backend.load_datamanager.return_value = datamanager
+
     def test_tabular_preprocess(self):
-        dataset_properties = dict(numerical_columns=list(range(15)), categorical_columns=[],)
+        dataset_properties = {
+            'numerical_columns': list(range(15)),
+            'categorical_columns': [],
+            'task_type': 'tabular_classification'}
         X = dict(X_train=np.random.random((10, 15)),
                  y_train=np.random.random(10),
                  train_indices=[0, 1, 2, 3, 4, 5],
@@ -29,6 +42,8 @@ class TabularPreprocessingTest(unittest.TestCase):
                  torch_num_threads=1,
                  early_stopping=20,
                  dataset_properties=dataset_properties,
+                 split_id=0,
+                 backend=self.backend,
                  )
         pipeline = TabularClassificationPipeline(dataset_properties=dataset_properties)
         # Remove the trainer
@@ -58,6 +73,8 @@ class TabularPreprocessingTest(unittest.TestCase):
                  torch_num_threads=1,
                  early_stopping=20,
                  dataset_properties=dataset_properties,
+                 split_id=0,
+                 backend=self.backend,
                  )
 
         pipeline = TabularClassificationPipeline(dataset_properties=dataset_properties)
@@ -79,8 +96,8 @@ class ImagePreprocessingTest(unittest.TestCase):
                  train_indices=[0, 1, 2, 3, 4, 5],
                  val_indices=[6, 7, 8, 9],
                  is_small_preprocess=True,
-                 channelwise_mean=np.array([np.mean(data[:, :, :, i]) for i in range(3)]),
-                 channelwise_std=np.array([np.std(data[:, :, :, i]) for i in range(3)]),
+                 mean=np.array([np.mean(data[:, :, :, i]) for i in range(3)]),
+                 std=np.array([np.std(data[:, :, :, i]) for i in range(3)]),
                  )
         dataset_properties = dict()
         pipeline = ImageClassificationPipeline(dataset_properties=dataset_properties)
@@ -97,8 +114,8 @@ class ImagePreprocessingTest(unittest.TestCase):
                  image_height=2,
                  image_width=2,
                  is_small_preprocess=False,
-                 channelwise_mean=np.array([np.mean(data[:, :, :, i]) for i in range(3)]),
-                 channelwise_std=np.array([np.std(data[:, :, :, i]) for i in range(3)]),
+                 mean=np.array([np.mean(data[:, :, :, i]) for i in range(3)]),
+                 std=np.array([np.std(data[:, :, :, i]) for i in range(3)]),
                  )
         dataset_properties = dict()
         pipeline = ImageClassificationPipeline(dataset_properties=dataset_properties)

@@ -1,71 +1,173 @@
+# mypy: ignore-errors
 import typing
+from abc import abstractmethod
+from typing import Any, Optional
+
+from ConfigurationSpace.configuration_space import \
+    Configuration, \
+    ConfigurationSpace
+
+import numpy as np
+
+from autoPyTorch.datasets.base_dataset import BaseDataset
 
 
-class Task:
+class BaseTask():
+    """
+    Base class for the tasks that serve as API to the pipelines.
+    """
 
-    @typing.no_type_check
     def __init__(
-        self,
-        **pipeline_kwargs,
+        self
     ):
-        self._pipeline = pipeline_kwargs['pipeline']
-        self._pipeline_config = pipeline_kwargs['pipeline_config']
-        self._optimizer = pipeline_kwargs['optimizer']
-        self._resource_scheduler = ['resource_scheduler']
-        self._backend = ['backend']
+        self.pipeline = self.build_pipeline()
+
+        self.pipeline_config = self.pipeline.get_default_config()
+
+        self.search_space = self.pipeline.get_hyperparameter_search_space()
+
+    @abstractmethod
+    def build_pipeline(self):
+        raise NotImplementedError
+
+    def set_pipeline_config(
+            self,
+            **pipeline_config_kwargs: Any) -> None:
+        """
+        Check wether arguments are valid and then pipeline configuration.
+        """
+        unknown_keys = []
+        for option, value in pipeline_config_kwargs.items:
+            if option in self.pipeline_config.keys():
+                pass
+            else:
+                unknown_keys.append(option)
+
+        if len(unknown_keys) > 0:
+            raise ValueError("Invalid configuration arguments given %s" % unknown_keys)
+
+        self.pipeline_config.update(pipeline_config_kwargs)
+
+    def get_pipeline_config(self) -> dict:
+        """
+        Returns the current pipeline configuration.
+        """
+        return self.pipeline_config
+
+    def set_search_space(self, search_space: ConfigurationSpace) -> None:
+        """
+        Update the search space.
+        """
+        raise NotImplementedError
+
+    def get_search_space(self) -> ConfigurationSpace:
+        """
+        Returns the current search space as ConfigurationSpace object.
+        """
+        return self.search_space
 
     @typing.no_type_check
     def search(
         self,
-        X,
-        y,
-        X_val,
-        y_val,
-        X_test,
-        y_test,
-        search_space,
+        dataset: BaseDataset,
     ):
-        pass
+        """Refit a model configuration and calculate the model performance.
+        Given a model configuration, the model is trained on the joint train
+        and validation sets of the dataset. This corresponds to the refit
+        phase after finding a best hyperparameter configuration after the hpo
+        phase.
+        Args:
+            dataset: (Dataset)
+                The argument that will provide the dataset splits. It can either
+                be a dictionary with the splits, or the dataset object which can
+                generate the splits based on different restrictions.
+        """
+        # TODO: Check dataset type against task type
+        dataset_properties = dataset.get_dataset_properties()
+
+        X = {}
+        X.update(dataset_properties)
+        X.update(self.pipeline_config)
+
+        self.fit_result = self.pipeline.fit_pipeline(X)
+
+        # TODO do something with the fit result
 
     @typing.no_type_check
     def fit(
         self,
-        X,
-        y,
-        X_test,
-        y_test,
-        model_config,
+        dataset: BaseDataset,
+        model_config: Configuration,
+        X_test: Optional[np.ndarray] = None,
+        y_test: Optional[np.ndarray] = None
     ):
-        pass
+        """Refit a model configuration and calculate the model performance.
+        Given a model configuration, the model is trained on the joint train
+        and validation sets of the dataset. This corresponds to the refit
+        phase after finding a best hyperparameter configuration after the hpo
+        phase.
+        Args:
+            dataset: (Dataset)
+                The argument that will provide the dataset splits. It can either
+                be a dictionary with the splits, or the dataset object which can
+                generate the splits based on different restrictions.
+            model_config: (Configuration)
+                The configuration of the model.
+        Returns:
+            Value of the evaluation metric calculated on the test set.
+        """
+        # TODO the model configuration is for the pipeline
+        # instead of it being given from the hpo algorithm
+        # it takes it from us ?
 
-    @typing.no_type_check
+        dataset_properties = dataset.get_dataset_properties()
+
+        X = {}
+        X.update(dataset_properties)
+        X.update(self.pipeline_config)
+
+        self.pipeline.set_hyperparameters(model_config)
+        self.pipeline.fit(X)
+
+        return self.score(X_test, y_test)
+
     def predict(
         self,
-        X_test,
-        y_test,
-    ):
-        pass
+        X_test: np.ndarray,
+    ) -> np.ndarray:
+        """Generate the estimator predictions.
+        Generate the predictions based on the given examples from the test set.
+        Args:
+        X_test: (np.ndarray)
+            The test set examples.
+        Returns:
+            Array with estimator predictions.
+        """
+        # TODO use the batch size and take it from the pipeline
+        # TODO argument to method for a flag that might return probabilities
+        # in case the pipeline does not have a predict_proba then continue
+        # normally and raise warning
+        return self.pipeline.predict(X_test)
 
-    @typing.no_type_check
     def score(
         self,
-        X_test,
-        y_test,
-    ):
-        pass
-
-    @typing.no_type_check
-    def get_pipeline_config(
-        self
-    ):
-        return self._pipeline_config
-
-    @typing.no_type_check
-    def set_pipeline_config(
-        self,
-        new_pipeline_config,
-    ):
-        self._pipeline_config = new_pipeline_config
+        X_test: np.ndarray,
+        y_test: np.ndarray,
+        sample_weights: Optional[np.ndarray] = None,
+    ) -> float:
+        """Calculate the score on the test set.
+        Calculate the evaluation measure on the test set.
+        Args:
+        X_test: (np.ndarray)
+            The test examples of the dataset.
+        y_test: (np.ndarray)
+            The test ground truth labels.
+        sample_weights: (np.ndarray|None)
+            The weights for each sample.
+        Returns:
+            Value of the evaluation metric calculated on the test set.
+        """
+        return self.pipeline.score(X_test, y_test, sample_weights)
 
     @typing.no_type_check
     def get_incumbent_results(
@@ -75,12 +177,6 @@ class Task:
 
     @typing.no_type_check
     def get_incumbent_config(
-        self
-    ):
-        pass
-
-    @typing.no_type_check
-    def get_default_search_space(
         self
     ):
         pass

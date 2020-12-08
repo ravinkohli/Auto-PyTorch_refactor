@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/Auto-PyTorch.iml" filepath="$PROJECT_DIR$/.idea/Auto-PyTorch.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/Auto-PyTorch_refactor.iml" filepath="$PROJECT_DIR$/.idea/Auto-PyTorch_refactor.iml" />
     </modules>
   </component>
 </project>

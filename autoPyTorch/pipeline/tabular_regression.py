@@ -97,7 +97,7 @@ class TabularRegressionPipeline(RegressorMixin, BasePipeline):
 
         return X, fit_params
 
-    def score(self, X, y, batch_size: Optional[int] = None):
+    def score(self, X: np.ndarray, y: np.ndarray, batch_size: Optional[int] = None) -> np.ndarray:
         """score.
 
                 Args:

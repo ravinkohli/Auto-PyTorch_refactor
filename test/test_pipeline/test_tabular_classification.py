@@ -1,9 +1,13 @@
+import os
+import shutil
 import unittest
 import unittest.mock
 
 from sklearn.datasets import make_classification
 
+from autoPyTorch.datasets.tabular_dataset import TabularDataset
 from autoPyTorch.pipeline.tabular_classification import TabularClassificationPipeline
+from autoPyTorch.utils.backend import create
 from autoPyTorch.utils.common import FitRequirement
 
 
@@ -29,6 +33,32 @@ class PipelineTest(unittest.TestCase):
             'numerical_columns': list(range(4)),
             'categorical_columns': [],
         }
+
+        # Create run dir
+        tmp_dir = '/tmp/autoPyTorch_ensemble_test_tmp'
+        if os.path.exists(tmp_dir):
+            shutil.rmtree(tmp_dir)
+        output_dir = '/tmp/autoPyTorch_ensemble_test_out'
+        if os.path.exists(output_dir):
+            shutil.rmtree(output_dir)
+        self.backend = create(
+            temporary_directory=tmp_dir,
+            output_directory=output_dir,
+            delete_tmp_folder_after_terminate=False
+        )
+
+        # Create the directory structure
+        self.backend._make_internals_directory()
+
+        # Create a datamanager for this toy problem
+        datamanager = TabularDataset(
+            X=self.X, Y=self.y,
+            X_test=self.X, Y_test=self.y,
+        )
+        self.backend.save_datamanager(datamanager)
+
+    def tearDown(self):
+        self.backend.context.delete_directories()
 
     def test_pipeline_fit(self):
         """This test makes sure that the pipeline is able to fit
@@ -61,6 +91,8 @@ class PipelineTest(unittest.TestCase):
              'use_tensorboard_logger': True,
              'use_pynisher': False,
              'metrics_during_training': True,
+             'split_id': 0,
+             'backend': self.backend,
              }
         )
 
@@ -96,6 +128,8 @@ class PipelineTest(unittest.TestCase):
              'use_tensorboard_logger': True,
              'use_pynisher': False,
              'metrics_during_training': True,
+             'split_id': 0,
+             'backend': self.backend,
              }
         )
 
@@ -124,6 +158,8 @@ class PipelineTest(unittest.TestCase):
              'use_tensorboard_logger': True,
              'use_pynisher': False,
              'metrics_during_training': True,
+             'split_id': 0,
+             'backend': self.backend,
              }
         for key in X.keys():
             # skip tests for data loader requirements as data loader has different check_requirements
@@ -140,7 +176,10 @@ class PipelineTest(unittest.TestCase):
         """Fitting a network should put the network in the X"""
 
         # Create the pipeline to check. A random config should be sufficient
-        dataset_properties = {'numerical_columns': [], 'categorical_columns': []}
+        dataset_properties = {
+            'numerical_columns': [],
+            'categorical_columns': [],
+            'task_type': 'tabular_classification'}
         pipeline = TabularClassificationPipeline(dataset_properties=dataset_properties)
         cs = pipeline.get_hyperparameter_search_space()
         config = cs.sample_configuration()
@@ -149,7 +188,7 @@ class PipelineTest(unittest.TestCase):
         # Make sure that fitting a network adds a "network" to X
         self.assertIn('network', pipeline.named_steps.keys())
         X = pipeline.named_steps['network'].fit(
-            {'num_features': 10, 'num_classes': 2},
+            {'num_features': 10, 'num_classes': 2, 'X_train': self.X, 'y_train': self.y},
             None
         ).transform({})
         self.assertIn('network', X)

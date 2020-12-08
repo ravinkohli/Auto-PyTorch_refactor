@@ -1,5 +1,6 @@
 import warnings
 from abc import ABCMeta
+from collections import Counter
 from typing import Any, Dict, List, Optional, Tuple
 
 from ConfigSpace import Configuration
@@ -129,6 +130,10 @@ class BasePipeline(Pipeline):
         """
 
         # Pre-process X
+        if batch_size is None:
+            warnings.warn("Batch size not provided. "
+                          "Will predict on the whole data in a single iteration")
+            batch_size = X.shape[0]
         loader = self.named_steps['data_loader'].get_loader(X=X, batch_size=batch_size)
         return self.named_steps['network'].predict(loader)
 
@@ -137,10 +142,10 @@ class BasePipeline(Pipeline):
         configuration: Configuration,
         init_params: Optional[Dict] = None
     ) -> 'Pipeline':
-        """Method to set the hyperparamter configuration of the pipeline.
+        """Method to set the hyperparameter configuration of the pipeline.
 
         It iterates over the components of the pipeline and applies a given
-        configuration accordingly
+        configuration accordingly.
 
         Args:
             configuration (Configuration): configuration object to search and overwrite in
@@ -342,7 +347,7 @@ class BasePipeline(Pipeline):
         the pipeline and gets the fit requirement of that components.
         All the fit requirements are then aggregated into a list
         Returns:
-            List[NamedTuple]: List of
+            List[NamedTuple]: List of FitRequirements
         """
         fit_requirements = list()  # List[FitRequirement]
         for name, step in self.steps:
@@ -352,6 +357,35 @@ class BasePipeline(Pipeline):
 
         # remove duplicates in the list
         fit_requirements = list(set(fit_requirements))
+        fit_requirements = [req for req in fit_requirements if (req.user_defined and not req.dataset_property)]
+        req_names = [req.name for req in fit_requirements]
+
+        # check wether requirement names are unique
+        if len(set(req_names)) != len(fit_requirements):
+            name_occurences = Counter(req_names)
+            multiple_names = [name for name, num_occ in name_occurences.items() if num_occ > 1]
+            multiple_fit_requirements = [req for req in fit_requirements if req.name in multiple_names]
+            raise ValueError("Found fit requirements with different values %s" % multiple_fit_requirements)
+        return fit_requirements
+
+    def get_dataset_requirements(self) -> List[FitRequirement]:
+        """
+        Utility function that goes through all the components in
+        the pipeline and gets the fit requirement that are expected to be
+        computed by the dataset for that components. All the fit requirements
+        are then aggregated into a list.
+        Returns:
+            List[NamedTuple]: List of FitRequirements
+        """
+        fit_requirements = list()  # type: List[FitRequirement]
+        for name, step in self.steps:
+            step_requirements = step.get_fit_requirements()
+            if step_requirements:
+                fit_requirements.extend(step_requirements)
+
+        # remove duplicates in the list
+        fit_requirements = list(set(fit_requirements))
+        fit_requirements = [req for req in fit_requirements if (req.user_defined and req.dataset_property)]
         return fit_requirements
 
     def _get_estimator_hyperparameter_name(self) -> str:
@@ -372,7 +406,6 @@ class BasePipeline(Pipeline):
     def get_default_pipeline_options() -> Dict[str, Any]:
         return {
             'job_id': '1',
-            'working_dir': '/tmp/experiment_1',
             'device': 'cpu',
             'budget_type': 'epochs',
             'epochs': 1,

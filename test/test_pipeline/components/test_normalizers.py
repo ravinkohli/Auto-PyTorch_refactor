@@ -15,7 +15,7 @@ class TestNormalizers(unittest.TestCase):
 
     def test_image_normalizer(self):
         self.initialise()
-        X = {'channelwise_mean': self.mean, 'channelwise_std': self.std, 'X_train': self.train}
+        X = {'mean': self.mean, 'std': self.std, 'X_train': self.train}
 
         normalizer = ImageNormalizer()
         normalizer = normalizer.fit(X)
@@ -32,7 +32,7 @@ class TestNormalizers(unittest.TestCase):
     def test_no_normalizer(self):
         self.initialise()
 
-        X = {'channelwise_mean': self.mean, 'channelwise_std': self.std, 'X_train': self.train}
+        X = {'mean': self.mean, 'std': self.std, 'X_train': self.train}
 
         normalizer = NoNormalizer()
         normalizer = normalizer.fit(X)

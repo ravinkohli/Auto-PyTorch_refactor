@@ -168,7 +168,7 @@ class AutoMLSMBO(object):
         self.resampling_strategy_args = resampling_strategy_args
 
         # and a bunch of useful limits
-        self.worst_possible_result = get_cost_of_crash(self.metric) # TODO: [0])
+        self.worst_possible_result = get_cost_of_crash(self.metric[0])
         self.total_walltime_limit = int(total_walltime_limit)
         self.func_eval_time_limit = int(func_eval_time_limit)
         self.memory_limit = memory_limit
@@ -195,7 +195,11 @@ class AutoMLSMBO(object):
         else:
             self.datamanager = self.backend.load_datamanager()
 
+<<<<<<< HEAD
         self.task = self.datamanager.info['task_type']
+=======
+        self.task = self.datamanager.info['task']
+>>>>>>> 1945b4b05a55cdeb801817c10cd847218e24cd21
 
     def run_smbo(self, func: typing.Optional[typing.Callable] = None
                  ) -> typing.Tuple[RunHistory, TrajLogger, str]:

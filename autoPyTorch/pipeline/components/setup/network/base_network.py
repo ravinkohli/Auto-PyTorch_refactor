@@ -1,33 +1,31 @@
-import numbers
 from abc import abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 
+import pandas as pd
+
 import torch
+from torch import nn
 
 from autoPyTorch.pipeline.components.setup.base_setup import autoPyTorchSetupComponent
-from autoPyTorch.utils.common import FitRequirement
 
 
 class BaseNetworkComponent(autoPyTorchSetupComponent):
-    """Provide an abstract interface for networks
-    in Auto-Pytorch"""
+    """
+    Provide an abstract interface for networks
+    in Auto-Pytorch
+    """
 
     def __init__(
-        self,
-        intermediate_activation: str,
-        final_activation: Optional[str],
-        random_state: Optional[np.random.RandomState] = None,
+            self,
+            random_state: Optional[np.random.RandomState] = None,
+            device: Optional[torch.device] = None
     ) -> None:
         super(BaseNetworkComponent, self).__init__()
         self.network = None
-        self.intermediate_activation = intermediate_activation
         self.random_state = random_state
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-        self.add_fit_requirements([FitRequirement('num_features', (numbers.Integral,)),
-                                  FitRequirement('num_classes', (numbers.Integral,))])
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") if device is None else device
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> autoPyTorchSetupComponent:
         """
@@ -44,10 +42,13 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
         # information to fit this stage
         self.check_requirements(X, y)
 
-        in_features = X['num_features']
-        out_features = X['num_classes']
+        input_shape = X['X_train'].shape[1:]
+        if isinstance(X['y_train'], pd.core.series.Series):
+            X['y_train'] = X['y_train'].to_numpy()
+        output_shape = X['y_train'].shape
 
-        self.network = self.build_network(in_features, out_features)
+        self.network = self.build_network(input_shape=input_shape,
+                                          output_shape=output_shape)
 
         # Properly set the network training device
         self.to(self.device)
@@ -55,58 +56,39 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
         return self
 
     @abstractmethod
-    def build_network(self, in_feature: int, out_features: int) -> torch.nn.Module:
-        """This method returns a pytorch network, that is dynamically built
-        using:
-
-            common network arguments from the base class:
-                * intermediate_activation
-                * final_activation
-
-            a self.config that is network specific, and contains the additional
-            configuration hyperparameters to build a domain specific network
+    def build_network(self, input_shape: Tuple[int, ...], output_shape: Tuple[int, ...]) -> torch.nn.Module:
+        """
+        This method returns a pytorch network, that is dynamically built using
+        a self.config that is network specific, and contains the additional
+        configuration hyperparameters to build a domain specific network
         """
         raise NotImplementedError()
 
     def transform(self, X: Dict[str, Any]) -> Dict[str, Any]:
-        """The transform function calls the transform function of the
-        underlying model and returns the transformed array.
-
-        Args:
-            X (np.ndarray): input features
-
-        Returns:
-            np.ndarray: Transformed features
+        """
+        The transform function updates the network in the X dictionary.
         """
         X.update({'network': self.network})
         return X
 
-    def get_network(self) -> torch.nn.Module:
-        """Return the underlying network object.
+    def get_network(self) -> nn.Module:
+        """
+        Return the underlying network object.
         Returns:
             model : the underlying network object
         """
         assert self.network is not None, "No network was initialized"
         return self.network
 
-    @classmethod
-    def get_activations_dict(cls) -> Dict[str, torch.nn.Module]:
+    def check_requirements(self, X: Dict[str, Any], y: Any = None) -> None:
         """
-        This method highlights the activations that can be used,
-        when dynamically building a network.
+        This common utility makes sure that the input dictionary X,
+        used to fit a given component class, contains the minimum information
+        to fit the given component, and it's parents
         """
-        return {
-            'relu': torch.nn.ReLU,
-            'sigmoid': torch.nn.Sigmoid,
-            'tanh': torch.nn.Tanh,
-            'leakyrelu': torch.nn.LeakyReLU,
-            'selu': torch.nn.SELU,
-            'rrelu': torch.nn.RReLU,
-            'tanhshrink': torch.nn.Tanhshrink,
-            'hardtanh': torch.nn.Hardtanh,
-            'elu': torch.nn.ELU,
-            'prelu': torch.nn.PReLU,
-        }
+
+        # Honor the parent requirements
+        super().check_requirements(X, y)
 
     def get_network_weights(self) -> torch.nn.parameter.Parameter:
         """Returns the weights of the network"""
@@ -133,12 +115,12 @@ class BaseNetworkComponent(autoPyTorchSetupComponent):
 
         for i, (X_batch, Y_batch) in enumerate(loader):
             # Predict on batch
-            X_batch = torch.autograd.Variable(X_batch).to(self.device)
+            X_batch = torch.autograd.Variable(X_batch).float().to(self.device)
 
             Y_batch_pred = self.network(X_batch).detach().cpu()
             Y_batch_preds.append(Y_batch_pred)
 
-        return torch.cat(Y_batch_preds, 0)
+        return torch.cat(Y_batch_preds, 0).cpu().numpy()
 
     def __str__(self) -> str:
         """ Allow a nice understanding of what components where used """

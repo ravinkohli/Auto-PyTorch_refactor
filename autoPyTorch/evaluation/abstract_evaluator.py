@@ -16,6 +16,7 @@ from autoPyTorch.constants import (
     TABULAR_TASKS,
     IMAGE_TASKS,
     STRING_TO_TASK_TYPES
+
 )
 from autoPyTorch.evaluation.utils import (
     convert_multioutput_multiclass_to_multilabel
@@ -148,6 +149,7 @@ class AbstractEvaluator(object):
 
         self.output_y_hat_optimization = output_y_hat_optimization
         # TODO: Check if we need all supported metrics, as in our case even single metric is in a score_dict form
+
 
         if isinstance(disable_file_output, (bool, list)):
             self.disable_file_output = disable_file_output
