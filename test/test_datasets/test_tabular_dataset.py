@@ -72,7 +72,6 @@ def get_data_to_train() -> typing.Dict[str, typing.Any]:
     return fit_dictionary
 
 
-@unittest.skipIf(condition=os.path.exists('/tmp/autoPyTorch_ensemble_test_tmp'), reason="Temporary file exists")
 class TabularDatasetTest(unittest.TestCase):
 
     def test_get_dataset_properties(self):
@@ -80,9 +79,13 @@ class TabularDatasetTest(unittest.TestCase):
         fit_dictionary = get_data_to_train()
 
         # Build a repository with random fitted models
-        backend = create(temporary_directory='/tmp/autoPyTorch_ensemble_test_tmp',
-                         output_directory='/tmp/autoPyTorch_ensemble_test_out',
-                         delete_tmp_folder_after_terminate=False)
+        try:
+            backend = create(temporary_directory='/tmp/autoPyTorch_ensemble_test_tmp',
+                             output_directory='/tmp/autoPyTorch_ensemble_test_out',
+                             delete_tmp_folder_after_terminate=False)
+        except:
+            self.assertRaises(FileExistsError)
+            return unittest.skip("File already exists")
 
         fit_dictionary['backend'] = backend
 
