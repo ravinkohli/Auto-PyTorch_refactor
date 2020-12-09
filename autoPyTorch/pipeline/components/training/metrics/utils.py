@@ -63,7 +63,7 @@ def get_metrics(dataset_properties: Dict[str, Any],
     assert 'task_type' in dataset_properties, \
         "Expected dataset_properties to have task_type got {}".format(dataset_properties.keys())
     assert 'output_type' in dataset_properties, \
-        "Expected dataset_properties to have task_type got {}".format(dataset_properties.keys())
+        "Expected dataset_properties to have output_type got {}".format(dataset_properties.keys())
     if all_supported_metrics:
         assert names is None, "Can't pass names when all_supported_metrics are true"
 
