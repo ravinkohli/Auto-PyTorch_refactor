@@ -29,7 +29,7 @@ class TimeSeriesForecastingDataset(BaseDataset):
                  shuffle: Optional[bool] = False,
                  seed: Optional[int] = 42,
                  transforms: Optional[torchvision.transforms.Compose] = None,
-    ):
+                 ):
         """
 
         :param target_variables: The indices of the variables you want to forecast

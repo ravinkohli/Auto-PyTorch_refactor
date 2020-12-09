@@ -12,12 +12,10 @@ import lockfile
 
 import numpy as np
 
-
 from autoPyTorch.datasets.base_dataset import BaseDataset
 from autoPyTorch.ensemble.abstract_ensemble import AbstractEnsemble
 from autoPyTorch.pipeline.base_pipeline import BasePipeline
 from autoPyTorch.utils.logging_ import PicklableClientLogger, get_named_client_logger
-
 
 __all__ = [
     'Backend'
@@ -25,10 +23,10 @@ __all__ = [
 
 
 def create(
-    temporary_directory: str,
-    output_directory: Optional[str],
-    delete_tmp_folder_after_terminate: bool = True,
-    delete_output_folder_after_terminate: bool = True,
+        temporary_directory: str,
+        output_directory: Optional[str],
+        delete_tmp_folder_after_terminate: bool = True,
+        delete_output_folder_after_terminate: bool = True,
 ) -> 'Backend':
     """
     Creates a backend object that manages disk related transactions
@@ -273,7 +271,6 @@ class Backend(object):
             existing_targets = np.load(filepath, allow_pickle=True)
             if existing_targets.shape[0] > targets.shape[0] or (
                     existing_targets.shape == targets.shape and np.allclose(existing_targets, targets)):
-
                 return filepath
         except Exception:
             pass
@@ -392,9 +389,9 @@ class Backend(object):
             return pickle.load(fh)
 
     def save_numrun_to_dir(
-        self, seed: int, idx: int, budget: float, model: Optional[BasePipeline],
-        cv_model: Optional[BasePipeline], ensemble_predictions: Optional[np.ndarray],
-        valid_predictions: Optional[np.ndarray], test_predictions: Optional[np.ndarray],
+            self, seed: int, idx: int, budget: float, model: Optional[BasePipeline],
+            cv_model: Optional[BasePipeline], ensemble_predictions: Optional[np.ndarray],
+            valid_predictions: Optional[np.ndarray], test_predictions: Optional[np.ndarray],
     ) -> None:
         runs_directory = self.get_runs_directory()
         tmpdir = tempfile.mkdtemp(dir=runs_directory)
@@ -409,9 +406,9 @@ class Backend(object):
                 pickle.dump(cv_model, fh, -1)
 
         for preds, subset in (
-            (ensemble_predictions, 'ensemble'),
-            (valid_predictions, 'valid'),
-            (test_predictions, 'test')
+                (ensemble_predictions, 'ensemble'),
+                (valid_predictions, 'valid'),
+                (test_predictions, 'test')
         ):
             if preds is not None:
                 file_path = os.path.join(
@@ -456,7 +453,6 @@ class Backend(object):
             ensemble_members_run_numbers = pickle.load(fh)
 
         return ensemble_members_run_numbers
-
 
     def save_ensemble(self, ensemble: AbstractEnsemble, idx: int, seed: int) -> None:
         try:

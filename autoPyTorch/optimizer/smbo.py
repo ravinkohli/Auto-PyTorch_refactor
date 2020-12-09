@@ -1,30 +1,30 @@
 import copy
 import json
-import typing
 import logging.handlers
+import typing
 
 import ConfigSpace
 
 import dask.distributed
 
 from smac.facade.smac_ac_facade import SMAC4AC
-from smac.intensification.simple_intensifier import SimpleIntensifier
 from smac.intensification.intensification import Intensifier
+from smac.intensification.simple_intensifier import SimpleIntensifier
 from smac.runhistory.runhistory import RunHistory
 from smac.runhistory.runhistory2epm import RunHistory2EPM4LogCost
 from smac.scenario.scenario import Scenario
-from smac.tae.serial_runner import SerialRunner
 from smac.tae.dask_runner import DaskParallelRunner
+from smac.tae.serial_runner import SerialRunner
 from smac.utils.io.traj_logging import TrajLogger
 
 # TODO: Enable when merged Ensemble
 # from autoPyTorch.ensemble.ensemble_builder import EnsembleBuilderManager
-from autoPyTorch.utils.backend import Backend
 from autoPyTorch.datasets.base_dataset import BaseDataset
-from autoPyTorch.utils.logging_ import get_named_client_logger
-from autoPyTorch.utils.stopwatch import StopWatch
 from autoPyTorch.evaluation.tae import ExecuteTaFuncWithQueue, get_cost_of_crash
 from autoPyTorch.pipeline.components.training.metrics.base import autoPyTorchMetric
+from autoPyTorch.utils.backend import Backend
+from autoPyTorch.utils.logging_ import get_named_client_logger
+from autoPyTorch.utils.stopwatch import StopWatch
 
 
 def get_smac_object(
@@ -244,7 +244,7 @@ class AutoMLSMBO(object):
             memory_limit=self.memory_limit,
             disable_file_output=self.disable_file_output,
             ta=func,
-            logger_port = self.logger_port,
+            logger_port=self.logger_port,
             **self.resampling_strategy_args
         )
         ta = ExecuteTaFuncWithQueue

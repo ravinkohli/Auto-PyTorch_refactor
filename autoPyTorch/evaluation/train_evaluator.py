@@ -1,22 +1,17 @@
-import copy
-import json
-
 import numpy as np
 
 import pandas as pd
+
 from smac.tae import StatusType
 
+from autoPyTorch.constants import (
+    CLASSIFICATION_TASKS,
+    MULTICLASSMULTIOUTPUT,
+)
 from autoPyTorch.evaluation.abstract_evaluator import (
     AbstractEvaluator,
 )
-from autoPyTorch.constants import (
-    CLASSIFICATION_TASKS,
-    MULTICLASS,
-    MULTICLASSMULTIOUTPUT,
-    REGRESSION_TASKS,
-    CONTINUOUSMULTIOUTPUT,
-    STRING_TO_OUTPUT_TYPES
-)
+
 
 __all__ = ['TrainEvaluator', 'eval_holdout']
 

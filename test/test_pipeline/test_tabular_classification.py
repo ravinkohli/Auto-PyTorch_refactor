@@ -73,28 +73,26 @@ class PipelineTest(unittest.TestCase):
         cs = pipeline.get_hyperparameter_search_space()
         config = cs.sample_configuration()
         pipeline.set_hyperparameters(config)
-        pipeline.fit(
-            {
-             'X_train': self.X,
-             'y_train': self.y,
-             'train_indices': list(range(self.X.shape[0] // 2)),
-             'val_indices': list(range(self.X.shape[0] // 2, self.X.shape[0])),
-             # Training configuration
-             'dataset_properties': self.dataset_properties,
-             'job_id': 'example_tabular_classification_1',
-             'device': 'cpu',
-             'budget_type': 'epochs',
-             'epochs': 5,
-             'torch_num_threads': 1,
-             'early_stopping': 20,
-             'working_dir': '/tmp',
-             'use_tensorboard_logger': True,
-             'use_pynisher': False,
-             'metrics_during_training': True,
-             'split_id': 0,
-             'backend': self.backend,
-             }
-        )
+        pipeline.fit({'X_train': self.X,
+                      'y_train': self.y,
+                      'train_indices': list(range(self.X.shape[0] // 2)),
+                      'val_indices': list(range(self.X.shape[0] // 2, self.X.shape[0])),
+                      # Training configuration
+                      'dataset_properties': self.dataset_properties,
+                      'job_id': 'example_tabular_classification_1',
+                      'device': 'cpu',
+                      'budget_type': 'epochs',
+                      'epochs': 5,
+                      'torch_num_threads': 1,
+                      'early_stopping': 20,
+                      'working_dir': '/tmp',
+                      'use_tensorboard_logger': True,
+                      'use_pynisher': False,
+                      'metrics_during_training': True,
+                      'split_id': 0,
+                      'backend': self.backend,
+                      }
+                     )
 
         # To make sure we fitted the model, there should be a
         # run summary object with accuracy

@@ -92,15 +92,9 @@ def get_metrics(dataset_properties: Dict[str, Any],
             metrics.extend(list(supported_metrics.values()))
         else:
             if STRING_TO_TASK_TYPES[dataset_properties['task_type']] in CLASSIFICATION_TASKS:
-                metrics.append(supported_metrics[
-                                   default_metrics['classification']
-                                   [dataset_properties['output_type']]
-                               ])
+                metrics.append(supported_metrics[default_metrics['classification'][dataset_properties['output_type']]])
             if STRING_TO_TASK_TYPES[dataset_properties['task_type']] in REGRESSION_TASKS:
-                metrics.append(supported_metrics[
-                                   default_metrics['regression']
-                                   [dataset_properties['output_type']]
-                               ])
+                metrics.append(supported_metrics[default_metrics['regression'][dataset_properties['output_type']]])
 
     return metrics
 

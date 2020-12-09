@@ -72,7 +72,7 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         self.num_classes = None
         if len(train_tensors) == 2 and train_tensors[1] is not None:
             self.output_type: int = type_of_target(self.train_tensors[1])
-            num_classes = len(np.unique(self.train_tensors[1]))
+            self.num_classes = len(np.unique(self.train_tensors[1]))
         # TODO: Look for a criteria to define small enough to preprocess
         self.is_small_preprocess = True
 

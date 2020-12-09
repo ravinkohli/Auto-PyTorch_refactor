@@ -4,13 +4,13 @@ import unittest.mock
 import numpy as np
 
 from autoPyTorch.constants import (
+    BINARY,
+    CONTINUOUS,
+    OUTPUT_TYPES_TO_STRING,
     STRING_TO_TASK_TYPES,
-    TASK_TYPES_TO_STRING,
     TABULAR_CLASSIFICATION,
     TABULAR_REGRESSION,
-    OUTPUT_TYPES_TO_STRING,
-    CONTINUOUS,
-    BINARY
+    TASK_TYPES_TO_STRING
 )
 from autoPyTorch.pipeline.components.training.metrics.base import autoPyTorchMetric
 from autoPyTorch.pipeline.components.training.metrics.utils import calculate_score, get_metrics

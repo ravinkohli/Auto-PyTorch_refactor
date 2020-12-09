@@ -13,8 +13,8 @@ from autoPyTorch.datasets.tabular_dataset import TabularDataset
 from autoPyTorch.optimizer.smbo import AutoMLSMBO
 from autoPyTorch.pipeline.components.training.metrics.utils import get_metrics
 from autoPyTorch.utils.backend import create
-from autoPyTorch.utils.pipeline import get_configuration_space
 from autoPyTorch.utils.logging_ import setup_logger, start_log_server
+from autoPyTorch.utils.pipeline import get_configuration_space
 from autoPyTorch.utils.stopwatch import StopWatch
 
 
@@ -86,8 +86,8 @@ if __name__ == "__main__":
     X_train, X_test, y_train, y_test = get_data_to_train()
 
     # Build a repository with random fitted models
-    backend = create(temporary_directory='./tmp/autoPyTorch_ensemble_test_tmp',
-                     output_directory='./tmp/autoPyTorch_ensemble_test_out',
+    backend = create(temporary_directory='./tmp/autoPyTorch_smac_test_tmp',
+                     output_directory='./tmp/autoPyTorch_smac_test_out',
                      delete_tmp_folder_after_terminate=False)
     # Create the directory structure
     backend._make_internals_directory()

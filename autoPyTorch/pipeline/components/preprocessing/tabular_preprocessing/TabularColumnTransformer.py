@@ -12,7 +12,7 @@ from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.base_ta
 )
 from autoPyTorch.pipeline.components.preprocessing.tabular_preprocessing.utils import get_tabular_preprocessers
 from autoPyTorch.utils.common import FitRequirement
-from autoPyTorch.utils.backend import Backend
+
 
 class TabularColumnTransformer(autoPyTorchTabularPreprocessingComponent):
 
@@ -58,8 +58,10 @@ class TabularColumnTransformer(autoPyTorchTabularPreprocessingComponent):
         if len(X['dataset_properties']['categorical_columns']):
             categorical_pipeline = make_pipeline(*preprocessors['categorical'])
 
-        self.column_transformer = make_column_transformer((numerical_pipeline, X['dataset_properties']['numerical_columns']),
-                                                          (categorical_pipeline, X['dataset_properties']['categorical_columns']),
+        self.column_transformer = make_column_transformer((numerical_pipeline,
+                                                           X['dataset_properties']['numerical_columns']),
+                                                          (categorical_pipeline,
+                                                           X['dataset_properties']['categorical_columns']),
                                                           remainder='passthrough')
         self.column_transformer.fit(X['X_train'])
 

@@ -43,7 +43,8 @@ class TestNormalizer(unittest.TestCase):
         self.assertIsNone(X['scaler']['categorical'])
 
         # make column transformer with returned encoder to fit on data
-        column_transformer = make_column_transformer((scaler, X['dataset_properties']['numerical_columns']), remainder='passthrough')
+        column_transformer = make_column_transformer((scaler, X['dataset_properties']['numerical_columns']),
+                                                     remainder='passthrough')
         column_transformer = column_transformer.fit(X['X_train'])
         transformed = column_transformer.transform(data[test_indices])
 
@@ -80,7 +81,8 @@ class TestNormalizer(unittest.TestCase):
         self.assertIsNone(X['scaler']['categorical'])
 
         # make column transformer with returned encoder to fit on data
-        column_transformer = make_column_transformer((scaler, X['dataset_properties']['numerical_columns']), remainder='passthrough')
+        column_transformer = make_column_transformer((scaler, X['dataset_properties']['numerical_columns']),
+                                                     remainder='passthrough')
         column_transformer = column_transformer.fit(X['X_train'])
         transformed = column_transformer.transform(data[test_indices])
 
@@ -117,7 +119,8 @@ class TestNormalizer(unittest.TestCase):
         self.assertIsNone(X['scaler']['categorical'])
 
         # make column transformer with returned encoder to fit on data
-        column_transformer = make_column_transformer((scaler, X['dataset_properties']['numerical_columns']), remainder='passthrough')
+        column_transformer = make_column_transformer((scaler, X['dataset_properties']['numerical_columns']),
+                                                     remainder='passthrough')
         column_transformer = column_transformer.fit(X['X_train'])
         transformed = column_transformer.transform(data[test_indices])
 
@@ -157,7 +160,8 @@ class TestMinMaxScaler(unittest.TestCase):
         self.assertIsNone(X['scaler']['categorical'])
 
         # make column transformer with returned encoder to fit on data
-        column_transformer = make_column_transformer((scaler, X['dataset_properties']['numerical_columns']), remainder='passthrough')
+        column_transformer = make_column_transformer((scaler, X['dataset_properties']['numerical_columns']),
+                                                     remainder='passthrough')
         column_transformer = column_transformer.fit(X['X_train'])
         transformed = column_transformer.transform(data[test_indices])
 
@@ -197,7 +201,8 @@ class TestStandardScaler(unittest.TestCase):
         self.assertIsNone(X['scaler']['categorical'])
 
         # make column transformer with returned encoder to fit on data
-        column_transformer = make_column_transformer((scaler, X['dataset_properties']['numerical_columns']), remainder='passthrough')
+        column_transformer = make_column_transformer((scaler, X['dataset_properties']['numerical_columns']),
+                                                     remainder='passthrough')
         column_transformer = column_transformer.fit(X['X_train'])
         transformed = column_transformer.transform(data[test_indices])
 

@@ -6,10 +6,10 @@ import numpy as np
 import torchvision.transforms
 
 from autoPyTorch.constants import (
+    MULTICLASS,
+    OUTPUT_TYPES_TO_STRING,
     TABULAR_CLASSIFICATION,
     TASK_TYPES_TO_STRING,
-    MULTICLASS,
-    OUTPUT_TYPES_TO_STRING
 )
 from autoPyTorch.pipeline.image_classification import ImageClassificationPipeline
 from autoPyTorch.pipeline.tabular_classification import TabularClassificationPipeline

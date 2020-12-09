@@ -3,7 +3,10 @@ import queue
 import numpy as np
 
 __all__ = [
-    'read_queue'
+    'read_queue',
+    'convert_multioutput_multiclass_to_multilabel',
+    'extract_learning_curve',
+    'empty_queue'
 ]
 
 

@@ -31,7 +31,7 @@ class ImageDataset(BaseDataset):
                  shuffle: Optional[bool] = True,
                  seed: Optional[int] = 42,
                  transforms: Optional[torchvision.transforms.Compose] = None,
-    ):
+                 ):
         _check_image_inputs(train=train, val=val)
         train = _create_image_dataset(data=train)
         if val is not None:

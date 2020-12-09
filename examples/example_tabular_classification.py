@@ -7,16 +7,14 @@ Tabular Classification
 import os
 import typing
 
-import numpy as np
-
 import sklearn.datasets
 import sklearn.model_selection
-from sklearn.utils.multiclass import type_of_target
 
 from autoPyTorch.datasets.tabular_dataset import TabularDataset
 from autoPyTorch.pipeline.tabular_classification import TabularClassificationPipeline
 from autoPyTorch.utils.backend import create
 from autoPyTorch.utils.pipeline import get_dataset_requirements
+
 
 # Get the training data for tabular classification
 def get_data_to_train() -> typing.Tuple[typing.Any, typing.Any, typing.Any, typing.Any]:

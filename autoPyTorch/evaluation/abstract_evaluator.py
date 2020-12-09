@@ -1,34 +1,37 @@
-import time
 import logging.handlers
-from typing import Dict, Optional
+import time
 import warnings
 
+from ConfigSpace import Configuration
+
 import numpy as np
+
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import VotingClassifier, VotingRegressor
 
-from autoPyTorch.pipeline.tabular_regression import TabularRegressionPipeline
-from autoPyTorch.pipeline.tabular_classification import TabularClassificationPipeline
-from autoPyTorch.pipeline.image_classification import ImageClassificationPipeline
 from autoPyTorch.constants import (
     CLASSIFICATION_TASKS,
-    REGRESSION_TASKS,
-    MULTICLASS,
-    TABULAR_TASKS,
     IMAGE_TASKS,
+    MULTICLASS,
+    REGRESSION_TASKS,
+    STRING_TO_OUTPUT_TYPES,
     STRING_TO_TASK_TYPES,
-    STRING_TO_OUTPUT_TYPES
+    TABULAR_TASKS,
 )
 from autoPyTorch.evaluation.utils import (
     convert_multioutput_multiclass_to_multilabel
 )
-from autoPyTorch.pipeline.components.training.metrics.utils import calculate_score, CLASSIFICATION_METRICS, \
-    REGRESSION_METRICS
+from autoPyTorch.pipeline.components.training.metrics.utils import (
+    CLASSIFICATION_METRICS,
+    REGRESSION_METRICS,
+    calculate_score,
+)
+from autoPyTorch.pipeline.image_classification import ImageClassificationPipeline
+from autoPyTorch.pipeline.tabular_classification import TabularClassificationPipeline
+from autoPyTorch.pipeline.tabular_regression import TabularRegressionPipeline
 from autoPyTorch.utils.backend import Backend
-from autoPyTorch.utils.pipeline import get_dataset_requirements
 from autoPyTorch.utils.logging_ import get_named_client_logger
-
-from ConfigSpace import Configuration
+from autoPyTorch.utils.pipeline import get_dataset_requirements
 
 __all__ = [
     'AbstractEvaluator'

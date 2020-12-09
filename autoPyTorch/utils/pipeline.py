@@ -1,14 +1,14 @@
 # -*- encoding: utf-8 -*-
 from typing import Any, Dict, List, Optional
-import faulthandler
+
 from ConfigSpace.configuration_space import ConfigurationSpace
 
 from autoPyTorch.constants import (
     CLASSIFICATION_TASKS,
     IMAGE_TASKS,
     REGRESSION_TASKS,
+    STRING_TO_TASK_TYPES,
     TABULAR_TASKS,
-    STRING_TO_TASK_TYPES
 )
 from autoPyTorch.pipeline.image_classification import ImageClassificationPipeline
 from autoPyTorch.pipeline.tabular_classification import TabularClassificationPipeline

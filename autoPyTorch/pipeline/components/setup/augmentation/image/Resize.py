@@ -18,7 +18,6 @@ class Resize(BaseImageAugmenter):
 
     def __init__(self, use_augmenter: bool = True,
                  random_state: Optional[Union[int, np.random.RandomState]] = None):
-
         super().__init__(use_augmenter=use_augmenter)
         self.random_state = random_state
         self.add_fit_requirements([
@@ -34,12 +33,10 @@ class Resize(BaseImageAugmenter):
 
         return self
 
-
     @staticmethod
     def get_hyperparameter_search_space(
-        dataset_properties: Optional[Dict[str, str]] = None
+            dataset_properties: Optional[Dict[str, str]] = None
     ) -> ConfigurationSpace:
-
         cs = ConfigurationSpace()
         use_augmenter = CategoricalHyperparameter('use_augmenter', choices=[True, False], default_value=True)
         cs.add_hyperparameters([use_augmenter])
