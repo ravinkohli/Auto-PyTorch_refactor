@@ -22,7 +22,7 @@ class EarlyPreprocessing(autoPyTorchSetupComponent):
             FitRequirement('is_small_preprocess', (bool,), user_defined=True, dataset_property=True),
             FitRequirement('X_train', (np.ndarray, pd.DataFrame, csr_matrix), user_defined=True,
                            dataset_property=False),
-            FitRequirement('train_indices', (List,), user_defined=True, dataset_property=False)])
+            FitRequirement('train_indices', (List, np.ndarray), user_defined=True, dataset_property=False)])
 
     def fit(self, X: Dict[str, Any], y: Any = None) -> "EarlyPreprocessing":
         self.check_requirements(X, y)
@@ -33,7 +33,7 @@ class EarlyPreprocessing(autoPyTorchSetupComponent):
 
         transforms = get_preprocess_transforms(X)
 
-        if X['is_small_preprocess']:
+        if X['dataset_properties']['is_small_preprocess']:
             X['X_train'] = preprocess(dataset=X['X_train'], transforms=transforms,
                                       indices=X['train_indices'])
             if 'X_test' in X:

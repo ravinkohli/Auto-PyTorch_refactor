@@ -35,7 +35,7 @@ class FeatureDataLoader(BaseDataLoaderComponent):
         # This transformations apply for both train/val/test, so no
         # distinction is performed
         transformations = []
-        if not X['is_small_preprocess']:
+        if not X['dataset_properties']['is_small_preprocess']:
             transformations.append(X['preprocess_transforms'])
 
         # Transform to tensor
@@ -54,5 +54,5 @@ class FeatureDataLoader(BaseDataLoaderComponent):
                 mechanism, in which during a transform, a components adds relevant information
                 so that further stages can be properly fitted
         """
-        if not X['is_small_preprocess'] and 'preprocess_transforms' not in X:
+        if not X['dataset_properties']['is_small_preprocess'] and 'preprocess_transforms' not in X:
             raise ValueError("Cannot find the preprocess_transforms in the fit dictionary")
