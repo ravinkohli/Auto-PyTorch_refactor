@@ -408,7 +408,7 @@ class BasePipeline(Pipeline):
             'job_id': '1',
             'device': 'cpu',
             'budget_type': 'epochs',
-            'epochs': 20,
+            'epochs': 1,
             'runtime': 3600,
             'torch_num_threads': 1,
             'early_stopping': 10,

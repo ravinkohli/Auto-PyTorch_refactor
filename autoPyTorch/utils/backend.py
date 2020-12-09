@@ -12,6 +12,7 @@ import lockfile
 
 import numpy as np
 
+
 from autoPyTorch.datasets.base_dataset import BaseDataset
 from autoPyTorch.ensemble.abstract_ensemble import AbstractEnsemble
 from autoPyTorch.pipeline.base_pipeline import BasePipeline
@@ -455,6 +456,7 @@ class Backend(object):
             ensemble_members_run_numbers = pickle.load(fh)
 
         return ensemble_members_run_numbers
+
 
     def save_ensemble(self, ensemble: AbstractEnsemble, idx: int, seed: int) -> None:
         try:
