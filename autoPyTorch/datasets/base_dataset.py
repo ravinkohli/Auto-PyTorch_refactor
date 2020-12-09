@@ -12,7 +12,6 @@ from torch.utils.data import Dataset, Subset
 
 import torchvision
 
-from autoPyTorch.constants import STRING_TO_OUTPUT_TYPES
 from autoPyTorch.datasets.resampling_strategy import (
     CROSS_VAL_FN,
     CrossValTypes,
@@ -50,7 +49,7 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         resampling_strategy_args: Optional[Dict[str, Any]] = None,
         shuffle: Optional[bool] = True,
         seed: Optional[int] = 42,
-        transforms: Optional[torchvision.transforms.Compose] = None
+        transforms: Optional[torchvision.transforms.Compose] = None,
     ):
         """
         :param train_tensors: A tuple of objects that have a __len__ and a __getitem__ attribute.
@@ -70,8 +69,10 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         self.resampling_strategy_args = resampling_strategy_args
         self.task_type: Optional[int] = None
         self.issparse: bool = issparse(self.train_tensors[0])
-        self.output_type: int = STRING_TO_OUTPUT_TYPES[type_of_target(self.train_tensors[1])]
-
+        self.num_classes = None
+        if len(train_tensors) == 2 and train_tensors[1] is not None:
+            self.output_type: int = type_of_target(self.train_tensors[1])
+            num_classes = len(np.unique(self.train_tensors[1]))
         # TODO: Look for a criteria to define small enough to preprocess
         self.is_small_preprocess = True
 
@@ -158,44 +159,27 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
 
     def create_val_split(self,
                          holdout_val_type: Optional[HoldoutValTypes] = None,
-                         val_share: Optional[float] = None) -> Tuple[Dataset, Dataset]:
-        if val_share is not None:
-            if holdout_val_type is None:
-                raise ValueError(
-                    '`val_share` specified, but `holdout_val_type` not specified.'
-                )
-            if self.val_tensors is not None:
-                raise ValueError(
-                    '`val_share` specified, but the Dataset was a given a pre-defined split at initialization already.')
-            if val_share < 0 or val_share > 1:
-                raise ValueError(f"`val_share` must be between 0 and 1, got {val_share}.")
-            if not isinstance(holdout_val_type, HoldoutValTypes):
-                raise NotImplementedError(f'The specified `holdout_val_type` "{holdout_val_type}" is not supported.')
-            kwargs = {}
-            if is_stratified(holdout_val_type):
-                # we need additional information about the data for stratification
-                kwargs["stratify"] = self.train_tensors[-1]
-            train, val = self.holdout_validators[holdout_val_type.name](val_share, self._get_indices(), **kwargs)
-            return Subset(self, train), Subset(self, val)
-        else:
-            if self.val_tensors is None:
-                raise ValueError('Please specify `val_share` or initialize with a validation dataset.')
-            val = BaseDataset(self.val_tensors)
-            return self, val
+                         val_share: Optional[float] = None) -> None:
+        if holdout_val_type is None:
+            raise ValueError(
+                '`val_share` specified, but `holdout_val_type` not specified.'
+            )
+        if self.val_tensors is not None:
+            raise ValueError(
+                '`val_share` specified, but the Dataset was a given a pre-defined split at initialization already.')
+        if val_share < 0 or val_share > 1:
+            raise ValueError(f"`val_share` must be between 0 and 1, got {val_share}.")
+        if not isinstance(holdout_val_type, HoldoutValTypes):
+            raise NotImplementedError(f'The specified `holdout_val_type` "{holdout_val_type}" is not supported.')
+        kwargs = {}
+        if is_stratified(holdout_val_type):
+            # we need additional information about the data for stratification
+            kwargs["stratify"] = self.train_tensors[-1]
+        train, val = self.holdout_validators[holdout_val_type.name](val_share, self._get_indices(), **kwargs)
+        self.splits = [[train, val]]
+        return
 
-    def get_dataset_for_training(self, split_id: int) -> Tuple[Dataset, Dataset]:
-        """
-        The above split methods employ the Subset to internally subsample the whole dataset.
-
-        During training, we need access to one of those splits. This is a handy function
-        to provide training data to fit a pipeline
-
-        Args:
-            split (int): The desired subset of the dataset to split and use
-
-        Returns:
-            Dataset: the reduced dataset to be used for testing
-        """
+    def create_splits(self) -> None:
         if isinstance(self.resampling_strategy, HoldoutValTypes):
             # Regardless of the split, there is a single dataset
             val_share = DEFAULT_RESAMPLING_PARAMETERS[self.resampling_strategy].get(
@@ -217,13 +201,24 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
                     cross_val_type=self.resampling_strategy,
                     num_splits=cast(int, num_splits),
                 )
-
-            # Subset creates a dataset
-            # Assert for mypy -- self.splits is created above in self.create_cross_val_splits
-            assert self.splits is not None
-            return (Subset(self, self.splits[split_id][0]), Subset(self, self.splits[split_id][1]))
         else:
             raise ValueError(f"Unsupported resampling strategy {self.resampling_strategy}")
+
+    def get_dataset_for_training(self, split_id: int) -> Tuple[Dataset, Dataset]:
+        """
+        The above split methods employ the Subset to internally subsample the whole dataset.
+
+        During training, we need access to one of those splits. This is a handy function
+        to provide training data to fit a pipeline
+
+        Args:
+            split (int): The desired subset of the dataset to split and use
+
+        Returns:
+            Dataset: the reduced dataset to be used for testing
+        """
+        assert self.splits is not None, "cant return dataset for training without calling create_splits() first"
+        return Subset(self, self.splits[split_id][0]), Subset(self, self.splits[split_id][1])
 
     def replace_data(self, X_train: BASE_DATASET_INPUT, X_test: Optional[BASE_DATASET_INPUT]) -> 'BaseDataset':
         """
@@ -248,4 +243,10 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         dataset_properties = dict()
         for dataset_requirement in dataset_requirements:
             dataset_properties[dataset_requirement.name] = getattr(self, dataset_requirement.name)
+
+        # Add task type, output type and issparse to dataset properties as
+        # they are not a dataset requirement in the pipeline
+        dataset_properties.update({'task_type': self.task_type,
+                                   'output_type': self.output_type,
+                                   'issparse': self.issparse})
         return dataset_properties
