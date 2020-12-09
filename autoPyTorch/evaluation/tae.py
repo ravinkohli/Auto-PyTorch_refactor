@@ -29,7 +29,7 @@ from smac.tae.execute_func import AbstractTAFunc
 
 import autoPyTorch.evaluation.train_evaluator
 from autoPyTorch.evaluation.utils import extract_learning_curve, read_queue, empty_queue
-from autoPyTorch.utils.logging_ import get_logger, PickableLoggerAdapter
+from autoPyTorch.utils.logging_ import get_named_client_logger, PicklableClientLogger  # get_logger, PickableLoggerAdapter
 from autoPyTorch.utils.backend import Backend
 from autoPyTorch.pipeline.components.training.metrics.base import autoPyTorchMetric
 
@@ -93,7 +93,7 @@ class ExecuteTaFuncWithQueue(AbstractTAFunc):
         seed: int,
         resampling_strategy: str,
         metric: autoPyTorchMetric,
-        logger: PickableLoggerAdapter,
+        logger: PicklableClientLogger,
         cost_for_crash: float,
         abort_on_first_run_crash: bool,
         initial_num_run: int = 1,
@@ -108,6 +108,7 @@ class ExecuteTaFuncWithQueue(AbstractTAFunc):
         init_params: typing.Dict[str, typing.Any] = None,
         budget_type: str = None,
         ta: typing.Optional[typing.Callable] = None,
+        logger_port: int = None,
         **resampling_strategy_args
     ):
 
@@ -161,17 +162,17 @@ class ExecuteTaFuncWithQueue(AbstractTAFunc):
         self.init_params = init_params
         self.budget_type = budget_type
         self.logger = logger
-
+        self.logger_port = logger_port
         if memory_limit is not None:
             memory_limit = int(math.ceil(memory_limit))
         self.memory_limit = memory_limit
 
         dm = self.backend.load_datamanager()
-        if 'X_valid' in dm.data and 'Y_valid' in dm.data:
+        if dm.val_tensors is not None:
             self._get_validation_loss = True
         else:
             self._get_validation_loss = False
-        if 'X_test' in dm.data and 'Y_test' in dm.data:
+        if dm.test_tensors is not None:
             self._get_test_loss = True
         else:
             self._get_test_loss = False
@@ -253,7 +254,7 @@ class ExecuteTaFuncWithQueue(AbstractTAFunc):
             init_params.update(self.init_params)
 
         arguments = dict(
-            logger=get_logger("pynisher"),
+            logger=get_named_client_logger(self.backend.temporary_directory, "pynisher", port=self.logger_port),
             wall_time_in_s=cutoff,
             mem_in_mb=self.memory_limit,
             capture_output=True,
@@ -279,11 +280,8 @@ class ExecuteTaFuncWithQueue(AbstractTAFunc):
             init_params=init_params,
             budget=budget,
             budget_type=self.budget_type,
+            logger_port=self.logger_port
         )
-
-        if self.resampling_strategy != 'test':
-            obj_kwargs['resampling_strategy'] = self.resampling_strategy
-            obj_kwargs['resampling_strategy_args'] = self.resampling_strategy_args
 
         try:
             obj = pynisher.enforce_limits(**arguments)(self.ta)

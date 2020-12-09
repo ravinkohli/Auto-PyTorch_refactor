@@ -6,7 +6,7 @@ import tempfile
 import time
 import uuid
 import warnings
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import lockfile
 
@@ -96,10 +96,6 @@ class BackendContext(object):
             )
         )
         self._output_directory = output_directory
-<<<<<<< HEAD
-        self._logger = logging.get_logger(__name__)
-=======
->>>>>>> 1945b4b05a55cdeb801817c10cd847218e24cd21
         self.create_directories()
         self._logger = None  # type: Optional[PicklableClientLogger]
 
@@ -209,13 +205,6 @@ class Backend(object):
         try:
             os.makedirs(self.internals_directory)
         except Exception as e:
-<<<<<<< HEAD
-            self.logger.debug("_make_internals_directory: %s" % e)
-        try:
-            os.makedirs(self.get_runs_directory())
-        except Exception as e:
-            self.logger.debug("_make_internals_directory: %s" % e)
-=======
             if self._logger is not None:
                 self._logger.debug("_make_internals_directory: %s" % e)
         try:
@@ -223,7 +212,6 @@ class Backend(object):
         except Exception as e:
             if self._logger is not None:
                 self._logger.debug("_make_internals_directory: %s" % e)
->>>>>>> 1945b4b05a55cdeb801817c10cd847218e24cd21
 
     def _get_start_time_filename(self, seed: Union[str, int]) -> str:
         if isinstance(seed, str):
@@ -319,60 +307,6 @@ class Backend(object):
     def _get_datamanager_pickle_filename(self) -> str:
         return os.path.join(self.internals_directory, 'datamanager.pkl')
 
-<<<<<<< HEAD
-    def _get_fit_dictionary_pickle_filename(self) -> str:
-        return os.path.join(self.internals_directory, 'fit_dictionary.pkl')
-
-    def save_fit_dictionary(self, fit_dictionary: Any) -> str:
-        self._make_internals_directory()
-        filepath = self._get_fit_dictionary_pickle_filename()
-
-        with lockfile.LockFile(filepath):
-            if not os.path.exists(filepath):
-                with tempfile.NamedTemporaryFile('wb', dir=os.path.dirname(
-                        filepath), delete=False) as fh:
-                    pickle.dump(fit_dictionary, fh, -1)
-                    tempname = fh.name
-                os.rename(tempname, filepath)
-
-        return filepath
-
-    def load_fit_dictionary(self) -> Dict[str, Any]:
-        filepath = self._get_fit_dictionary_pickle_filename()
-        with lockfile.LockFile(filepath):
-            with open(filepath, 'rb') as fh:
-                return pickle.load(fh)
-
-    def save_datamanager(self, datamanager: Any) -> str:
-        self._make_internals_directory()
-        filepath = self._get_datamanager_pickle_filename()
-
-        with lockfile.LockFile(filepath):
-            if not os.path.exists(filepath):
-                with tempfile.NamedTemporaryFile('wb', dir=os.path.dirname(
-                        filepath), delete=False) as fh:
-                    pickle.dump(datamanager, fh, -1)
-                    tempname = fh.name
-                os.rename(tempname, filepath)
-
-        return filepath
-
-    def load_datamanager(self) -> Any:  # Any here because I don't know what the datamanager looks!
-        filepath = self._get_datamanager_pickle_filename()
-        with lockfile.LockFile(filepath):
-            with open(filepath, 'rb') as fh:
-                return pickle.load(fh)
-
-    def get_runs_directory(self) -> str:
-        return os.path.join(self.internals_directory, 'runs')
-
-    def get_numrun_directory(self, seed: int, num_run: int, budget: float) -> str:
-        return os.path.join(self.internals_directory, 'runs', '%d_%d_%s' % (seed, num_run, budget))
-
-    def get_model_filename(self, seed: int, idx: int, budget: float) -> str:
-        return '%s.%s.%s.model' % (seed, idx, budget)
-
-=======
     def save_datamanager(self, datamanager: BaseDataset) -> str:
         self._make_internals_directory()
         filepath = self._get_datamanager_pickle_filename()
@@ -402,7 +336,6 @@ class Backend(object):
     def get_model_filename(self, seed: int, idx: int, budget: float) -> str:
         return '%s.%s.%s.model' % (seed, idx, budget)
 
->>>>>>> 1945b4b05a55cdeb801817c10cd847218e24cd21
     def get_cv_model_filename(self, seed: int, idx: int, budget: float) -> str:
         return '%s.%s.%s.cv_model' % (seed, idx, budget)
 
@@ -499,14 +432,6 @@ class Backend(object):
     def get_ensemble_dir(self) -> str:
         return os.path.join(self.internals_directory, 'ensembles')
 
-<<<<<<< HEAD
-    # def load_ensemble(self, seed: int) -> Optional[AbstractEnsemble]:
-    def load_ensemble(self, seed: int) -> Any:
-        ensemble_dir = self.get_ensemble_dir()
-
-        if not os.path.exists(ensemble_dir):
-            self.logger.warning('Directory %s does not exist' % ensemble_dir)
-=======
     def load_ensemble(self, seed: int) -> Optional[AbstractEnsemble]:
         ensemble_dir = self.get_ensemble_dir()
 
@@ -515,7 +440,6 @@ class Backend(object):
                 self._logger.warning('Directory %s does not exist' % ensemble_dir)
             else:
                 warnings.warn('Directory %s does not exist' % ensemble_dir)
->>>>>>> 1945b4b05a55cdeb801817c10cd847218e24cd21
             return None
 
         if seed >= 0:
@@ -533,12 +457,8 @@ class Backend(object):
 
         return ensemble_members_run_numbers
 
-<<<<<<< HEAD
-    # def save_ensemble(self, ensemble: AbstractEnsemble, idx: int, seed: int) -> None:
-    def save_ensemble(self, ensemble: Any, idx: int, seed: int) -> None:
-=======
+
     def save_ensemble(self, ensemble: AbstractEnsemble, idx: int, seed: int) -> None:
->>>>>>> 1945b4b05a55cdeb801817c10cd847218e24cd21
         try:
             os.makedirs(self.get_ensemble_dir())
         except Exception:
