@@ -10,6 +10,7 @@ from autoPyTorch.constants import (
 )
 from autoPyTorch.evaluation.abstract_evaluator import (
     AbstractEvaluator,
+    _fit_and_suppress_warnings
 )
 
 
@@ -94,7 +95,7 @@ class TrainEvaluator(AbstractEvaluator):
              'split_id': fold,
              **self._init_params}  # fit dictionary
         y = None
-        model = model.fit(X, y)
+        _fit_and_suppress_warnings(self.logger, model, X, y)
         self.logger.info("Model fitted, now predicting")
         (
             Y_train_pred,
