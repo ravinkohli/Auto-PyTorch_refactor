@@ -1,6 +1,7 @@
 import copy
 import json
 import typing
+import logging.handlers
 
 import ConfigSpace
 
@@ -18,9 +19,9 @@ from smac.utils.io.traj_logging import TrajLogger
 
 # TODO: Enable when merged Ensemble
 # from autoPyTorch.ensemble.ensemble_builder import EnsembleBuilderManager
-from autoPyTorch.data.abstract_data_manager import AbstractDataManager
 from autoPyTorch.utils.backend import Backend
-from autoPyTorch.utils.logging_ import get_logger
+from autoPyTorch.datasets.base_dataset import BaseDataset
+from autoPyTorch.utils.logging_ import get_named_client_logger
 from autoPyTorch.utils.stopwatch import StopWatch
 from autoPyTorch.evaluation.tae import ExecuteTaFuncWithQueue, get_cost_of_crash
 from autoPyTorch.pipeline.components.training.metrics.base import autoPyTorchMetric
@@ -96,6 +97,7 @@ class AutoMLSMBO(object):
                  # TODO: Re-enable when ensemble merged
                  # ensemble_callback: typing.Optional[EnsembleBuilderManager] = None,
                  ensemble_callback: typing.Any = None,
+                 logger_port=logging.handlers.DEFAULT_TCP_LOGGING_PORT
                  ):
         """
         Interface to SMAC. This method calls the SMAC optimize method, and allows
@@ -184,28 +186,27 @@ class AutoMLSMBO(object):
         self.ensemble_callback = ensemble_callback
 
         dataset_name_ = "" if dataset_name is None else dataset_name
+        self.logger_port = logger_port
         logger_name = '%s(%d):%s' % (self.__class__.__name__, self.seed, ":" + dataset_name_)
-        self.logger = get_logger(logger_name)
+        self.logger = get_named_client_logger(output_dir=backend.temporary_directory, name=logger_name,
+                                              port=self.logger_port)
+        self.logger.info("initialised {}".format(self.__class__.__name__))
 
     def reset_data_manager(self) -> None:
         if self.datamanager is not None:
             del self.datamanager
-        if isinstance(self.dataset_name, AbstractDataManager):
+        if isinstance(self.dataset_name, BaseDataset):
             self.datamanager = self.dataset_name
         else:
             self.datamanager = self.backend.load_datamanager()
 
-<<<<<<< HEAD
-        self.task = self.datamanager.info['task_type']
-=======
-        self.task = self.datamanager.info['task']
->>>>>>> 1945b4b05a55cdeb801817c10cd847218e24cd21
+        self.task = self.datamanager.task_type
 
     def run_smbo(self, func: typing.Optional[typing.Callable] = None
                  ) -> typing.Tuple[RunHistory, TrajLogger, str]:
 
         self.watcher.start_task('SMBO')
-
+        self.logger.info("Started run of SMBO")
         # == first things first: load the datamanager
         self.reset_data_manager()
 
@@ -243,9 +244,11 @@ class AutoMLSMBO(object):
             memory_limit=self.memory_limit,
             disable_file_output=self.disable_file_output,
             ta=func,
+            logger_port = self.logger_port,
             **self.resampling_strategy_args
         )
         ta = ExecuteTaFuncWithQueue
+        self.logger.info("Created TA")
 
         startup_time = self.watcher.wall_elapsed(self.dataset_name)
         total_walltime_limit = self.total_walltime_limit - startup_time - 5
@@ -305,6 +308,8 @@ class AutoMLSMBO(object):
 
         if self.ensemble_callback is not None:
             smac.register_callback(self.ensemble_callback)
+
+        self.logger.info("initialised smac, running optimise")
 
         smac.optimize()
 
