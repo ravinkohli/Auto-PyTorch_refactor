@@ -1,8 +1,14 @@
+from multiprocessing.queues import Queue
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+from ConfigSpace.configuration_space import Configuration
 import numpy as np
 
 import pandas as pd
 
 from smac.tae import StatusType
+
+from sklearn.base import BaseEstimator
 
 from autoPyTorch.constants import (
     CLASSIFICATION_TASKS,
@@ -10,14 +16,16 @@ from autoPyTorch.constants import (
 )
 from autoPyTorch.evaluation.abstract_evaluator import (
     AbstractEvaluator,
-    _fit_and_suppress_warnings
+    fit_and_suppress_warnings
 )
+from autoPyTorch.pipeline.components.training.metrics.base import autoPyTorchMetric
+from autoPyTorch.utils.backend import Backend
 
 
 __all__ = ['TrainEvaluator', 'eval_holdout']
 
 
-def _get_y_array(y, task_type):
+def _get_y_array(y: np.ndarray, task_type: int) -> np.ndarray:
     if task_type in CLASSIFICATION_TASKS and task_type != \
             MULTICLASSMULTIOUTPUT:
         return y.ravel()
@@ -26,19 +34,19 @@ def _get_y_array(y, task_type):
 
 
 class TrainEvaluator(AbstractEvaluator):
-    def __init__(self, backend, queue, metric,
-                 configuration=None,
-                 seed=1,
-                 output_y_hat_optimization=True,
-                 num_run=None,
-                 budget=None,
-                 budget_type=None,
-                 keep_models=False,
-                 include=None,
-                 exclude=None,
-                 disable_file_output=False,
-                 init_params=None,
-                 logger_port=None):
+    def __init__(self, backend: Backend, queue: Queue, metric: List[autoPyTorchMetric],
+                 configuration: Optional[Configuration] = None,
+                 seed: int = 1,
+                 output_y_hat_optimization: bool = True,
+                 num_run: Optional[int] = None,
+                 include: Optional[Dict[str, Any]] = None,
+                 exclude: Optional[Dict[str, Any]] = None,
+                 disable_file_output: bool = False,
+                 init_params: Optional[Dict[str, Any]] = None,
+                 budget: Optional[float] = None,
+                 budget_type: Optional[str] = None,
+                 logger_port: Optional[int] = None,
+                 keep_models: Optional[bool] = None) -> None:
         super().__init__(
             backend=backend,
             queue=queue,
@@ -64,13 +72,15 @@ class TrainEvaluator(AbstractEvaluator):
         self.Y_targets = [None] * self.num_folds
         self.Y_train_targets = np.ones(self.y_train.shape) * np.NaN
         self.models = [None] * self.num_folds
-        self.indices = [None] * self.num_folds
+        self.indices = [None] * self.num_folds  # type: List[Optional[Tuple[Union[np.ndarray, List]]]]
 
         self.keep_models = keep_models
 
-    def fit_predict_and_loss(self):
+    def fit_predict_and_loss(self) -> None:
         """Fit, predict and compute the loss for cross-validation and
         holdout"""
+        assert self.splits is not None, "Can't fit pipeline in {} is datamanager.splits is None"\
+            .format(self.__class__.__name__)
         for i, (train_split, test_split) in enumerate(self.splits):
             self.logger.info("Starting fit {}".format(i))
 
@@ -80,8 +90,9 @@ class TrainEvaluator(AbstractEvaluator):
                                   test_indices=test_split,
                                   add_model_to_self=True)
 
-    def _fit_and_predict(self, fold, train_indices, test_indices,
-                         add_model_to_self):
+    def _fit_and_predict(self, fold: int, train_indices: Union[np.ndarray, List], test_indices: Union[np.ndarray, List],
+                         add_model_to_self: bool) -> None:
+
         model = self._get_model()
 
         self.indices[fold] = ((train_indices, test_indices))
@@ -95,7 +106,7 @@ class TrainEvaluator(AbstractEvaluator):
              'split_id': fold,
              **self._init_params}  # fit dictionary
         y = None
-        _fit_and_suppress_warnings(self.logger, model, X, y)
+        fit_and_suppress_warnings(self.logger, model, X, y)
         self.logger.info("Model fitted, now predicting")
         (
             Y_train_pred,
@@ -130,7 +141,9 @@ class TrainEvaluator(AbstractEvaluator):
             status=status,
         )
 
-    def _predict(self, model, test_indices, train_indices):
+    def _predict(self, model: BaseEstimator,
+                 test_indices: Union[np.ndarray, List],
+                 train_indices: Union[np.ndarray, List]):
 
         X_train = self.X_train
         if isinstance(X_train, pd.DataFrame):

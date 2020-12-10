@@ -1,11 +1,16 @@
 import logging.handlers
+from multiprocessing.queues import Queue
 import time
+from typing import Any, Dict, List, Optional, Tuple, Union
 import warnings
 
 from ConfigSpace import Configuration
 
 import numpy as np
 
+from smac.tae import StatusType
+
+from sklearn.base import BaseEstimator
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import VotingClassifier, VotingRegressor
 
@@ -18,93 +23,109 @@ from autoPyTorch.constants import (
     STRING_TO_TASK_TYPES,
     TABULAR_TASKS,
 )
+from autoPyTorch.datasets.base_dataset import BaseDataset
 from autoPyTorch.evaluation.utils import (
     convert_multioutput_multiclass_to_multilabel
 )
+from autoPyTorch.pipeline.components.training.metrics.base import autoPyTorchMetric
 from autoPyTorch.pipeline.components.training.metrics.utils import (
-    CLASSIFICATION_METRICS,
-    REGRESSION_METRICS,
     calculate_score,
 )
 from autoPyTorch.pipeline.image_classification import ImageClassificationPipeline
 from autoPyTorch.pipeline.tabular_classification import TabularClassificationPipeline
 from autoPyTorch.pipeline.tabular_regression import TabularRegressionPipeline
 from autoPyTorch.utils.backend import Backend
-from autoPyTorch.utils.logging_ import get_named_client_logger
+from autoPyTorch.utils.logging_ import get_named_client_logger, PicklableClientLogger
 from autoPyTorch.utils.pipeline import get_dataset_requirements
 
 __all__ = [
-    'AbstractEvaluator'
+    'AbstractEvaluator',
+    'fit_and_suppress_warnings'
 ]
 
 
 # TODO: make dummypipeline or model for autopytorch
 class MyDummyClassifier(DummyClassifier):
-    def __init__(self, config, random_state, init_params=None):
+    def __init__(self, config: Configuration,
+                 random_state: Optional[Union[int, np.random.RandomState]] = None,
+                 init_params: Optional[Dict] = None
+                 ) -> None:
         self.configuration = config
         if config == 1:
             super(MyDummyClassifier, self).__init__(strategy="uniform")
         else:
             super(MyDummyClassifier, self).__init__(strategy="most_frequent")
 
-    def pre_transform(self, X, y, fit_params=None):  # pylint: disable=R0201
+    def pre_transform(self, X: Dict[str, Any], y: Any,
+                      fit_params: Dict[str, Any] = None
+                      ) -> Tuple[Dict[str, Any], Dict[str, Any]]:  # pylint: disable=R0201
         if fit_params is None:
             fit_params = {}
         return X, fit_params
 
-    def fit(self, X, y, sample_weight=None):
+    def fit(self, X: Dict[str, Any], y: Any,
+            sample_weight: Optional[np.ndarray] = None) -> object:
         X_train = X['X_train'][X['train_indices']]
         y_train = X['y_train'][X['train_indices']]
         return super(MyDummyClassifier, self).fit(np.ones((X_train.shape[0], 1)), y_train,
                                                   sample_weight=sample_weight)
 
-    def predict_proba(self, X, batch_size=1000):
+    def predict_proba(self, X: Dict[str, Any],
+                      batch_size: int = 1000) -> np.array:
         new_X = np.ones((X['X_train']['val_indices'].shape[0], 1))
         probas = super(MyDummyClassifier, self).predict_proba(new_X)
         probas = convert_multioutput_multiclass_to_multilabel(probas).astype(
             np.float32)
         return probas
 
-    def estimator_supports_iterative_fit(self):  # pylint: disable=R0201
+    def estimator_supports_iterative_fit(self) -> bool:  # pylint: disable=R0201
         return False
 
-    def get_additional_run_info(self):  # pylint: disable=R0201
+    def get_additional_run_info(self) -> None:  # pylint: disable=R0201
         return None
 
 
 class MyDummyRegressor(DummyRegressor):
-    def __init__(self, config, random_state, init_params=None):
+    def __init__(self, config: Configuration,
+                 random_state: Optional[Union[int, np.random.RandomState]] = None,
+                 init_params: Optional[Dict] = None) -> None:
         self.configuration = config
         if config == 1:
             super(MyDummyRegressor, self).__init__(strategy='mean')
         else:
             super(MyDummyRegressor, self).__init__(strategy='median')
 
-    def pre_transform(self, X, y, fit_params=None):
+    def pre_transform(self, X: Dict[str, Any], y: Any,
+                      fit_params: Dict[str, Any] = None
+                      ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         if fit_params is None:
             fit_params = {}
         return X, fit_params
 
-    def fit(self, X, y, sample_weight=None):
+    def fit(self, X: Dict[str, Any], y: Any,
+            sample_weight: Optional[np.ndarray] = None) -> object:
         X_train = X['X_train'][X['train_indices']]
         y_train = X['y_train'][X['train_indices']]
         return super(MyDummyRegressor, self).fit(np.ones((X_train.shape[0], 1)), y_train,
                                                  sample_weight=sample_weight)
 
-    def predict(self, X, batch_size=1000):
+    def predict(self, X: Dict[str, Any],
+                batch_size: int = 1000) -> np.array:
         new_X = np.ones((X['X_train']['val_indices'].shape[0], 1))
         return super(MyDummyRegressor, self).predict(new_X).astype(np.float32)
 
-    def estimator_supports_iterative_fit(self):  # pylint: disable=R0201
+    def estimator_supports_iterative_fit(self) -> bool:  # pylint: disable=R0201
         return False
 
-    def get_additional_run_info(self):  # pylint: disable=R0201
+    def get_additional_run_info(self) -> None:  # pylint: disable=R0201
         return None
 
 
-def _fit_and_suppress_warnings(logger, model, X, y):
+def fit_and_suppress_warnings(logger: PicklableClientLogger, model: BaseEstimator,
+                              X: Dict[str, Any], y: Any
+                              ) -> BaseEstimator:
     def send_warnings_to_log(message, category, filename, lineno,
-                             file=None, line=None):
+                             file=None, line=None) -> None:
         logger.debug('%s:%s: %s:%s',
                      filename, lineno, category.__name__, message)
         return
@@ -118,18 +139,18 @@ def _fit_and_suppress_warnings(logger, model, X, y):
 
 # TODO: adjust for differences in image and tabular data, also maybe time series but its low priority
 class AbstractEvaluator(object):
-    def __init__(self, backend: Backend, queue, metric,
-                 configuration=None,
-                 seed=1,
-                 output_y_hat_optimization=True,
-                 num_run=None,
-                 include=None,
-                 exclude=None,
-                 disable_file_output=False,
-                 init_params=None,
-                 budget=None,
-                 budget_type=None,
-                 logger_port=None):
+    def __init__(self, backend: Backend, queue: Queue, metric: List[autoPyTorchMetric],
+                 configuration: Optional[Configuration] = None,
+                 seed: int = 1,
+                 output_y_hat_optimization: bool = True,
+                 num_run: Optional[int] = None,
+                 include: Optional[Dict[str, Any]] = None,
+                 exclude: Optional[Dict[str, Any]] = None,
+                 disable_file_output: bool = False,
+                 init_params: Optional[Dict[str, Any]] = None,
+                 budget: Optional[float] = None,
+                 budget_type: Optional[str] = None,
+                 logger_port: Optional[int] = None) -> None:
 
         self.starttime = time.time()
 
@@ -139,7 +160,7 @@ class AbstractEvaluator(object):
         self.queue = queue
 
         # TODO: use autopytorch datasets once PR is passed
-        self.datamanager = self.backend.load_datamanager()
+        self.datamanager: BaseDataset = self.backend.load_datamanager()
         self.include = include
         self.exclude = exclude
 
@@ -165,6 +186,7 @@ class AbstractEvaluator(object):
         else:
             raise ValueError('disable_file_output should be either a bool or a list')
 
+        self.model_class: Optional[BaseEstimator] = None
         info = {'task_type': self.datamanager.task_type,
                 'output_type': self.datamanager.output_type,
                 'issparse': self.issparse}
@@ -235,7 +257,8 @@ class AbstractEvaluator(object):
         self.logger.debug("Default pipeline options: {}".format(default_pipeline_options))
         self._init_params.update({**default_pipeline_options})
 
-    def _get_model(self):
+    def _get_model(self) -> BaseEstimator:
+        assert self.model_class is not None, "Can't return model, model_class not initialised"
         if not isinstance(self.configuration, Configuration):
             model = self.model_class(config=self.configuration,
                                      random_state=np.random.RandomState(self.seed),
@@ -251,7 +274,7 @@ class AbstractEvaluator(object):
                                      init_params=self._init_params)
         return model
 
-    def _loss(self, y_true, y_hat, all_supported_metrics=None):
+    def _loss(self, y_true: np.ndarray, y_hat: np.ndarray) -> Dict[str, float]:
         """Auto-sklearn follows a minimization goal, so the make_scorer
         sign is used as a guide to obtain the value to reduce.
 
@@ -263,28 +286,23 @@ class AbstractEvaluator(object):
                 For accuracy for example: optimum(1) - (+1 * actual score)
                 For logloss for example: optimum(0) - (-1 * actual score)
         """
-        # TODO: removed all_supported_metrics
 
         if not isinstance(self.configuration, Configuration):
-            return {self.metric: 1.0}
+            return {self.metric[0].name: 1.0}
 
         score = calculate_score(
             y_true, y_hat, self.task_type, self.metric)
 
-        if hasattr(score, '__len__'):
-            if self.task_type in CLASSIFICATION_TASKS:
-                err = {key: metric._optimum - score[key] for key, metric in
-                       CLASSIFICATION_METRICS.items() if key in score}
-            else:
-                err = {key: metric._optimum - score[key] for key, metric in
-                       REGRESSION_METRICS.items() if key in score}
-        else:
-            err = self.metric._optimum - score
+        err = {metric.name: metric._optimum - score[metric.name] for metric in self.metric
+               if metric.name in score.keys()}
 
         return err
 
-    def finish_up(self, loss, train_loss, opt_pred, valid_pred, val_indices, test_pred,
-                  additional_run_info, file_output, status):
+    def finish_up(self, loss: Dict[str, float], train_loss: Dict[str, float],
+                  opt_pred: np.ndarray, valid_pred: np.ndarray,
+                  val_indices: Union[List, np.ndarray], test_pred: np.ndarray,
+                  additional_run_info: Optional[Dict], file_output: bool, status: StatusType
+                  ) -> Union[Tuple[float, Dict[str, Any], int, Dict], None]:
         """This function does everything necessary after the fitting is done:
 
         * predicting
@@ -337,13 +355,15 @@ class AbstractEvaluator(object):
         #     rval_dict['final_queue_element'] = True
 
         self.queue.put(rval_dict)
+        return None
 
     def calculate_auxiliary_losses(
             self,
-            Y_valid_pred,
-            Y_test_pred,
-            val_indices
-    ):
+            Y_valid_pred: np.ndarray,
+            Y_test_pred: np.ndarray,
+            val_indices: Union[List, np.ndarray]
+    ) -> Tuple[Optional[float], Optional[float]]:
+
         if Y_valid_pred is not None:
             if val_indices is not None:
                 validation_loss = self._loss(self.y_train[val_indices], Y_valid_pred)
@@ -368,10 +388,10 @@ class AbstractEvaluator(object):
 
     def file_output(
             self,
-            Y_optimization_pred,
-            Y_valid_pred,
-            Y_test_pred
-    ):
+            Y_optimization_pred: np.ndarray,
+            Y_valid_pred: np.ndarray,
+            Y_test_pred: np.ndarray
+    ) -> Tuple[Optional[float], Dict]:
         # Abort if self.Y_optimization is None
         # self.Y_optimization can be None if we use partial-cv, then,
         # obviously no output should be saved.
@@ -454,7 +474,7 @@ class AbstractEvaluator(object):
 
         return None, {}
 
-    def _predict_proba(self, X, model, task_type, Y_train):
+    def _predict_proba(self, X: np.ndarray, model: BaseEstimator, Y_train: np.ndarray) -> np.ndarray:
         def send_warnings_to_log(message, category, filename, lineno,
                                  file=None, line=None):
             self.logger.debug('%s:%s: %s:%s' %
@@ -468,7 +488,8 @@ class AbstractEvaluator(object):
         Y_pred = self._ensure_prediction_array_sizes(Y_pred, Y_train)
         return Y_pred
 
-    def _predict_regression(self, X, model, task_type, Y_train=None):
+    def _predict_regression(self, X: np.ndarray, model: BaseEstimator,
+                            Y_train: Optional[np.ndarray] = None) -> np.ndarray:
         def send_warnings_to_log(message, category, filename, lineno,
                                  file=None, line=None):
             self.logger.debug('%s:%s: %s:%s' %
@@ -484,8 +505,10 @@ class AbstractEvaluator(object):
 
         return Y_pred
 
-    def _ensure_prediction_array_sizes(self, prediction, Y_train):
-        num_classes = self.datamanager.num_classes
+    def _ensure_prediction_array_sizes(self, prediction: np.ndarray,
+                                       Y_train: np.ndarray) -> np.ndarray:
+        assert self.datamanager.num_classes is not None, "Called function on wrong task"
+        num_classes: int = self.datamanager.num_classes
 
         if self.output_type == MULTICLASS and \
                 prediction.shape[1] < num_classes:
