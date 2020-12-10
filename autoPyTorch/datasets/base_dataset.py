@@ -67,11 +67,11 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         self.shuffle = shuffle
         self.resampling_strategy = resampling_strategy
         self.resampling_strategy_args = resampling_strategy_args
-        self.task_type: Optional[int] = None
+        self.task_type: Optional[str] = None
         self.issparse: bool = issparse(self.train_tensors[0])
         self.num_classes = None
         if len(train_tensors) == 2 and train_tensors[1] is not None:
-            self.output_type: int = type_of_target(self.train_tensors[1])
+            self.output_type: str = type_of_target(self.train_tensors[1])
             self.num_classes = len(np.unique(self.train_tensors[1]))
         # TODO: Look for a criteria to define small enough to preprocess
         self.is_small_preprocess = True
@@ -158,8 +158,8 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         return
 
     def create_val_split(self,
-                         holdout_val_type: Optional[HoldoutValTypes] = None,
-                         val_share: Optional[float] = None) -> None:
+                         holdout_val_type: HoldoutValTypes,
+                         val_share: float) -> None:
         if holdout_val_type is None:
             raise ValueError(
                 '`val_share` specified, but `holdout_val_type` not specified.'

@@ -1,6 +1,12 @@
+from multiprocessing.queues import Queue
+
+from typing import List, Optional, Union
+
 import queue
 
 import numpy as np
+
+from smac.runhistory.runhistory import RunValue
 
 __all__ = [
     'read_queue',
@@ -10,11 +16,11 @@ __all__ = [
 ]
 
 
-def read_queue(queue_):
-    stack = []
+def read_queue(queue_: Queue) -> List[RunValue]:
+    stack: List[RunValue] = []
     while True:
         try:
-            rval = queue_.get(timeout=1)
+            rval: RunValue = queue_.get(timeout=1)
         except queue.Empty:
             break
 
@@ -36,7 +42,7 @@ def read_queue(queue_):
         return stack
 
 
-def empty_queue(queue_):
+def empty_queue(queue_: Queue) -> None:
     while True:
         try:
             queue_.get(block=False)
@@ -46,7 +52,7 @@ def empty_queue(queue_):
     queue_.close()
 
 
-def extract_learning_curve(stack, key=None):
+def extract_learning_curve(stack: List[RunValue], key: Optional[str] = None) -> List[List]:
     learning_curve = []
     for entry in stack:
         if key:
@@ -56,7 +62,7 @@ def extract_learning_curve(stack, key=None):
     return list(learning_curve)
 
 
-def convert_multioutput_multiclass_to_multilabel(probas):
+def convert_multioutput_multiclass_to_multilabel(probas: Union[List, np.ndarray]) -> np.ndarray:
     if isinstance(probas, np.ndarray) and len(probas.shape) > 2:
         raise ValueError('New unsupported sklearn output!')
     if isinstance(probas, list):

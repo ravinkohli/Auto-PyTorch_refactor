@@ -10,6 +10,14 @@ from torch.utils.data import Dataset, TensorDataset
 import torchvision.transforms
 from torchvision.transforms import functional as TF
 
+from autoPyTorch.constants import (
+    CLASSIFICATION_TASKS,
+    IMAGE_CLASSIFICATION,
+    IMAGE_REGRESSION,
+    REGRESSION_TASKS,
+    STRING_TO_OUTPUT_TYPES,
+    TASK_TYPES_TO_STRING,
+)
 from autoPyTorch.datasets.base_dataset import BaseDataset
 from autoPyTorch.datasets.resampling_strategy import (
     CrossValTypes,
@@ -43,6 +51,15 @@ class ImageDataset(BaseDataset):
         super().__init__(train_tensors=train, val_tensors=val, test_tensors=test, shuffle=shuffle,
                          resampling_strategy=resampling_strategy, resampling_strategy_args=resampling_strategy_args,
                          seed=seed, transforms=transforms)
+        if self.output_type is not None:
+            if STRING_TO_OUTPUT_TYPES[self.output_type] in CLASSIFICATION_TASKS:
+                self.task_type = TASK_TYPES_TO_STRING[IMAGE_CLASSIFICATION]
+            elif STRING_TO_OUTPUT_TYPES[self.output_type] in REGRESSION_TASKS:
+                self.task_type = TASK_TYPES_TO_STRING[IMAGE_REGRESSION]
+            else:
+                raise ValueError("Output type not currently supported ")
+        else:
+            raise ValueError("Task type not currently supported ")
         self.cross_validators = get_cross_validators(
             CrossValTypes.stratified_k_fold_cross_validation,
             CrossValTypes.k_fold_cross_validation,
