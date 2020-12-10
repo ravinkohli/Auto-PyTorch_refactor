@@ -11,10 +11,10 @@ import torchvision.transforms
 from torchvision.transforms import functional as TF
 
 from autoPyTorch.constants import (
-    CLASSIFICATION_TASKS,
+    CLASSIFICATION_OUTPUTS,
     IMAGE_CLASSIFICATION,
     IMAGE_REGRESSION,
-    REGRESSION_TASKS,
+    REGRESSION_OUTPUTS,
     STRING_TO_OUTPUT_TYPES,
     TASK_TYPES_TO_STRING,
 )
@@ -52,9 +52,9 @@ class ImageDataset(BaseDataset):
                          resampling_strategy=resampling_strategy, resampling_strategy_args=resampling_strategy_args,
                          seed=seed, transforms=transforms)
         if self.output_type is not None:
-            if STRING_TO_OUTPUT_TYPES[self.output_type] in CLASSIFICATION_TASKS:
+            if STRING_TO_OUTPUT_TYPES[self.output_type] in CLASSIFICATION_OUTPUTS:
                 self.task_type = TASK_TYPES_TO_STRING[IMAGE_CLASSIFICATION]
-            elif STRING_TO_OUTPUT_TYPES[self.output_type] in REGRESSION_TASKS:
+            elif STRING_TO_OUTPUT_TYPES[self.output_type] in REGRESSION_OUTPUTS:
                 self.task_type = TASK_TYPES_TO_STRING[IMAGE_REGRESSION]
             else:
                 raise ValueError("Output type not currently supported ")
