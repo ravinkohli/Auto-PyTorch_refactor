@@ -1,6 +1,5 @@
-import warnings
 from abc import ABCMeta
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, cast
 
 import numpy as np
 
@@ -18,6 +17,8 @@ from autoPyTorch.datasets.resampling_strategy import (
     DEFAULT_RESAMPLING_PARAMETERS,
     HOLDOUT_FN,
     HoldoutValTypes,
+    get_cross_validators,
+    get_holdout_validators,
     is_stratified,
 )
 from autoPyTorch.utils.common import FitRequirement
@@ -39,6 +40,23 @@ def type_check(train_tensors: BASE_DATASET_INPUT, val_tensors: Optional[BASE_DAT
             check_valid_data(val_tensors[i])
 
 
+class TransformSubset(Subset):
+    """
+    Because the BaseDataset contains all the data (train/val/test), the transformations
+    have to be applied with some directions. That is, if yielding train data,
+    we expect to apply train transformation (which have augmentations exclusively).
+
+    We achieve so by adding a train flag to the pytorch subset
+    """
+    def __init__(self, dataset: Dataset, indices: Sequence[int], train: bool) -> None:
+        self.dataset = dataset
+        self.indices = indices
+        self.train = train
+
+    def __getitem__(self, idx: int) -> np.ndarray:
+        return self.dataset.__getitem__(self.indices[idx], self.train)
+
+
 class BaseDataset(Dataset, metaclass=ABCMeta):
     def __init__(
         self,
@@ -49,7 +67,8 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         resampling_strategy_args: Optional[Dict[str, Any]] = None,
         shuffle: Optional[bool] = True,
         seed: Optional[int] = 42,
-        transforms: Optional[torchvision.transforms.Compose] = None,
+        train_transforms: Optional[torchvision.transforms.Compose] = None,
+        val_transforms: Optional[torchvision.transforms.Compose] = None,
     ):
         """
         :param train_tensors: A tuple of objects that have a __len__ and a __getitem__ attribute.
@@ -80,13 +99,25 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         self.is_small_preprocess = True
 
         # Make sure cross validation splits are created once
-        self.splits = None  # type: Optional[List]
+        self.cross_validators = get_cross_validators(
+            CrossValTypes.stratified_k_fold_cross_validation,
+            CrossValTypes.k_fold_cross_validation,
+            CrossValTypes.shuffle_split_cross_validation,
+            CrossValTypes.stratified_shuffle_split_cross_validation
+        )
+        self.holdout_validators = get_holdout_validators(
+            HoldoutValTypes.holdout_validation,
+            HoldoutValTypes.stratified_holdout_validation
+        )
+        self.splits = self.get_splits_from_resampling_strategy()
 
         # We also need to be able to transform the data, be it for pre-processing
         # or for augmentation
-        self.transform = transforms
+        self.train_transform = train_transforms
+        self.val_transform = val_transforms
 
-    def update_transform(self, transform: Optional[torchvision.transforms.Compose]
+    def update_transform(self, transform: Optional[torchvision.transforms.Compose],
+                         train: bool = True,
                          ) -> 'BaseDataset':
         """
         During the pipeline execution, the pipeline object might propose transformations
@@ -98,21 +129,43 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         Args:
             transform (torchvision.transforms.Compose): The transformations proposed
                 by the current pipeline
+            train (bool): Whether to update the train or validation transform
 
         Returns:
             self: A copy of the update pipeline
         """
-        self.transform = transform
+        if train:
+            self.train_transform = transform
+        else:
+            self.val_transform = transform
         return self
 
-    def __getitem__(self, index: int) -> Tuple[np.ndarray, ...]:
+    def __getitem__(self, index: int, train: bool = True) -> Tuple[np.ndarray, ...]:
+        """
+        The base dataset uses a Subset of the data. Nevertheless, the base dataset expect
+        both validation and test data to be present in the same dataset, which motivated the
+        need to dynamically give train/test data with the __getitem__ command.
+
+        This method yields a datapoint of the whole data (after a Subset has selected a given
+        item, based on the resampling strategy) and applies a train/testing transformation, if any.
+
+        Args:
+            index (int): what element to yield from all the train/test tensors
+            train (bool): Whether to apply a train or test transformation, if any
+
+        Returns:
+            A transformed single point prediction
+        """
 
         if hasattr(self.train_tensors[0], 'loc'):
-            X = self.train_tensors[0].iloc[index].to_numpy()
+            X = self.train_tensors[0].iloc[[index]]
         else:
             X = self.train_tensors[0][index]
-        if self.transform:
-            X = self.transform(X)
+
+        if self.train_transform is not None and train:
+            X = self.train_transform(X)
+        elif self.val_transform is not None and not train:
+            X = self.val_transform(X)
 
         # In case of prediction, the targets are not provided
         Y = self.train_tensors[1]
@@ -133,9 +186,41 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
             indices = np.arange(len(self))
         return indices
 
+    def get_splits_from_resampling_strategy(self) -> List[Tuple[List[int], List[int]]]:
+        """
+        Creates a set of splits based on a resampling strategy provided
+        """
+        splits = []
+        if isinstance(self.resampling_strategy, HoldoutValTypes):
+            val_share = DEFAULT_RESAMPLING_PARAMETERS[self.resampling_strategy].get(
+                'val_share', None)
+            if self.resampling_strategy_args is not None:
+                val_share = self.resampling_strategy_args.get('val_share', val_share)
+            splits.append(
+                self.create_holdout_val_split(
+                    holdout_val_type=self.resampling_strategy,
+                    val_share=val_share,
+                )
+            )
+        elif isinstance(self.resampling_strategy, CrossValTypes):
+            num_splits = DEFAULT_RESAMPLING_PARAMETERS[self.resampling_strategy].get(
+                'num_splits', None),
+            if self.resampling_strategy_args is not None:
+                num_splits = self.resampling_strategy_args.get('num_splits', num_splits)
+            # Create the split if it was not created before
+            splits.extend(
+                self.create_cross_val_splits(
+                    cross_val_type=self.resampling_strategy,
+                    num_splits=cast(int, num_splits),
+                )
+            )
+        else:
+            raise ValueError("Unsupported resampling strategy={self.resampling_strategy}")
+        return splits
+
     def create_cross_val_splits(self,
                                 cross_val_type: CrossValTypes,
-                                num_splits: int) -> None:
+                                num_splits: int) -> List[Tuple[List[int], List[int]]]:
         """
         This function creates the cross validation split for the given task.
 
@@ -152,14 +237,15 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         if is_stratified(cross_val_type):
             # we need additional information about the data for stratification
             kwargs["stratify"] = self.train_tensors[-1]
-        self.splits = self.cross_validators[cross_val_type.name](
+        splits = self.cross_validators[cross_val_type.name](
             num_splits, self._get_indices(), **kwargs)
+        return splits
 
-        return
-
-    def create_val_split(self,
-                         holdout_val_type: HoldoutValTypes,
-                         val_share: float) -> None:
+    def create_holdout_val_split(
+        self,
+        holdout_val_type: HoldoutValTypes,
+        val_share: float,
+    ) -> Tuple[Dataset, Dataset]:
         if holdout_val_type is None:
             raise ValueError(
                 '`val_share` specified, but `holdout_val_type` not specified.'
@@ -176,39 +262,7 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
             # we need additional information about the data for stratification
             kwargs["stratify"] = self.train_tensors[-1]
         train, val = self.holdout_validators[holdout_val_type.name](val_share, self._get_indices(), **kwargs)
-        self.splits = [[train, val]]
-        return
-
-    def create_splits(self) -> None:
-        if self.splits is None:
-
-            if isinstance(self.resampling_strategy, HoldoutValTypes):
-                # Regardless of the split, there is a single dataset
-                val_share = DEFAULT_RESAMPLING_PARAMETERS[self.resampling_strategy].get(
-                    'val_share', None)
-                if self.resampling_strategy_args is not None:
-                    val_share = self.resampling_strategy_args.get('val_share', val_share)
-                return self.create_val_split(
-                    holdout_val_type=self.resampling_strategy,
-                    val_share=val_share,
-                )
-            elif isinstance(self.resampling_strategy, CrossValTypes):
-                num_splits = DEFAULT_RESAMPLING_PARAMETERS[self.resampling_strategy].get(
-                    'num_splits', None),
-                if self.resampling_strategy_args is not None:
-                    num_splits = self.resampling_strategy_args.get('num_splits', num_splits)
-                # Create the split if it was not created before
-                if isinstance(num_splits, tuple):
-                    num_splits = num_splits[0]
-                self.create_cross_val_splits(
-                    cross_val_type=self.resampling_strategy,
-                    num_splits=num_splits,
-                )
-            else:
-                raise ValueError(f"Unsupported resampling strategy {self.resampling_strategy}")
-        else:
-            warnings.warn("Calling create_cross_val_splits more that once will not overwrite "
-                          "the previously created split of {self.splits}")
+        return train, val
 
     def get_dataset_for_training(self, split_id: int) -> Tuple[Dataset, Dataset]:
         """
@@ -223,8 +277,9 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         Returns:
             Dataset: the reduced dataset to be used for testing
         """
-        assert self.splits is not None, "cant return dataset for training without calling create_splits() first"
-        return Subset(self, self.splits[split_id][0]), Subset(self, self.splits[split_id][1])
+        # Subset creates a dataset. Splits is a (train_indices, test_indices) tuple
+        return (TransformSubset(self, self.splits[split_id][0], train=True),
+                TransformSubset(self, self.splits[split_id][1], train=False))
 
     def replace_data(self, X_train: BASE_DATASET_INPUT, X_test: Optional[BASE_DATASET_INPUT]) -> 'BaseDataset':
         """

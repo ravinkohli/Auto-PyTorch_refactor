@@ -3,9 +3,14 @@ import shutil
 import unittest
 import unittest.mock
 
+import numpy as np
+
+import pandas as pd
+
 from sklearn.datasets import make_classification
 
 from autoPyTorch.datasets.tabular_dataset import TabularDataset
+from autoPyTorch.pipeline.components.setup.early_preprocessor.utils import get_preprocess_transforms
 from autoPyTorch.pipeline.tabular_classification import TabularClassificationPipeline
 from autoPyTorch.utils.backend import create
 from autoPyTorch.utils.common import FitRequirement
@@ -63,6 +68,33 @@ class PipelineTest(unittest.TestCase):
         datamanager.create_splits()
         self.backend.save_datamanager(datamanager)
 
+        self.fit_dictionary = {
+            'num_features': self.num_features,
+            'num_classes': self.num_classes,
+            'numerical_columns': list(range(self.num_features)),
+            'categorical_columns': [],
+            'categories': [],
+            'X_train': self.X,
+            'y_train': self.y,
+            'train_indices': list(range(self.X.shape[0] // 2)),
+            'val_indices': list(range(self.X.shape[0] // 2, self.X.shape[0])),
+            'is_small_preprocess': False,
+            # Training configuration
+            'dataset_properties': self.dataset_properties,
+            'job_id': 'example_tabular_classification_1',
+            'device': 'cpu',
+            'budget_type': 'epochs',
+            'epochs': 5,
+            'torch_num_threads': 1,
+            'early_stopping': 20,
+            'working_dir': '/tmp',
+            'use_tensorboard_logger': True,
+            'use_pynisher': False,
+            'metrics_during_training': True,
+            'split_id': 0,
+            'backend': self.backend,
+        }
+
     def tearDown(self):
         self.backend.context.delete_directories()
 
@@ -74,30 +106,64 @@ class PipelineTest(unittest.TestCase):
         cs = pipeline.get_hyperparameter_search_space()
         config = cs.sample_configuration()
         pipeline.set_hyperparameters(config)
-        pipeline.fit({'X_train': self.X,
-                      'y_train': self.y,
-                      'train_indices': list(range(self.X.shape[0] // 2)),
-                      'val_indices': list(range(self.X.shape[0] // 2, self.X.shape[0])),
-                      # Training configuration
-                      'dataset_properties': self.dataset_properties,
-                      'job_id': 'example_tabular_classification_1',
-                      'device': 'cpu',
-                      'budget_type': 'epochs',
-                      'epochs': 5,
-                      'torch_num_threads': 1,
-                      'early_stopping': 20,
-                      'working_dir': '/tmp',
-                      'use_tensorboard_logger': True,
-                      'use_pynisher': False,
-                      'metrics_during_training': True,
-                      'split_id': 0,
-                      'backend': self.backend,
-                      }
-                     )
+        pipeline.fit(
+            self.fit_dictionary
+        )
 
         # To make sure we fitted the model, there should be a
         # run summary object with accuracy
         self.assertIsNotNone(pipeline.named_steps['trainer'].run_summary)
+
+    def test_pipeline_predict(self):
+        """This test makes sure that the pipeline is able to fit
+        given random combinations of hyperparameters across the pipeline"""
+
+        pipeline = TabularClassificationPipeline(dataset_properties=self.dataset_properties)
+        cs = pipeline.get_hyperparameter_search_space()
+        config = cs.sample_configuration()
+        pipeline.set_hyperparameters(config)
+
+        pipeline.fit(
+            self.fit_dictionary
+        )
+
+        prediction = pipeline.predict(pd.DataFrame(self.X).infer_objects().convert_dtypes())
+        self.assertIsInstance(prediction, np.ndarray)
+        self.assertEqual(prediction.shape, (200, 200))
+
+    def test_pipeline_transform(self):
+        """
+        In the context of autopytorch, transform expands a fit dictionary with
+        components that where previously fit. We can use this as a nice way to make sure
+        that fit properly work.
+        This code is added in light of components not properly added to the fit dicitonary
+        """
+
+        pipeline = TabularClassificationPipeline(dataset_properties=self.dataset_properties)
+        cs = pipeline.get_hyperparameter_search_space()
+        config = cs.sample_configuration()
+        pipeline.set_hyperparameters(config)
+
+        pipeline.fit(
+            self.fit_dictionary
+        )
+
+        transformed_fit_dictionary = pipeline.transform(self.fit_dictionary)
+
+        # First, we do not lose anyone! (We use a fancy subset containment check)
+        self.assertTrue(self.fit_dictionary.items() <= transformed_fit_dictionary.items())
+
+        # Then the pipeline should have added the following keys
+        expected_keys = {'imputer', 'encoder', 'scaler', 'tabular_transformer',
+                         'preprocess_transforms', 'network', 'optimizer', 'lr_scheduler',
+                         'train_data_loader', 'val_data_loader', 'run_summary'}
+        self.assertTrue(expected_keys.issubset(set(transformed_fit_dictionary.keys())))
+
+        # Then we need to have transformations being created.
+        self.assertTrue(len(get_preprocess_transforms(transformed_fit_dictionary)) > 0)
+
+        # We expect the transformations to be in the pipeline at anytime for inference
+        self.assertIn('preprocess_transforms', transformed_fit_dictionary.keys())
 
     def test_default_configuration(self):
         """Makes sure that when no config is set, we can trust the

@@ -18,12 +18,6 @@ from autoPyTorch.constants import (
     TASK_TYPES_TO_STRING,
 )
 from autoPyTorch.datasets.base_dataset import BaseDataset
-from autoPyTorch.datasets.resampling_strategy import (
-    CrossValTypes,
-    HoldoutValTypes,
-    get_cross_validators,
-    get_holdout_validators
-)
 
 
 class DataTypes(Enum):

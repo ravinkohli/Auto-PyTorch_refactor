@@ -34,12 +34,15 @@ class EarlyPreprocessing(autoPyTorchSetupComponent):
         transforms = get_preprocess_transforms(X)
 
         if X['dataset_properties']['is_small_preprocess']:
-            X['X_train'] = preprocess(dataset=X['X_train'], transforms=transforms,
-                                      indices=X['train_indices'])
-            if 'X_test' in X:
-                X['X_test'] = preprocess(dataset=X['X_test'], transforms=transforms)
-        else:
-            X.update({'preprocess_transforms': transforms})
+            # Incorporate the transform to the dataset
+            datamanager = X['backend'].load_datamanager()
+
+            X['X_train'] = preprocess(dataset=datamanager.train_tensors[0], transforms=transforms)
+            if datamanager.test_tensors is not None:
+                X['X_test'] = preprocess(dataset=datamanager.test_tensors[0], transforms=transforms)
+
+        # We need to also save the preprocess transforms for inference
+        X.update({'preprocess_transforms': transforms})
         return X
 
     @staticmethod

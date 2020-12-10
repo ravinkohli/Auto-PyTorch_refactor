@@ -76,7 +76,7 @@ def get_data_to_train() -> typing.Tuple[typing.Dict[str, typing.Any]]:
         'numerical_columns': numerical_columns,
         'num_features': X.shape[1],
         'num_classes': len(np.unique(y)),
-        'is_small_preprocess': True,
+        'is_small_preprocess': False,
         'categories': categories,
         'X_train': X_train,
         'y_train': y_train,
@@ -138,7 +138,8 @@ def random_search_and_save(fit_dictionary: typing.Dict[str, typing.Any], backend
 
         # Predict using the fit model
         ensemble_predictions = pipeline.predict(
-            np.take(X_train, fit_dictionary['val_indices'], axis=0))
+            X_train.iloc[fit_dictionary['val_indices']]
+        )
         test_predictions = pipeline.predict(X_test)
 
         backend.save_numrun_to_dir(
