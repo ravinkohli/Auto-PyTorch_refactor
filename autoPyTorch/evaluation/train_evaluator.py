@@ -148,17 +148,14 @@ class TrainEvaluator(AbstractEvaluator):
         X_train = self.X_train
         if isinstance(X_train, pd.DataFrame):
             X_train = X_train.to_numpy()
-        train_pred = self.predict_function(X_train[train_indices],
-                                           model, self.task_type,
+        train_pred = self.predict_function(X_train[train_indices], model,
                                            self.y_train[train_indices])
 
-        valid_pred = self.predict_function(X_train[test_indices],
-                                           model, self.task_type,
+        valid_pred = self.predict_function(X_train[test_indices], model,
                                            self.y_train[train_indices])
 
         if self.X_test is not None:
             test_pred = self.predict_function(self.X_test, model,
-                                              self.task_type,
                                               self.y_train[train_indices])
         else:
             test_pred = None
