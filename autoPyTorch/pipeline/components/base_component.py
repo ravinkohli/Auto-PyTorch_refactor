@@ -227,9 +227,7 @@ class autoPyTorchComponent(BaseEstimator):
         assert 'dataset_properties' in X.keys(), "Fit dictionary must contain dataset_properties"
 
         for requirement in self._fit_requirements:
-            check_dict = X
-            if requirement.dataset_property:
-                check_dict = X['dataset_properties']
+            check_dict = X['dataset_properties'] if requirement.dataset_property else X
             if requirement.name not in check_dict.keys():
                 raise ValueError("To fit {}, expected fit dictionary to have '{}'"
                                  " but got \n {}".format(self.__class__.__name__, requirement.name, list(check_dict.keys())))

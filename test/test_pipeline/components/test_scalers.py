@@ -184,7 +184,8 @@ class TestStandardScaler(unittest.TestCase):
         categorical_columns = list()
         numerical_columns = [0, 1, 2]
         dataset_properties = {'categorical_columns': categorical_columns,
-                              'numerical_columns': numerical_columns, }
+                              'numerical_columns': numerical_columns,
+                              'issparse': False}
         X = {
             'X_train': data[train_indices],
             'dataset_properties': dataset_properties
