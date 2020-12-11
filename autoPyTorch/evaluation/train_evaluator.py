@@ -21,7 +21,6 @@ from autoPyTorch.evaluation.abstract_evaluator import (
 from autoPyTorch.pipeline.components.training.metrics.base import autoPyTorchMetric
 from autoPyTorch.utils.backend import Backend
 
-
 __all__ = ['TrainEvaluator', 'eval_holdout']
 
 
@@ -69,38 +68,188 @@ class TrainEvaluator(AbstractEvaluator):
             raise AttributeError("Must have called create_splits on {}".format(self.datamanager.__class__.__name__))
         self.num_folds = len(self.splits)
         self.Y_optimization = None
-        self.Y_targets = [None] * self.num_folds
-        self.Y_train_targets = np.ones(self.y_train.shape) * np.NaN
-        self.models = [None] * self.num_folds
-        self.indices = [None] * self.num_folds  # type: List[Optional[Tuple[Union[np.ndarray, List]]]]
+        self.Y_targets: List[Optional[np.ndarray]] = [None] * self.num_folds
+        self.Y_train_targets: np.ndarray = np.ones(self.y_train.shape) * np.NaN
+        self.models: List[Optional[BaseEstimator]] = [None] * self.num_folds
+        self.indices: List[Optional[Tuple[Union[np.ndarray, List], Union[np.ndarray, List]]]] = [None] * self.num_folds
 
         self.keep_models = keep_models
 
     def fit_predict_and_loss(self) -> None:
         """Fit, predict and compute the loss for cross-validation and
         holdout"""
-        assert self.splits is not None, "Can't fit pipeline in {} is datamanager.splits is None"\
+        assert self.splits is not None, "Can't fit pipeline in {} is datamanager.splits is None" \
             .format(self.__class__.__name__)
-        for i, (train_split, test_split) in enumerate(self.splits):
-            self.logger.info("Starting fit {}".format(i))
+        if self.num_folds == 1:
+            split_id = 0
+            self.logger.info("Starting fit {}".format(split_id))
 
+            model = self._get_model()
+
+            train_split, test_split = self.splits[split_id]
             self.Y_optimization = self.y_train[test_split]
             self.Y_actual_train = self.y_train[train_split]
-            self._fit_and_predict(i, train_indices=train_split,
-                                  test_indices=test_split,
-                                  add_model_to_self=True)
+            y_train_pred, y_opt_pred, y_valid_pred, y_test_pred = self._fit_and_predict(model, split_id,
+                                                                                        train_indices=train_split,
+                                                                                        test_indices=test_split,
+                                                                                        add_model_to_self=True)
+            train_loss = self._loss(self.y_train[train_split], y_train_pred)
+            loss = self._loss(self.y_train[test_split], y_opt_pred)
 
-    def _fit_and_predict(self, fold: int, train_indices: Union[np.ndarray, List], test_indices: Union[np.ndarray, List],
-                         add_model_to_self: bool) -> None:
+            additional_run_info = model.get_additional_run_info() if hasattr(model, 'get_additional_run_info') else {}
 
-        model = self._get_model()
+            status = StatusType.SUCCESS
+
+            self.finish_up(
+                loss=loss,
+                train_loss=train_loss,
+                opt_pred=y_opt_pred,
+                valid_pred=y_valid_pred,
+                test_pred=y_test_pred,
+                additional_run_info=additional_run_info,
+                file_output=self.num_folds == 1,
+                status=status,
+            )
+
+        else:
+            Y_train_pred: List[Optional[np.ndarray]] = [None] * self.num_folds
+            Y_optimization_pred: List[Optional[np.ndarray]] = [None] * self.num_folds
+            Y_valid_pred: List[Optional[np.ndarray]] = [None] * self.num_folds
+            Y_test_pred: List[Optional[np.ndarray]] = [None] * self.num_folds
+            additional_run_info: Optional[Dict] = None
+            train_splits: List[Optional[Union[np.ndarray, List]]] = [None] * self.num_folds
+            test_splits: List[Optional[Union[np.ndarray, List]]] = [None] * self.num_folds
+
+            self.models = [self._get_model() for _ in range(self.num_folds)]
+
+            # stores train loss of each fold.
+            train_losses = [np.NaN] * self.num_folds
+            # used as weights when averaging train losses.
+            train_fold_weights = [np.NaN] * self.num_folds
+            # stores opt (validation) loss of each fold.
+            opt_losses = [np.NaN] * self.num_folds
+            # weights for opt_losses.
+            opt_fold_weights = [np.NaN] * self.num_folds
+
+            for i, (train_split, test_split) in enumerate(self.splits):
+
+                model = self.models[i]
+                train_pred, opt_pred, valid_pred, test_pred = self._fit_and_predict(model, i,
+                                                                                    train_indices=train_split,
+                                                                                    test_indices=test_split,
+                                                                                    add_model_to_self=False)
+                Y_train_pred[i] = train_pred
+                Y_optimization_pred[i] = opt_pred
+                Y_valid_pred[i] = valid_pred
+                Y_test_pred[i] = test_pred
+                train_splits[i] = train_split
+
+                self.Y_train_targets[train_split] = self.y_train[train_split]
+                self.Y_targets[i] = self.y_train[test_split]
+                # Compute train loss of this fold and store it. train_loss could
+                # either be a scalar or a dict of scalars with metrics as keys.
+                train_loss = self._loss(
+                    self.Y_train_targets[train_split],
+                    train_pred,
+                )
+                train_losses[i] = train_loss
+                # number of training data points for this fold. Used for weighting
+                # the average.
+                train_fold_weights[i] = len(train_split)
+
+                # Compute validation loss of this fold and store it.
+                optimization_loss = self._loss(
+                    self.Y_targets[i],
+                    opt_pred,
+                )
+                opt_losses[i] = optimization_loss
+                # number of optimization data points for this fold.
+                # Used for weighting the average.
+                opt_fold_weights[i] = len(train_split)
+
+
+                # Compute weights of each fold based on the number of samples in each
+                # fold.
+                train_fold_weights = [w / sum(train_fold_weights)
+                                      for w in train_fold_weights]
+                opt_fold_weights = [w / sum(opt_fold_weights)
+                                    for w in opt_fold_weights]
+
+                # train_losses is a list of either scalars or dicts. If it contains
+                # dicts, then train_loss is computed using the target metric
+                # (self.metric).
+                train_loss = np.average([train_losses[i][str(self.metric[0])]
+                                         for i in range(self.num_folds)],
+                                        weights=train_fold_weights,
+                                        )
+
+                opt_loss = {}
+                for metric in opt_losses[0].keys():
+                    opt_loss[metric] = np.average(
+                        [
+                            opt_losses[i][metric]
+                            for i in range(self.num_folds)
+                        ],
+                        weights=opt_fold_weights,
+                    )
+                Y_targets = self.Y_targets
+                Y_train_targets = self.Y_train_targets
+
+                Y_optimization_preds = np.concatenate(
+                    [Y_optimization_pred[i] for i in range(self.num_folds)
+                     if Y_optimization_pred[i] is not None])
+                Y_targets = np.concatenate([
+                    Y_targets[i] for i in range(self.num_folds)
+                    if Y_targets[i] is not None
+                ])
+
+                if self.X_valid is not None:
+                    Y_valid_preds = np.array([Y_valid_pred[i]
+                                              for i in range(self.num_folds)
+                                              if Y_valid_pred[i] is not None])
+                    # Average the predictions of several models
+                    if len(Y_valid_preds.shape) == 3:
+                        Y_valid_preds = np.nanmean(Y_valid_preds, axis=0)
+                else:
+                    Y_valid_preds = None
+
+                if self.X_test is not None:
+                    Y_test_preds = np.array([Y_test_pred[i]
+                                             for i in range(self.num_folds)
+                                             if Y_test_pred[i] is not None])
+                    # Average the predictions of several models
+                    if len(Y_test_preds.shape) == 3:
+                        Y_test_preds = np.nanmean(Y_test_preds, axis=0)
+                else:
+                    Y_test_preds = None
+
+                self.Y_optimization = Y_targets
+                self.Y_actual_train = Y_train_targets
+
+                self.model = self._get_model()
+
+                status = StatusType.SUCCESS
+                self.finish_up(
+                    loss=opt_loss,
+                    train_loss=train_loss,
+                    opt_pred=Y_optimization_preds,
+                    valid_pred=Y_valid_preds,
+                    test_pred=Y_test_preds,
+                    additional_run_info=additional_run_info,
+                    file_output=True,
+                    status=status,
+                )
+
+    def _fit_and_predict(self, model: BaseEstimator, fold: int, train_indices: Union[np.ndarray, List],
+                         test_indices: Union[np.ndarray, List],
+                         add_model_to_self: bool
+                         ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
 
         self.indices[fold] = ((train_indices, test_indices))
 
         # Do only output the files in the case of iterative holdout,
         # In case of iterative partial cv, no file output is needed
         # because ensembles cannot be built
-        file_output = True if self.num_folds == 1 else False
         X = {'train_indices': train_indices,
              'val_indices': test_indices,
              'split_id': fold,
@@ -110,6 +259,7 @@ class TrainEvaluator(AbstractEvaluator):
         self.logger.info("Model fitted, now predicting")
         (
             Y_train_pred,
+            Y_opt_pred,
             Y_valid_pred,
             Y_test_pred
         ) = self._predict(
@@ -120,30 +270,15 @@ class TrainEvaluator(AbstractEvaluator):
 
         if add_model_to_self:
             self.model = model
+        else:
+            self.models[fold] = model
 
-        train_loss = self._loss(self.y_train[train_indices], Y_train_pred)
-        loss = self._loss(self.y_train[test_indices], Y_valid_pred)
-        additional_run_info = model.get_additional_run_info()
-
-        status = StatusType.SUCCESS
-
-        self.finish_up(
-            loss=loss,
-            train_loss=train_loss,
-            # TODO: currently sending valid_pred to all,
-            #  potentially change valid_pred to opt_pred
-            opt_pred=Y_valid_pred,
-            valid_pred=Y_valid_pred,
-            val_indices=test_indices,
-            test_pred=Y_test_pred,
-            additional_run_info=additional_run_info,
-            file_output=file_output,
-            status=status,
-        )
+        return Y_train_pred, Y_opt_pred, Y_valid_pred, Y_test_pred
 
     def _predict(self, model: BaseEstimator,
                  test_indices: Union[np.ndarray, List],
-                 train_indices: Union[np.ndarray, List]):
+                 train_indices: Union[np.ndarray, List]
+                 ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
 
         X_train = self.X_train
         if isinstance(X_train, pd.DataFrame):
@@ -151,36 +286,41 @@ class TrainEvaluator(AbstractEvaluator):
         train_pred = self.predict_function(X_train[train_indices], model,
                                            self.y_train[train_indices])
 
-        valid_pred = self.predict_function(X_train[test_indices], model,
-                                           self.y_train[train_indices])
+        opt_pred = self.predict_function(X_train[test_indices], model,
+                                         self.y_train[train_indices])
 
+        if self.X_valid is not None:
+            valid_pred = self.predict_function(self.X_valid, model,
+                                               self.y_valid)
+        else:
+            valid_pred = None
         if self.X_test is not None:
             test_pred = self.predict_function(self.X_test, model,
                                               self.y_train[train_indices])
         else:
             test_pred = None
 
-        return train_pred, valid_pred, test_pred
+        return train_pred, opt_pred, valid_pred, test_pred
 
 
 # create closure for evaluating an algorithm
 def eval_holdout(
-        queue,
-        config,
-        backend,
-        metric,
-        seed,
-        num_run,
+        backend: Backend,
+        queue: Queue,
+        metric: List[autoPyTorchMetric],
+        config: Optional[Configuration],
+        seed: int,
+        output_y_hat_optimization: bool,
+        num_run: int,
         instance,
-        output_y_hat_optimization,
-        include,
-        exclude,
-        disable_file_output,
-        init_params=None,
-        budget=100.0,
-        budget_type=None,
-        logger_port=None
-):
+        include: Optional[Dict[str, Any]],
+        exclude: Optional[Dict[str, Any]],
+        disable_file_output: bool,
+        init_params: Optional[Dict[str, Any]] = None,
+        budget: float = 100,
+        budget_type: Optional[str] = None,
+        logger_port: Optional[int] = None,
+) -> None:
     evaluator = TrainEvaluator(
         backend=backend,
         queue=queue,

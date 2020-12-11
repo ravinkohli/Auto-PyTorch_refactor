@@ -44,7 +44,6 @@ __all__ = [
 ]
 
 
-# TODO: make dummypipeline or model for autopytorch
 class MyDummyClassifier(DummyClassifier):
     def __init__(self, config: Configuration,
                  random_state: Optional[Union[int, np.random.RandomState]] = None,
@@ -155,16 +154,19 @@ class AbstractEvaluator(object):
         self.starttime = time.time()
 
         self.configuration = configuration
-        # TODO: adjust backend for autopytorch backend
         self.backend = backend
         self.queue = queue
 
-        # TODO: use autopytorch datasets once PR is passed
         self.datamanager: BaseDataset = self.backend.load_datamanager()
         self.include = include
         self.exclude = exclude
 
         self.X_train, self.y_train = self.datamanager.train_tensors
+
+        if self.datamanager.val_tensors is not None:
+            self.X_valid, self.y_valid = self.datamanager.val_tensors
+        else:
+            self.X_valid, self.y_valid = None, None
 
         if self.datamanager.test_tensors is not None:
             self.X_test, self.y_test = self.datamanager.test_tensors
@@ -179,7 +181,6 @@ class AbstractEvaluator(object):
         self.seed = seed
 
         self.output_y_hat_optimization = output_y_hat_optimization
-        # TODO: Check if we need all supported metrics, as in our case even single metric is in a score_dict form
 
         if isinstance(disable_file_output, (bool, list)):
             self.disable_file_output = disable_file_output
@@ -264,8 +265,6 @@ class AbstractEvaluator(object):
                                      random_state=np.random.RandomState(self.seed),
                                      init_params=self._init_params)
         else:
-            if self.configuration is not None:
-                self.logger.debug("model_class is : {}".format(self.model_class))
             model = self.model_class(config=self.configuration,
                                      dataset_properties=self.dataset_properties,
                                      random_state=np.random.RandomState(self.seed),
@@ -299,10 +298,10 @@ class AbstractEvaluator(object):
         return err
 
     def finish_up(self, loss: Dict[str, float], train_loss: Dict[str, float],
-                  opt_pred: np.ndarray, valid_pred: np.ndarray,
-                  val_indices: Union[List, np.ndarray], test_pred: np.ndarray,
-                  additional_run_info: Optional[Dict], file_output: bool, status: StatusType
-                  ) -> Union[Tuple[float, Dict[str, Any], int, Dict], None]:
+                  opt_pred: np.ndarray, valid_pred: Optional[np.ndarray],
+                  test_pred: Optional[np.ndarray], additional_run_info: Optional[Dict],
+                  file_output: bool, status: StatusType
+                  ) -> Optional[Tuple[float, float, int, Dict]]:
         """This function does everything necessary after the fitting is done:
 
         * predicting
@@ -322,7 +321,7 @@ class AbstractEvaluator(object):
             additional_run_info_ = {}
 
         validation_loss, test_loss = self.calculate_auxiliary_losses(
-            valid_pred, test_pred, val_indices
+            valid_pred, test_pred
         )
 
         if loss_ is not None:
@@ -361,12 +360,11 @@ class AbstractEvaluator(object):
             self,
             Y_valid_pred: np.ndarray,
             Y_test_pred: np.ndarray,
-            val_indices: Union[List, np.ndarray]
     ) -> Tuple[Optional[float], Optional[float]]:
 
         if Y_valid_pred is not None:
-            if val_indices is not None:
-                validation_loss = self._loss(self.y_train[val_indices], Y_valid_pred)
+            if self.y_valid is not None:
+                validation_loss = self._loss(self.y_valid, Y_valid_pred)
                 if isinstance(validation_loss, dict):
                     validation_loss = validation_loss[self.metric[0].name]
             else:
