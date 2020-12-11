@@ -143,18 +143,15 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         # is being used for multiple pipelines. That is, to be efficient with memory
         # we dump the dataset to memory and read it on a need basis. So this function
         # should be robust against multiple calls, and it does so by remembering the splits
-        if self.splits is None:
-            if not isinstance(cross_val_type, CrossValTypes):
-                raise NotImplementedError(f'The selected `cross_val_type` "{cross_val_type}" is not implemented.')
-            kwargs = {}
-            if is_stratified(cross_val_type):
-                # we need additional information about the data for stratification
-                kwargs["stratify"] = self.train_tensors[-1]
-            self.splits = self.cross_validators[cross_val_type.name](
-                num_splits, self._get_indices(), **kwargs)
-        else:
-            warnings.warn("Calling create_cross_val_splits more that once will not overwrite "
-                          "the previously created split of {self.splits}")
+        if not isinstance(cross_val_type, CrossValTypes):
+            raise NotImplementedError(f'The selected `cross_val_type` "{cross_val_type}" is not implemented.')
+        kwargs = {}
+        if is_stratified(cross_val_type):
+            # we need additional information about the data for stratification
+            kwargs["stratify"] = self.train_tensors[-1]
+        self.splits = self.cross_validators[cross_val_type.name](
+            num_splits, self._get_indices(), **kwargs)
+
         return
 
     def create_val_split(self,
@@ -180,29 +177,35 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         return
 
     def create_splits(self) -> None:
-        if isinstance(self.resampling_strategy, HoldoutValTypes):
-            # Regardless of the split, there is a single dataset
-            val_share = DEFAULT_RESAMPLING_PARAMETERS[self.resampling_strategy].get(
-                'val_share', None)
-            if self.resampling_strategy_args is not None:
-                val_share = self.resampling_strategy_args.get('val_share', val_share)
-            return self.create_val_split(
-                holdout_val_type=self.resampling_strategy,
-                val_share=val_share,
-            )
-        elif isinstance(self.resampling_strategy, CrossValTypes):
-            num_splits = DEFAULT_RESAMPLING_PARAMETERS[self.resampling_strategy].get(
-                'num_splits', None),
-            if self.resampling_strategy_args is not None:
-                num_splits = self.resampling_strategy_args.get('num_splits', num_splits)
-            # Create the split if it was not created before
-            if self.splits is None:
+        if self.splits is None:
+
+            if isinstance(self.resampling_strategy, HoldoutValTypes):
+                # Regardless of the split, there is a single dataset
+                val_share = DEFAULT_RESAMPLING_PARAMETERS[self.resampling_strategy].get(
+                    'val_share', None)
+                if self.resampling_strategy_args is not None:
+                    val_share = self.resampling_strategy_args.get('val_share', val_share)
+                return self.create_val_split(
+                    holdout_val_type=self.resampling_strategy,
+                    val_share=val_share,
+                )
+            elif isinstance(self.resampling_strategy, CrossValTypes):
+                num_splits = DEFAULT_RESAMPLING_PARAMETERS[self.resampling_strategy].get(
+                    'num_splits', None),
+                if self.resampling_strategy_args is not None:
+                    num_splits = self.resampling_strategy_args.get('num_splits', num_splits)
+                # Create the split if it was not created before
+                if isinstance(num_splits, tuple):
+                    num_splits = num_splits[0]
                 self.create_cross_val_splits(
                     cross_val_type=self.resampling_strategy,
-                    num_splits=cast(int, num_splits),
+                    num_splits=num_splits,
                 )
+            else:
+                raise ValueError(f"Unsupported resampling strategy {self.resampling_strategy}")
         else:
-            raise ValueError(f"Unsupported resampling strategy {self.resampling_strategy}")
+            warnings.warn("Calling create_cross_val_splits more that once will not overwrite "
+                          "the previously created split of {self.splits}")
 
     def get_dataset_for_training(self, split_id: int) -> Tuple[Dataset, Dataset]:
         """

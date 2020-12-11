@@ -325,6 +325,7 @@ class AbstractEvaluator(object):
         )
 
         if loss_ is not None:
+            self.logger.debug("In abstract evaluator finish up, is loss_ is not none, loss:{}".format(loss_))
             return self.duration, loss_, self.seed, additional_run_info_
 
         if isinstance(loss, dict):
@@ -332,6 +333,8 @@ class AbstractEvaluator(object):
             loss = loss_[self.metric[0].name]
         else:
             loss_ = {}
+
+        self.logger.debug("In abstract evaluator finish up, is loss_ is none, loss:{}".format(loss))
 
         additional_run_info = (
             {} if additional_run_info is None else additional_run_info

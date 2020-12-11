@@ -10,6 +10,7 @@ import sklearn.datasets
 import sklearn.model_selection
 
 from autoPyTorch.datasets.tabular_dataset import TabularDataset
+from autoPyTorch.datasets.resampling_strategy import CrossValTypes
 from autoPyTorch.optimizer.smbo import AutoMLSMBO
 from autoPyTorch.pipeline.components.training.metrics.utils import get_metrics
 from autoPyTorch.utils.backend import create
@@ -95,7 +96,8 @@ if __name__ == "__main__":
     # Create a datamanager for this toy problem
     datamanager = TabularDataset(
         X=X_train, Y=y_train,
-        X_test=X_test, Y_test=y_test)
+        X_test=X_test, Y_test=y_test,
+        resampling_strategy=CrossValTypes.k_fold_cross_validation)
     datamanager.create_splits()
     backend.save_datamanager(datamanager)
 

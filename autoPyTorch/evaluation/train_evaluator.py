@@ -66,7 +66,7 @@ class TrainEvaluator(AbstractEvaluator):
         self.splits = self.datamanager.splits
         if self.splits is None:
             raise AttributeError("Must have called create_splits on {}".format(self.datamanager.__class__.__name__))
-        self.num_folds = len(self.splits)
+        self.num_folds: int = len(self.splits)
         self.Y_optimization = None
         self.Y_targets: List[Optional[np.ndarray]] = [None] * self.num_folds
         self.Y_train_targets: np.ndarray = np.ones(self.y_train.shape) * np.NaN
@@ -118,7 +118,6 @@ class TrainEvaluator(AbstractEvaluator):
             Y_test_pred: List[Optional[np.ndarray]] = [None] * self.num_folds
             additional_run_info: Optional[Dict] = None
             train_splits: List[Optional[Union[np.ndarray, List]]] = [None] * self.num_folds
-            test_splits: List[Optional[Union[np.ndarray, List]]] = [None] * self.num_folds
 
             self.models = [self._get_model() for _ in range(self.num_folds)]
 
@@ -167,78 +166,78 @@ class TrainEvaluator(AbstractEvaluator):
                 # Used for weighting the average.
                 opt_fold_weights[i] = len(train_split)
 
+            # Compute weights of each fold based on the number of samples in each
+            # fold.
+            train_fold_weights = [w / sum(train_fold_weights)
+                                  for w in train_fold_weights]
+            opt_fold_weights = [w / sum(opt_fold_weights)
+                                for w in opt_fold_weights]
 
-                # Compute weights of each fold based on the number of samples in each
-                # fold.
-                train_fold_weights = [w / sum(train_fold_weights)
-                                      for w in train_fold_weights]
-                opt_fold_weights = [w / sum(opt_fold_weights)
-                                    for w in opt_fold_weights]
+            # train_losses is a list of dicts. It is
+            # computed using the target metric (self.metric).
+            train_loss = np.average([train_losses[i][str(self.metric[0])]
+                                     for i in range(self.num_folds)],
+                                    weights=train_fold_weights,
+                                    )
 
-                # train_losses is a list of either scalars or dicts. If it contains
-                # dicts, then train_loss is computed using the target metric
-                # (self.metric).
-                train_loss = np.average([train_losses[i][str(self.metric[0])]
-                                         for i in range(self.num_folds)],
-                                        weights=train_fold_weights,
-                                        )
-
-                opt_loss = {}
-                for metric in opt_losses[0].keys():
-                    opt_loss[metric] = np.average(
-                        [
-                            opt_losses[i][metric]
-                            for i in range(self.num_folds)
-                        ],
-                        weights=opt_fold_weights,
-                    )
-                Y_targets = self.Y_targets
-                Y_train_targets = self.Y_train_targets
-
-                Y_optimization_preds = np.concatenate(
-                    [Y_optimization_pred[i] for i in range(self.num_folds)
-                     if Y_optimization_pred[i] is not None])
-                Y_targets = np.concatenate([
-                    Y_targets[i] for i in range(self.num_folds)
-                    if Y_targets[i] is not None
-                ])
-
-                if self.X_valid is not None:
-                    Y_valid_preds = np.array([Y_valid_pred[i]
-                                              for i in range(self.num_folds)
-                                              if Y_valid_pred[i] is not None])
-                    # Average the predictions of several models
-                    if len(Y_valid_preds.shape) == 3:
-                        Y_valid_preds = np.nanmean(Y_valid_preds, axis=0)
-                else:
-                    Y_valid_preds = None
-
-                if self.X_test is not None:
-                    Y_test_preds = np.array([Y_test_pred[i]
-                                             for i in range(self.num_folds)
-                                             if Y_test_pred[i] is not None])
-                    # Average the predictions of several models
-                    if len(Y_test_preds.shape) == 3:
-                        Y_test_preds = np.nanmean(Y_test_preds, axis=0)
-                else:
-                    Y_test_preds = None
-
-                self.Y_optimization = Y_targets
-                self.Y_actual_train = Y_train_targets
-
-                self.model = self._get_model()
-
-                status = StatusType.SUCCESS
-                self.finish_up(
-                    loss=opt_loss,
-                    train_loss=train_loss,
-                    opt_pred=Y_optimization_preds,
-                    valid_pred=Y_valid_preds,
-                    test_pred=Y_test_preds,
-                    additional_run_info=additional_run_info,
-                    file_output=True,
-                    status=status,
+            opt_loss = {}
+            # self.logger.debug("OPT LOSSES: {}".format(opt_losses if opt_losses is not None else None))
+            for metric in opt_losses[0].keys():
+                opt_loss[metric] = np.average(
+                    [
+                        opt_losses[i][metric]
+                        for i in range(self.num_folds)
+                    ],
+                    weights=opt_fold_weights,
                 )
+            Y_targets = self.Y_targets
+            Y_train_targets = self.Y_train_targets
+
+            Y_optimization_preds = np.concatenate(
+                [Y_optimization_pred[i] for i in range(self.num_folds)
+                 if Y_optimization_pred[i] is not None])
+            Y_targets = np.concatenate([
+                Y_targets[i] for i in range(self.num_folds)
+                if Y_targets[i] is not None
+            ])
+
+            if self.X_valid is not None:
+                Y_valid_preds = np.array([Y_valid_pred[i]
+                                          for i in range(self.num_folds)
+                                          if Y_valid_pred[i] is not None])
+                # Average the predictions of several models
+                if len(Y_valid_preds.shape) == 3:
+                    Y_valid_preds = np.nanmean(Y_valid_preds, axis=0)
+            else:
+                Y_valid_preds = None
+
+            if self.X_test is not None:
+                Y_test_preds = np.array([Y_test_pred[i]
+                                         for i in range(self.num_folds)
+                                         if Y_test_pred[i] is not None])
+                # Average the predictions of several models
+                if len(Y_test_preds.shape) == 3:
+                    Y_test_preds = np.nanmean(Y_test_preds, axis=0)
+            else:
+                Y_test_preds = None
+
+            self.Y_optimization = Y_targets
+            self.Y_actual_train = Y_train_targets
+
+            self.model = self._get_model()
+
+            status = StatusType.SUCCESS
+            self.logger.debug("In train evaluator fit_predict_and_loss, loss:{}".format(opt_loss))
+            self.finish_up(
+                loss=opt_loss,
+                train_loss=train_loss,
+                opt_pred=Y_optimization_preds,
+                valid_pred=Y_valid_preds,
+                test_pred=Y_test_preds,
+                additional_run_info=additional_run_info,
+                file_output=self.num_folds == 1,
+                status=status,
+            )
 
     def _fit_and_predict(self, model: BaseEstimator, fold: int, train_indices: Union[np.ndarray, List],
                          test_indices: Union[np.ndarray, List],
