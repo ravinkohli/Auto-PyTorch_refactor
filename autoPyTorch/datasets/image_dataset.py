@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from PIL import Image
 
@@ -7,8 +7,17 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, TensorDataset
 
+import torchvision.transforms
 from torchvision.transforms import functional as TF
 
+from autoPyTorch.constants import (
+    CLASSIFICATION_OUTPUTS,
+    IMAGE_CLASSIFICATION,
+    IMAGE_REGRESSION,
+    REGRESSION_OUTPUTS,
+    STRING_TO_OUTPUT_TYPES,
+    TASK_TYPES_TO_STRING,
+)
 from autoPyTorch.datasets.base_dataset import BaseDataset
 from autoPyTorch.datasets.resampling_strategy import (
     CrossValTypes,
@@ -24,7 +33,13 @@ class ImageDataset(BaseDataset):
     def __init__(self,
                  train: IMAGE_DATASET_INPUT,
                  val: Optional[IMAGE_DATASET_INPUT] = None,
-                 test: Optional[IMAGE_DATASET_INPUT] = None):
+                 test: Optional[IMAGE_DATASET_INPUT] = None,
+                 resampling_strategy: Union[CrossValTypes, HoldoutValTypes] = HoldoutValTypes.holdout_validation,
+                 resampling_strategy_args: Optional[Dict[str, Any]] = None,
+                 shuffle: Optional[bool] = True,
+                 seed: Optional[int] = 42,
+                 transforms: Optional[torchvision.transforms.Compose] = None,
+                 ):
         _check_image_inputs(train=train, val=val)
         train = _create_image_dataset(data=train)
         if val is not None:
@@ -33,7 +48,18 @@ class ImageDataset(BaseDataset):
             test = _create_image_dataset(data=test)
         self.mean, self.std = _calc_mean_std(train=train)
 
-        super().__init__(train_tensors=train, val_tensors=val, test_tensors=test, shuffle=True)
+        super().__init__(train_tensors=train, val_tensors=val, test_tensors=test, shuffle=shuffle,
+                         resampling_strategy=resampling_strategy, resampling_strategy_args=resampling_strategy_args,
+                         seed=seed, transforms=transforms)
+        if self.output_type is not None:
+            if STRING_TO_OUTPUT_TYPES[self.output_type] in CLASSIFICATION_OUTPUTS:
+                self.task_type = TASK_TYPES_TO_STRING[IMAGE_CLASSIFICATION]
+            elif STRING_TO_OUTPUT_TYPES[self.output_type] in REGRESSION_OUTPUTS:
+                self.task_type = TASK_TYPES_TO_STRING[IMAGE_REGRESSION]
+            else:
+                raise ValueError("Output type not currently supported ")
+        else:
+            raise ValueError("Task type not currently supported ")
         self.cross_validators = get_cross_validators(
             CrossValTypes.stratified_k_fold_cross_validation,
             CrossValTypes.k_fold_cross_validation,

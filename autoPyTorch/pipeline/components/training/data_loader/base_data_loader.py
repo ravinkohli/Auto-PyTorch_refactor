@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from ConfigSpace.configuration_space import ConfigurationSpace
 from ConfigSpace.hyperparameters import (
@@ -46,7 +46,6 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
         # Define fit requirements
         self.add_fit_requirements([
             FitRequirement("split_id", (int,), user_defined=True, dataset_property=False),
-            FitRequirement("train_indices", (List,), user_defined=True, dataset_property=False),
             FitRequirement("Backend", (Backend,), user_defined=True, dataset_property=False),
             FitRequirement("is_small_preprocess", (bool,), user_defined=True, dataset_property=True)])
 
@@ -83,7 +82,7 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
         self.val_transform = self.build_transform(X, train=False)
 
         datamanager = X['backend'].load_datamanager()
-        if X["is_small_preprocess"]:
+        if X['dataset_properties']["is_small_preprocess"]:
             # This parameter indicates that the data has been pre-processed for speed
             # Overwrite the datamanager with the pre-processes data
             datamanager.replace_data(X['X_train'], X['X_test'] if 'X_test' in X else None)
@@ -190,7 +189,7 @@ class BaseDataLoaderComponent(autoPyTorchTrainingComponent):
         if 'backend' not in X:
             raise ValueError("backend is needed to load the data from disk")
 
-        if 'is_small_preprocess' not in X:
+        if 'is_small_preprocess' not in X['dataset_properties']:
             raise ValueError("is_small_pre-process is required to know if the data was preprocessed"
                              " or if the data-loader should transform it while loading a batch")
 

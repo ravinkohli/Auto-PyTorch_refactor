@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -7,7 +7,16 @@ import pandas as pd
 
 from sklearn.utils import check_array
 
-from autoPyTorch.constants import TABULAR_CLASSIFICATION
+import torchvision.transforms
+
+from autoPyTorch.constants import (
+    CLASSIFICATION_OUTPUTS,
+    REGRESSION_OUTPUTS,
+    STRING_TO_OUTPUT_TYPES,
+    TABULAR_CLASSIFICATION,
+    TABULAR_REGRESSION,
+    TASK_TYPES_TO_STRING,
+)
 from autoPyTorch.datasets.base_dataset import BaseDataset
 from autoPyTorch.datasets.resampling_strategy import (
     CrossValTypes,
@@ -43,7 +52,12 @@ class TabularDataset(BaseDataset):
 
     def __init__(self, X: Any, Y: Any,
                  X_test: Optional[Union[np.ndarray, pd.DataFrame]] = None,
-                 Y_test: Optional[Union[np.ndarray, pd.DataFrame]] = None):
+                 Y_test: Optional[Union[np.ndarray, pd.DataFrame]] = None,
+                 resampling_strategy: Union[CrossValTypes, HoldoutValTypes] = HoldoutValTypes.holdout_validation,
+                 resampling_strategy_args: Optional[Dict[str, Any]] = None,
+                 shuffle: Optional[bool] = True,
+                 seed: Optional[int] = 42,
+                 transforms: Optional[torchvision.transforms.Compose] = None):
         X, self.data_types, self.nan_mask, self.itovs, self.vtois = self.interpret_columns(X)
 
         if Y is not None:
@@ -57,7 +71,7 @@ class TabularDataset(BaseDataset):
             # the below function will simply return Pandas DataFrame.
             Y = check_array(Y, ensure_2d=False)
 
-        self.categorical_columns, self.numerical_columns, self.categories, self.num_features, self.num_classes = \
+        self.categorical_columns, self.numerical_columns, self.categories, self.num_features = \
             self.infer_dataset_properties(X, Y)
 
         # Allow support for X_test, Y_test. They will NOT be used for optimization, but
@@ -74,8 +88,18 @@ class TabularDataset(BaseDataset):
                     Y_test, assert_single_column=True)
                 Y_test = check_array(Y_test, ensure_2d=False)
 
-        super().__init__(train_tensors=(X, Y), test_tensors=(X_test, Y_test), shuffle=True)
-        self.task_type = TABULAR_CLASSIFICATION
+        super().__init__(train_tensors=(X, Y), test_tensors=(X_test, Y_test), shuffle=shuffle,
+                         resampling_strategy=resampling_strategy, resampling_strategy_args=resampling_strategy_args,
+                         seed=seed, transforms=transforms)
+        if self.output_type is not None:
+            if STRING_TO_OUTPUT_TYPES[self.output_type] in CLASSIFICATION_OUTPUTS:
+                self.task_type = TASK_TYPES_TO_STRING[TABULAR_CLASSIFICATION]
+            elif STRING_TO_OUTPUT_TYPES[self.output_type] in REGRESSION_OUTPUTS:
+                self.task_type = TASK_TYPES_TO_STRING[TABULAR_REGRESSION]
+            else:
+                raise ValueError("Output type not currently supported ")
+        else:
+            raise ValueError("Task type not currently supported ")
         self.cross_validators = get_cross_validators(
             CrossValTypes.stratified_k_fold_cross_validation,
             CrossValTypes.k_fold_cross_validation,
@@ -139,7 +163,7 @@ class TabularDataset(BaseDataset):
         return data, data_types, nan_mask, itovs, vtois
 
     def infer_dataset_properties(self, X: Any, y: Any) \
-            -> Tuple[List[int], List[int], List[object], int, Optional[int]]:
+            -> Tuple[List[int], List[int], List[object], int]:
 
         categorical_columns = []
         numerical_columns = []
@@ -150,8 +174,5 @@ class TabularDataset(BaseDataset):
                 numerical_columns.append(i)
         categories = [np.unique(X.iloc[:, a]).tolist() for a in categorical_columns]
         num_features = X.shape[1]
-        num_classes = None
-        if y is not None:
-            num_classes = len(np.unique(y))
 
-        return categorical_columns, numerical_columns, categories, num_features, num_classes
+        return categorical_columns, numerical_columns, categories, num_features

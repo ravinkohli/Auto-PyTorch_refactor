@@ -38,7 +38,7 @@ class ImageDataLoader(BaseDataLoaderComponent):
         # check if data set is small enough to be preprocessed.
         # If it is, then no need to add preprocess_transforms to
         # the data loader as the data is already preprocessed
-        if not X['is_small_preprocess']:
+        if not X['dataset_properties']['is_small_preprocess']:
             transformations.append(X['preprocess_transforms'])
 
         # Transform to tensor
@@ -60,5 +60,5 @@ class ImageDataLoader(BaseDataLoaderComponent):
         if not X['image_augmenter'] and 'image_augmenter' not in X:
             raise ValueError("Cannot find the image_augmenter in the fit dictionary")
 
-        if not X['is_small_preprocess'] and 'preprocess_transforms' not in X:
+        if not X['dataset_properties']['is_small_preprocess'] and 'preprocess_transforms' not in X:
             raise ValueError("Cannot find the preprocess_transforms in the fit dictionary")

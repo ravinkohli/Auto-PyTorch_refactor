@@ -15,7 +15,7 @@ class TestFeatureDataLoader(unittest.TestCase):
         """
         loader = FeatureDataLoader()
 
-        fit_dictionary = {'is_small_preprocess': True}
+        fit_dictionary = {'dataset_properties': {'is_small_preprocess': True}}
         for thing in ['imputer', 'scaler', 'encoder']:
             fit_dictionary[thing] = unittest.mock.Mock()
 
@@ -32,8 +32,8 @@ class TestFeatureDataLoader(unittest.TestCase):
         """
         loader = FeatureDataLoader()
 
-        fit_dictionary = {'is_small_preprocess': False}
-        fit_dictionary['preprocess_transforms'] = unittest.mock.Mock()
+        fit_dictionary = {'dataset_properties': {'is_small_preprocess': False},
+                          'preprocess_transforms': unittest.mock.Mock()}
 
         compose = loader.build_transform(fit_dictionary)
 

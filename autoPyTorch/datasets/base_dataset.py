@@ -1,6 +1,6 @@
 import warnings
 from abc import ABCMeta
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -12,7 +12,6 @@ from torch.utils.data import Dataset, Subset
 
 import torchvision
 
-from autoPyTorch.constants import STRING_TO_OUTPUT_TYPES
 from autoPyTorch.datasets.resampling_strategy import (
     CROSS_VAL_FN,
     CrossValTypes,
@@ -50,7 +49,7 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         resampling_strategy_args: Optional[Dict[str, Any]] = None,
         shuffle: Optional[bool] = True,
         seed: Optional[int] = 42,
-        transforms: Optional[torchvision.transforms.Compose] = None
+        transforms: Optional[torchvision.transforms.Compose] = None,
     ):
         """
         :param train_tensors: A tuple of objects that have a __len__ and a __getitem__ attribute.
@@ -68,10 +67,15 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         self.shuffle = shuffle
         self.resampling_strategy = resampling_strategy
         self.resampling_strategy_args = resampling_strategy_args
-        self.task_type: Optional[int] = None
+        self.task_type: Optional[str] = None
         self.issparse: bool = issparse(self.train_tensors[0])
-        self.output_type: int = STRING_TO_OUTPUT_TYPES[type_of_target(self.train_tensors[1])]
-
+        self.input_shape: Tuple[int] = train_tensors[0][1:].shape
+        if len(train_tensors) == 2 and train_tensors[1] is not None:
+            self.output_type: str = type_of_target(self.train_tensors[1])
+            self.num_classes: int = len(np.unique(self.train_tensors[1]))
+            self.output_shape: int = train_tensors[1].shape[1] if train_tensors[1].shape == 2 else 1
+        else:
+            raise NotImplementedError("Currently tasks without a target is not supported")
         # TODO: Look for a criteria to define small enough to preprocess
         self.is_small_preprocess = True
 
@@ -142,46 +146,69 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         # is being used for multiple pipelines. That is, to be efficient with memory
         # we dump the dataset to memory and read it on a need basis. So this function
         # should be robust against multiple calls, and it does so by remembering the splits
-        if self.splits is None:
-            if not isinstance(cross_val_type, CrossValTypes):
-                raise NotImplementedError(f'The selected `cross_val_type` "{cross_val_type}" is not implemented.')
-            kwargs = {}
-            if is_stratified(cross_val_type):
-                # we need additional information about the data for stratification
-                kwargs["stratify"] = self.train_tensors[-1]
-            self.splits = self.cross_validators[cross_val_type.name](
-                num_splits, self._get_indices(), **kwargs)
-        else:
-            warnings.warn("Calling create_cross_val_splits more that once will not overwrite "
-                          "the previously created split of {self.splits}")
+        if not isinstance(cross_val_type, CrossValTypes):
+            raise NotImplementedError(f'The selected `cross_val_type` "{cross_val_type}" is not implemented.')
+        kwargs = {}
+        if is_stratified(cross_val_type):
+            # we need additional information about the data for stratification
+            kwargs["stratify"] = self.train_tensors[-1]
+        self.splits = self.cross_validators[cross_val_type.name](
+            num_splits, self._get_indices(), **kwargs)
+
         return
 
     def create_val_split(self,
-                         holdout_val_type: Optional[HoldoutValTypes] = None,
-                         val_share: Optional[float] = None) -> Tuple[Dataset, Dataset]:
-        if val_share is not None:
-            if holdout_val_type is None:
-                raise ValueError(
-                    '`val_share` specified, but `holdout_val_type` not specified.'
+                         holdout_val_type: HoldoutValTypes,
+                         val_share: float) -> None:
+        if holdout_val_type is None:
+            raise ValueError(
+                '`val_share` specified, but `holdout_val_type` not specified.'
+            )
+        if self.val_tensors is not None:
+            raise ValueError(
+                '`val_share` specified, but the Dataset was a given a pre-defined split at initialization already.')
+        if val_share < 0 or val_share > 1:
+            raise ValueError(f"`val_share` must be between 0 and 1, got {val_share}.")
+        if not isinstance(holdout_val_type, HoldoutValTypes):
+            raise NotImplementedError(f'The specified `holdout_val_type` "{holdout_val_type}" is not supported.')
+        kwargs = {}
+        if is_stratified(holdout_val_type):
+            # we need additional information about the data for stratification
+            kwargs["stratify"] = self.train_tensors[-1]
+        train, val = self.holdout_validators[holdout_val_type.name](val_share, self._get_indices(), **kwargs)
+        self.splits = [[train, val]]
+        return
+
+    def create_splits(self) -> None:
+        if self.splits is None:
+
+            if isinstance(self.resampling_strategy, HoldoutValTypes):
+                # Regardless of the split, there is a single dataset
+                val_share = DEFAULT_RESAMPLING_PARAMETERS[self.resampling_strategy].get(
+                    'val_share', None)
+                if self.resampling_strategy_args is not None:
+                    val_share = self.resampling_strategy_args.get('val_share', val_share)
+                return self.create_val_split(
+                    holdout_val_type=self.resampling_strategy,
+                    val_share=val_share,
                 )
-            if self.val_tensors is not None:
-                raise ValueError(
-                    '`val_share` specified, but the Dataset was a given a pre-defined split at initialization already.')
-            if val_share < 0 or val_share > 1:
-                raise ValueError(f"`val_share` must be between 0 and 1, got {val_share}.")
-            if not isinstance(holdout_val_type, HoldoutValTypes):
-                raise NotImplementedError(f'The specified `holdout_val_type` "{holdout_val_type}" is not supported.')
-            kwargs = {}
-            if is_stratified(holdout_val_type):
-                # we need additional information about the data for stratification
-                kwargs["stratify"] = self.train_tensors[-1]
-            train, val = self.holdout_validators[holdout_val_type.name](val_share, self._get_indices(), **kwargs)
-            return Subset(self, train), Subset(self, val)
+            elif isinstance(self.resampling_strategy, CrossValTypes):
+                num_splits = DEFAULT_RESAMPLING_PARAMETERS[self.resampling_strategy].get(
+                    'num_splits', None),
+                if self.resampling_strategy_args is not None:
+                    num_splits = self.resampling_strategy_args.get('num_splits', num_splits)
+                # Create the split if it was not created before
+                if isinstance(num_splits, tuple):
+                    num_splits = num_splits[0]
+                self.create_cross_val_splits(
+                    cross_val_type=self.resampling_strategy,
+                    num_splits=num_splits,
+                )
+            else:
+                raise ValueError(f"Unsupported resampling strategy {self.resampling_strategy}")
         else:
-            if self.val_tensors is None:
-                raise ValueError('Please specify `val_share` or initialize with a validation dataset.')
-            val = BaseDataset(self.val_tensors)
-            return self, val
+            warnings.warn("Calling create_cross_val_splits more that once will not overwrite "
+                          "the previously created split of {self.splits}")
 
     def get_dataset_for_training(self, split_id: int) -> Tuple[Dataset, Dataset]:
         """
@@ -196,34 +223,8 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         Returns:
             Dataset: the reduced dataset to be used for testing
         """
-        if isinstance(self.resampling_strategy, HoldoutValTypes):
-            # Regardless of the split, there is a single dataset
-            val_share = DEFAULT_RESAMPLING_PARAMETERS[self.resampling_strategy].get(
-                'val_share', None)
-            if self.resampling_strategy_args is not None:
-                val_share = self.resampling_strategy_args.get('val_share', val_share)
-            return self.create_val_split(
-                holdout_val_type=self.resampling_strategy,
-                val_share=val_share,
-            )
-        elif isinstance(self.resampling_strategy, CrossValTypes):
-            num_splits = DEFAULT_RESAMPLING_PARAMETERS[self.resampling_strategy].get(
-                'num_splits', None),
-            if self.resampling_strategy_args is not None:
-                num_splits = self.resampling_strategy_args.get('num_splits', num_splits)
-            # Create the split if it was not created before
-            if self.splits is None:
-                self.create_cross_val_splits(
-                    cross_val_type=self.resampling_strategy,
-                    num_splits=cast(int, num_splits),
-                )
-
-            # Subset creates a dataset
-            # Assert for mypy -- self.splits is created above in self.create_cross_val_splits
-            assert self.splits is not None
-            return (Subset(self, self.splits[split_id][0]), Subset(self, self.splits[split_id][1]))
-        else:
-            raise ValueError(f"Unsupported resampling strategy {self.resampling_strategy}")
+        assert self.splits is not None, "cant return dataset for training without calling create_splits() first"
+        return Subset(self, self.splits[split_id][0]), Subset(self, self.splits[split_id][1])
 
     def replace_data(self, X_train: BASE_DATASET_INPUT, X_test: Optional[BASE_DATASET_INPUT]) -> 'BaseDataset':
         """
@@ -248,4 +249,14 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         dataset_properties = dict()
         for dataset_requirement in dataset_requirements:
             dataset_properties[dataset_requirement.name] = getattr(self, dataset_requirement.name)
+
+        # Add task type, output type and issparse to dataset properties as
+        # they are not a dataset requirement in the pipeline
+        dataset_properties.update({'task_type': self.task_type,
+                                   'output_type': self.output_type,
+                                   'issparse': self.issparse,
+                                   'input_shape': self.input_shape,
+                                   'output_shape': self.output_shape,
+                                   'num_classes': self.num_classes,
+                                   })
         return dataset_properties

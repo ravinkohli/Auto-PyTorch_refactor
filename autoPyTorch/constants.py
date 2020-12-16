@@ -35,13 +35,16 @@ OUTPUT_TYPES = [BINARY, CONTINUOUSMULTIOUTPUT, MULTICLASS, CONTINUOUS]
 OUTPUT_TYPES_TO_STRING = \
     {BINARY: 'binary',
      CONTINUOUSMULTIOUTPUT: 'continuous-multioutput',
-     MULTICLASS: 'multi-class',
+     MULTICLASS: 'multiclass',
      CONTINUOUS: 'continuous',
      MULTICLASSMULTIOUTPUT: 'multiclass-multioutput'}
 
 STRING_TO_OUTPUT_TYPES = \
     {'binary': BINARY,
      'continuous-multioutput': CONTINUOUSMULTIOUTPUT,
-     'multi-class': MULTICLASS,
+     'multiclass': MULTICLASS,
      'continuous': CONTINUOUS,
      'multiclass-multioutput': MULTICLASSMULTIOUTPUT}
+
+CLASSIFICATION_OUTPUTS = [BINARY, MULTICLASS, MULTICLASSMULTIOUTPUT]
+REGRESSION_OUTPUTS = [CONTINUOUS, CONTINUOUSMULTIOUTPUT]
