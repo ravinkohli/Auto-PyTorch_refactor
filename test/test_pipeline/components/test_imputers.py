@@ -112,9 +112,11 @@ class TestSimpleImputer(unittest.TestCase):
         self.assertIsInstance(numerical_imputer, BaseEstimator)
 
         # make column transformer with returned encoder to fit on data
-        column_transformer = make_column_transformer((categorical_imputer, X['dataset_properties']['categorical_columns']),
-                                                     (numerical_imputer, X['dataset_properties']['numerical_columns']),
-                                                     remainder='passthrough')
+        column_transformer = make_column_transformer(
+            (categorical_imputer, X['dataset_properties']['categorical_columns']),
+            (numerical_imputer, X['dataset_properties']['numerical_columns']),
+            remainder='passthrough'
+        )
         column_transformer = column_transformer.fit(X['X_train'])
         transformed = column_transformer.transform(data[test_indices])
 
@@ -155,9 +157,11 @@ class TestSimpleImputer(unittest.TestCase):
         self.assertIsInstance(numerical_imputer, BaseEstimator)
 
         # make column transformer with returned encoder to fit on data
-        column_transformer = make_column_transformer((categorical_imputer, X['dataset_properties']['categorical_columns']),
-                                                     (numerical_imputer, X['dataset_properties']['numerical_columns']),
-                                                     remainder='passthrough')
+        column_transformer = make_column_transformer(
+            (categorical_imputer, X['dataset_properties']['categorical_columns']),
+            (numerical_imputer, X['dataset_properties']['numerical_columns']),
+            remainder='passthrough'
+        )
         column_transformer = column_transformer.fit(X['X_train'])
         transformed = column_transformer.transform(data[test_indices])
 
@@ -198,9 +202,11 @@ class TestSimpleImputer(unittest.TestCase):
         self.assertIsInstance(numerical_imputer, BaseEstimator)
 
         # make column transformer with returned encoder to fit on data
-        column_transformer = make_column_transformer((categorical_imputer, X['dataset_properties']['categorical_columns']),
-                                                     (numerical_imputer, X['dataset_properties']['numerical_columns']),
-                                                     remainder='passthrough')
+        column_transformer = make_column_transformer(
+            (categorical_imputer, X['dataset_properties']['categorical_columns']),
+            (numerical_imputer, X['dataset_properties']['numerical_columns']),
+            remainder='passthrough'
+        )
         column_transformer = column_transformer.fit(X['X_train'])
         transformed = column_transformer.transform(data[test_indices])
         assert_array_equal(transformed.astype(str), np.array([['!missing!', 8, 9],

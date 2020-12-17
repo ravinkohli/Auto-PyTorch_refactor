@@ -33,7 +33,7 @@ class TestFeatureDataLoader(unittest.TestCase):
         loader = FeatureDataLoader()
 
         fit_dictionary = {'dataset_properties': {'is_small_preprocess': False},
-                          'preprocess_transforms': unittest.mock.Mock()}
+                          'preprocess_transforms': [unittest.mock.Mock()]}
 
         compose = loader.build_transform(fit_dictionary, mode='train')
 

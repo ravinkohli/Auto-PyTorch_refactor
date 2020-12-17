@@ -123,7 +123,7 @@ class ImagePreprocessingTest(unittest.TestCase):
                  y_train=np.random.random(10),
                  train_indices=[0, 1, 2, 3, 4, 5],
                  val_indices=[6, 7, 8, 9],
-                 dataset_properties=dataset_properties
+                 dataset_properties=dataset_properties,
                  backend=self.backend,
                  )
 
@@ -146,7 +146,7 @@ class ImagePreprocessingTest(unittest.TestCase):
                  y_train=np.random.random(10),
                  train_indices=[0, 1, 2, 3, 4, 5],
                  val_indices=[6, 7, 8, 9],
-                 dataset_properties=dataset_properties
+                 dataset_properties=dataset_properties,
                  backend=self.backend,
                  )
         dataset_properties = dict()

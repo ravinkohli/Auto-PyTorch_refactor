@@ -93,8 +93,7 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
             self.output_type: str = type_of_target(self.train_tensors[1])
             self.num_classes: int = len(np.unique(self.train_tensors[1]))
             self.output_shape: int = train_tensors[1].shape[1] if train_tensors[1].shape == 2 else 1
-        else:
-            raise NotImplementedError("Currently tasks without a target is not supported")
+
         # TODO: Look for a criteria to define small enough to preprocess
         self.is_small_preprocess = True
 
@@ -204,7 +203,7 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
             )
         elif isinstance(self.resampling_strategy, CrossValTypes):
             num_splits = DEFAULT_RESAMPLING_PARAMETERS[self.resampling_strategy].get(
-                'num_splits', None),
+                'num_splits', None)
             if self.resampling_strategy_args is not None:
                 num_splits = self.resampling_strategy_args.get('num_splits', num_splits)
             # Create the split if it was not created before

@@ -58,11 +58,11 @@ class TabularColumnTransformer(autoPyTorchTabularPreprocessingComponent):
         if len(X['dataset_properties']['categorical_columns']):
             categorical_pipeline = make_pipeline(*preprocessors['categorical'])
 
-        self.column_transformer = make_column_transformer((numerical_pipeline,
-                                                           X['dataset_properties']['numerical_columns']),
-                                                          (categorical_pipeline,
-                                                           X['dataset_properties']['categorical_columns']),
-                                                          remainder='passthrough')
+        self.preprocessor = make_column_transformer(
+            (numerical_pipeline, X['dataset_properties']['numerical_columns']),
+            (categorical_pipeline, X['dataset_properties']['categorical_columns']),
+            remainder='passthrough'
+        )
 
         # Where to get the data -- Prioritize X_train if any else
         # get from backend

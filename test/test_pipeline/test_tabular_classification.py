@@ -65,7 +65,6 @@ class PipelineTest(unittest.TestCase):
             X=self.X, Y=self.y,
             X_test=self.X, Y_test=self.y,
         )
-        datamanager.create_splits()
         self.backend.save_datamanager(datamanager)
 
         self.fit_dictionary = {

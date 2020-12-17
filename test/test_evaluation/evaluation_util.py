@@ -104,10 +104,11 @@ class BaseEvaluatorTest(unittest.TestCase):
                 traceback.print_exc()
                 raise e
         except ValueError as e:
-            if 'Floating-point under-/overflow occurred at epoch' in e.args[
-                0] or \
-                            'removed all features' in e.args[0] or \
-                            'failed to create intent' in e.args[0]:
+            if 'Floating-point under-/overflow occurred at epoch' in e.args[0]:
+                pass
+            elif 'removed all features' in e.args[0]:
+                pass
+            elif 'failed to create intent' in e.args[0]:
                 pass
             else:
                 raise e
@@ -143,7 +144,6 @@ def get_multiclass_classification_datamanager(resampling_strategy=HoldoutValType
         X_test=X_test, Y_test=Y_test,
         resampling_strategy=resampling_strategy
     )
-    dataset.create_splits()
     return dataset
 
 
@@ -184,7 +184,6 @@ def get_binary_classification_datamanager(resampling_strategy=HoldoutValTypes.ho
         X_test=X_test, Y_test=Y_test,
         resampling_strategy=resampling_strategy
     )
-    dataset.create_splits()
     return dataset
 
 
@@ -201,7 +200,6 @@ def get_regression_datamanager(resampling_strategy=HoldoutValTypes.holdout_valid
         X_test=X_test, Y_test=Y_test,
         resampling_strategy=resampling_strategy
     )
-    dataset.create_splits()
     return dataset
 
 

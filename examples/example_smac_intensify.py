@@ -98,7 +98,6 @@ if __name__ == "__main__":
         X=X_train, Y=y_train,
         X_test=X_test, Y_test=y_test,
         resampling_strategy=CrossValTypes.k_fold_cross_validation)
-    datamanager.create_splits()
     backend.save_datamanager(datamanager)
 
     # Build a ensemble from the above components

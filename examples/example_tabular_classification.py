@@ -51,7 +51,6 @@ if __name__ == '__main__':
     datamanager = TabularDataset(
         X=X_train, Y=y_train,
         X_test=X_test, Y_test=y_test)
-    datamanager.create_splits()
     backend.save_datamanager(datamanager)
 
     info = {'task_type': datamanager.task_type,

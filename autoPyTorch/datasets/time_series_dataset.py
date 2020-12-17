@@ -28,7 +28,8 @@ class TimeSeriesForecastingDataset(BaseDataset):
                  resampling_strategy_args: Optional[Dict[str, Any]] = None,
                  shuffle: Optional[bool] = False,
                  seed: Optional[int] = 42,
-                 transforms: Optional[torchvision.transforms.Compose] = None,
+                 train_transforms: Optional[torchvision.transforms.Compose] = None,
+                 val_transforms: Optional[torchvision.transforms.Compose] = None,
                  ):
         """
 
@@ -55,7 +56,10 @@ class TimeSeriesForecastingDataset(BaseDataset):
                                                           n_steps=n_steps)
         super().__init__(train_tensors=train, val_tensors=val, shuffle=shuffle,
                          resampling_strategy=resampling_strategy, resampling_strategy_args=resampling_strategy_args,
-                         seed=seed, transforms=transforms)
+                         seed=seed,
+                         train_transforms=train_transforms,
+                         val_transforms=val_transforms,
+                         )
         self.cross_validators = get_cross_validators(CrossValTypes.time_series_cross_validation)
         self.holdout_validators = get_holdout_validators(HoldoutValTypes.holdout_validation)
 

@@ -15,20 +15,20 @@ from sklearn.base import BaseEstimator
 from smac.tae import StatusType
 
 from autoPyTorch.datasets.resampling_strategy import CrossValTypes
-from autoPyTorch.evaluation.utils import read_queue
 from autoPyTorch.evaluation.train_evaluator import TrainEvaluator
-from autoPyTorch.utils import backend
+from autoPyTorch.evaluation.utils import read_queue
 from autoPyTorch.pipeline.base_pipeline import BasePipeline
 from autoPyTorch.pipeline.components.training.metrics.metrics import accuracy
+from autoPyTorch.utils import backend
 
 this_directory = os.path.dirname(__file__)
 sys.path.append(this_directory)
-from evaluation_util import (
+from evaluation_util import (  # noqa (E402: module level import not at top of file)
     BaseEvaluatorTest,
     get_binary_classification_datamanager,
     get_multiclass_classification_datamanager,
-    get_regression_datamanager  # noqa (E402: module level import not at top of file)
-)
+    get_regression_datamanager,
+)  # noqa (E402: module level import not at top of file)
 
 
 class BackendMock(object):
@@ -46,8 +46,10 @@ class DummyPipeline(BasePipeline):
         mocked_estimator = unittest.mock.Mock(spec=BaseEstimator)
         self.steps = [('MockStep', mocked_estimator)]
         pass
+
     def predict_proba(self, X, batch_size=None):
         return np.tile([0.6, 0.4], (len(X), 1))
+
     def get_additional_run_info(self) -> None:
         return None
 

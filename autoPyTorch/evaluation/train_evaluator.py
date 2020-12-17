@@ -99,7 +99,8 @@ class TrainEvaluator(AbstractEvaluator):
             train_loss = self._loss(self.y_train[train_split], y_train_pred)
             loss = self._loss(self.y_train[test_split], y_opt_pred)
 
-            additional_run_info = pipeline.get_additional_run_info() if hasattr(pipeline, 'get_additional_run_info') else {}
+            additional_run_info = pipeline.get_additional_run_info() if hasattr(
+                pipeline, 'get_additional_run_info') else {}
 
             status = StatusType.SUCCESS
 

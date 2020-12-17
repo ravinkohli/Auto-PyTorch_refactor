@@ -18,6 +18,10 @@ from autoPyTorch.constants import (
     TASK_TYPES_TO_STRING,
 )
 from autoPyTorch.datasets.base_dataset import BaseDataset
+from autoPyTorch.datasets.resampling_strategy import (
+    CrossValTypes,
+    HoldoutValTypes,
+)
 
 
 class DataTypes(Enum):
@@ -51,7 +55,9 @@ class TabularDataset(BaseDataset):
                  resampling_strategy_args: Optional[Dict[str, Any]] = None,
                  shuffle: Optional[bool] = True,
                  seed: Optional[int] = 42,
-                 transforms: Optional[torchvision.transforms.Compose] = None):
+                 train_transforms: Optional[torchvision.transforms.Compose] = None,
+                 val_transforms: Optional[torchvision.transforms.Compose] = None,
+                 ):
         X, self.data_types, self.nan_mask, self.itovs, self.vtois = self.interpret_columns(X)
 
         if Y is not None:
@@ -83,8 +89,10 @@ class TabularDataset(BaseDataset):
                 Y_test = check_array(Y_test, ensure_2d=False)
 
         super().__init__(train_tensors=(X, Y), test_tensors=(X_test, Y_test), shuffle=shuffle,
-                         resampling_strategy=resampling_strategy, resampling_strategy_args=resampling_strategy_args,
-                         seed=seed, transforms=transforms)
+                         resampling_strategy=resampling_strategy,
+                         resampling_strategy_args=resampling_strategy_args,
+                         seed=seed, train_transforms=train_transforms,
+                         val_transforms=val_transforms)
         if self.output_type is not None:
             if STRING_TO_OUTPUT_TYPES[self.output_type] in CLASSIFICATION_OUTPUTS:
                 self.task_type = TASK_TYPES_TO_STRING[TABULAR_CLASSIFICATION]
@@ -94,16 +102,6 @@ class TabularDataset(BaseDataset):
                 raise ValueError("Output type not currently supported ")
         else:
             raise ValueError("Task type not currently supported ")
-        self.cross_validators = get_cross_validators(
-            CrossValTypes.stratified_k_fold_cross_validation,
-            CrossValTypes.k_fold_cross_validation,
-            CrossValTypes.shuffle_split_cross_validation,
-            CrossValTypes.stratified_shuffle_split_cross_validation
-        )
-        self.holdout_validators = get_holdout_validators(
-            HoldoutValTypes.holdout_validation,
-            HoldoutValTypes.stratified_holdout_validation
-        )
 
     def interpret_columns(self, data: Any, assert_single_column: bool = False) -> tuple:
         single_column = False

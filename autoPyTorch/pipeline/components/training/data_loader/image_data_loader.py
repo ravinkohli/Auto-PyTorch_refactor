@@ -41,7 +41,7 @@ class ImageDataLoader(BaseDataLoaderComponent):
         # check if data set is small enough to be preprocessed.
         # If it is, then no need to add preprocess_transforms to
         # the data loader as the data is already preprocessed
-        if 'test' in mode or not X['is_small_preprocess']:
+        if 'test' in mode or not X['dataset_properties']['is_small_preprocess']:
             transformations.append(X['preprocess_transforms'])
 
         # Transform to tensor
