@@ -96,7 +96,7 @@ class TabularClassificationPipeline(ClassifierMixin, BasePipeline):
 
         return X, fit_params
 
-    def _predict_proba(self, X: np.ndarray):
+    def _predict_proba(self, X: np.ndarray) -> np.ndarray:
         # Pre-process X
         loader = self.named_steps['data_loader'].get_loader(X=X)
         pred = self.named_steps['network'].predict(loader)

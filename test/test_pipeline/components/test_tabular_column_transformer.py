@@ -67,9 +67,11 @@ class TabularTransformerTest(unittest.TestCase):
         # check if transformer was added to fit dictionary
         self.assertIn('tabular_transformer', X.keys())
         # check if transformer is of expected type
-        self.assertIsInstance(column_transformer, ColumnTransformer)
+        # In this case we expect the tabular transformer not the actual column transformer
+        # as the later is not callable and runs into error in the compose transform
+        self.assertIsInstance(column_transformer, TabularColumnTransformer)
 
-        data = column_transformer.fit_transform(X['X_train'])
+        data = column_transformer.preprocessor.fit_transform(X['X_train'])
         self.assertIsInstance(data, np.ndarray)
 
     def test_tabular_preprocess_only_categorical(self):
@@ -92,9 +94,9 @@ class TabularTransformerTest(unittest.TestCase):
         # check if transformer was added to fit dictionary
         self.assertIn('tabular_transformer', X.keys())
         # check if transformer is of expected type
-        self.assertIsInstance(column_transformer, ColumnTransformer)
+        self.assertIsInstance(column_transformer, TabularColumnTransformer)
 
-        data = column_transformer.fit_transform(X['X_train'])
+        data = column_transformer.preprocessor.fit_transform(X['X_train'])
         self.assertIsInstance(data, np.ndarray)
 
     def test_sparse_data(self):
@@ -120,9 +122,9 @@ class TabularTransformerTest(unittest.TestCase):
         # check if transformer was added to fit dictionary
         self.assertIn('tabular_transformer', X.keys())
         # check if transformer is of expected type
-        self.assertIsInstance(column_transformer, ColumnTransformer)
+        self.assertIsInstance(column_transformer.preprocessor, ColumnTransformer)
 
-        data = column_transformer.fit_transform(X['X_train'])
+        data = column_transformer.preprocessor.fit_transform(X['X_train'])
         self.assertIsInstance(data, csr_matrix)
 
 

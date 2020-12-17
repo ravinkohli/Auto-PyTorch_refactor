@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from sklearn.base import BaseEstimator
 
@@ -13,7 +13,8 @@ class autoPyTorchTabularPreprocessingComponent(autoPyTorchPreprocessingComponent
 
     def __init__(self) -> None:
         super().__init__()
-        self.preprocessor: Dict[str, Optional[BaseEstimator]] = dict(numerical=None, categorical=None)
+        self.preprocessor: Union[Dict[str, Optional[BaseEstimator]], BaseEstimator] = dict(
+            numerical=None, categorical=None)
 
     def get_preprocessor_dict(self) -> Dict[str, BaseEstimator]:
         """

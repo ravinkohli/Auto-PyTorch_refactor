@@ -486,7 +486,8 @@ class AbstractEvaluator(object):
 
         return None, {}
 
-    def _predict_proba(self, X: np.ndarray, pipeline: BaseEstimator, Y_train: np.ndarray) -> np.ndarray:
+    def _predict_proba(self, X: np.ndarray, pipeline: BaseEstimator,
+                       Y_train: Optional[np.ndarray] = None) -> np.ndarray:
         @no_type_check
         def send_warnings_to_log(message, category, filename, lineno,
                                  file=None, line=None):
