@@ -214,7 +214,7 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
                 )
             )
         else:
-            raise ValueError("Unsupported resampling strategy={self.resampling_strategy}")
+            raise ValueError(f"Unsupported resampling strategy={self.resampling_strategy}")
         return splits
 
     def create_cross_val_splits(self,
